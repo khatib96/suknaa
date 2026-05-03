@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Tajawal } from "next/font/google";
+import { Suspense } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import "./globals.css";
@@ -17,8 +18,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "سُكنى",
-  description: "منصة سُكنى لحجز العقارات والفنادق في سوريا",
+  title: {
+    default: "سُكنى — منصتك لاكتشاف وحجز السكن في سوريا",
+    template: "%s | سُكنى",
+  },
+  description:
+    "سُكنى هي المنصة الموثوقة لاكتشاف وحجز العقارات والفنادق في سوريا. شقق، فلل، شاليهات، فنادق ومنتجعات بأسعار تناسبك.",
+  applicationName: "سُكنى",
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#C85A3D",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -33,7 +46,9 @@ export default function RootLayout({
       className={`${tajawal.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-charcoal">
-        <Navbar />
+        <Suspense fallback={<div className="h-[72px]" />}>
+          <Navbar />
+        </Suspense>
         <div className="relative">{children}</div>
         <Footer />
       </body>

@@ -18,10 +18,10 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 1 — Public Website Skeleton (قيد التنفيذ — Homepage مبنية كاملة، جاهزة لتطوير صفحات أخرى)
-- **آخر مرحلة مكتملة**: Phase 0 + Layout + Homepage sections كاملة + معمارية بيانات + Adaptive Logo + Cache fix workflow
-- **آخر تحديث للذاكرة**: 2026-05-03 — Monorepo: نقل Next.js إلى `apps/web/` + pnpm workspaces + إصلاح `.gitignore`
-- **آخر AI عمل على المشروع**: Cursor (Claude)
+- **المرحلة الحالية**: Phase 1 — Public Website Skeleton (الـ 7 صفحات الحرجة مكتملة؛ الصفحات الثابتة About/Terms/… مؤجلة لـ Phase 1.5)
+- **آخر مرحلة مكتملة**: Phase 1 Core — Homepage كاملة + /become-a-host + /search + /property/[id] + /hotel/[id] + /login + /signup + 404/500 + PWA manifest
+- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة 9) — Phase 1 Core Pages + URL tab state + Booking widget بدون commission + RHF/Zod auth
+- **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
@@ -36,7 +36,9 @@
 - `bookings` polymorphic بـ discriminator (`booking_kind` enum) و CHECK constraint
 - Modular monolith، **ليس** microservices
 - **Stack**: Next.js 14 (App Router) + NestJS 10 + PostgreSQL 16 + PostGIS + Redis 7 + MinIO + Flutter (Phase 10)
-- Monorepo: **pnpm workspaces** (`apps/web`، `packages/*`)؛ **Turborepo** لاحقاً عند الحاجة لتنسيق build عبر عدة apps
+- **الهيكل الفعلي الآن**: apps/web/ (Next.js) + packages/ui + packages/types + infrastructure/
+- **Package Manager**: pnpm@9.15.4 (pnpm-workspace.yaml في الجذر)
+- **Turborepo**: مؤجَّل — pnpm workspaces كافٍ للمرحلة الحالية
 - Hosting: **Hostinger VPS** (KVM 2 → KVM 4 → KVM 8) + Cloudflare. **ليس** Hetzner.
 - OS: Ubuntu 24.04 LTS، Datacenter: Frankfurt أو Amsterdam
 
@@ -112,8 +114,8 @@
 - [ ] **بدء محادثات Sham Cash + MTN Cash**: لم تبدأ بعد — مهمة محمد في Phase 0
 - [ ] **بدء التواصل مع 2-3 معارف لـ beta hosts** (بيوت/شاليهات) — مهمة محمد
 - [x] إنشاء Git repo (private GitHub) ✓ 2026-05-03 — repo: https://github.com/khatib96/suknaa (private, main branch, 72 files, 10.51 MiB)
-- [x] Monorepo scaffold (pnpm workspaces + `apps/web` + `packages/types` + `packages/ui` + `infrastructure/`) ✓ 2026-05-03 — **Turborepo** لم يُضف بعد (`turbo.json` لاحقاً)
-- [ ] تثبيت Local Dev Environment (Docker Compose: Postgres+PostGIS، Redis، MinIO)
+- [x] Monorepo scaffold بـ pnpm workspaces ✓ 2026-05-03 — apps/web/ + packages/ui + packages/types + infrastructure/ — بدون Turborepo (يُضاف لاحقاً عند الحاجة)
+- [x] تثبيت Local Dev Environment ✓ 2026-05-04 — Docker Compose في infrastructure/docker-compose.yml — PostgreSQL 16+PostGIS (5432) + Redis 7 (6379) + MinIO (9000/9001) — يشتغل بـ: docker compose -f infrastructure/docker-compose.yml up -d
 - [ ] **Mockups**: تأجيل Figma — قرار محمد: نسكافولد Next.js skeleton مع شاشات placeholder (نبني ونرى مباشرة) — يبدأ في Phase 1
 - [ ] إصدار logo بصيغة SVG — مؤجَّل (PNG كافٍ الآن، سيُطلب من مصمم لاحقاً)
 
@@ -125,15 +127,20 @@
 - [x] **Destinations carousel** (data-driven, scroll أفقي) ✓ 2026-04-30
 - [x] **FeaturedListings** + PropertyCard + HotelCard (reusable) ✓ 2026-04-30
 - [x] **معمارية بيانات مرنة** (`data/hero-slides.ts` + `data/destinations.ts`) ✓ 2026-04-30
+- [x] **WhySuknaaStrip + SeasonalPicks** (قسمان جديدان على الـ Homepage) ✓ 2026-05-04
+- [x] **URL tab state**: نُقل `activeTab` من state محلي إلى `?tab=all|real_estate|hospitality` (Navbar + FeaturedListings + SearchTabs) ✓ 2026-05-04
+- [x] **`/become-a-host`** (8 أقسام: Hero + Numbers + Benefits + How + EarningsCalculator + Testimonials + FAQ + FinalCTA) ✓ 2026-05-04
+- [x] **`/search`** (Filters tab-aware + Grid + SortBar + EmptyState + MapToggle + URL params + filterProperties/filterHotels مُنفصلتان) ✓ 2026-05-04
+- [x] **`/property/[id]`** (Gallery + per-room PropertySpaces + Amenities + Map + Reviews + HostSnippet + sticky BookingWidget بدون commission) ✓ 2026-05-04
+- [x] **`/hotel/[id]`** (Gallery + RoomTypesList مع scarcity حقيقي على availableUnits + sticky DatePicker + Reviews + Company snippet) ✓ 2026-05-04
+- [x] **`/login` و `/signup`** (Zod + React Hook Form + intent guest/host + للمؤجِّر اختيار host_category و host_subtype مع validation متقاطع) ✓ 2026-05-04
+- [x] **404 + 500** بطابع سُكنى الدافئ ✓ 2026-05-04
+- [x] **PWA manifest** (`app/manifest.ts` → `/manifest.webmanifest`) ✓ 2026-05-04
 - [ ] إضافة الصور الفعلية (محمد يضيفها لـ `apps/web/public/images/hero/` و `apps/web/public/images/destinations/`)
 - [ ] دمج Mapbox GL JS فعلياً على `#map-container`
-- [ ] صفحة Search Results
-- [ ] صفحة Property Detail (RE)
-- [ ] صفحة Hotel Detail (Hospitality)
-- [ ] صفحة Host Landing (`/host`)
-- [ ] صفحات Login/Signup/About/How-it-Works/Help/Terms/Privacy/Cookies
-- [ ] صفحات أخطاء 404/500
-- [ ] PWA manifest + service worker
+- [ ] الصفحات الثابتة (Phase 1.5): About, How-it-Works, Help, Contact, Terms, Privacy, Cookies
+- [ ] صفحة Host Profile العامة (`/host/[username]`) — مؤجَّلة لـ Phase 1.5
+- [ ] Service Worker الفعلي (الـ manifest جاهز، الـ SW يحتاج إعدادات إضافية)
 - [ ] next-intl (AR + EN) — مؤجَّل
 - [ ] Deploy إلى staging
 
@@ -171,14 +178,75 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-03 (جلسة 7 — Adaptive Logo + Cache fix workflow)
+**التاريخ**: 2026-05-04 (جلسة 9 — Phase 1 Core Pages)
 **الـ AI المستخدم**: Cursor (Claude Opus 4.7)
+
+**السياق**: محمد طلب البدء بتنفيذ Phase 1 وفق `docs/BUILD_PLAN.md` و `docs/UI_UX_VISION.md`. اتُّخذ قراران رئيسيان:
+- **النطاق**: 7 صفحات حرجة الأولى (الخيار B) — Homepage polish + Search + Property + Hotel + Become a Host + Login + Signup. الصفحات الثابتة تُؤجَّل لـ Phase 1.5.
+- **اللغة**: AR فقط — `next-intl` يُضاف لاحقاً عند بدء النسخة الإنجليزية.
+
+### 9.1 — إكمال الـ Homepage
+- إضافة `WhySuknaaStrip` (4 ميزات بأيقونات Lucide) و `SeasonalPicks` (يُخفى إذا الـ data فارغة — قاعدة "لا nudges وهمية").
+- نقل tab state من local state إلى URL (`?tab=all|real_estate|hospitality`):
+  - `lib/tab.ts` يحوي `parseTab`, `TAB_VALUES`, `TAB_LABELS`, `DEFAULT_TAB` (مرجع موحَّد).
+  - `Navbar`, `FeaturedListings`, `SearchTabs` كلهم يقرؤون/يكتبون من URL.
+  - الـ Navbar مُلَفّ بـ `<Suspense>` في الـ layout (Next.js 16 يتطلب ذلك مع `useSearchParams`).
+- `FeaturedListings` يفلتر حسب الـ tab: `all` يعرض الكل، `real_estate` يخفي الفنادق، `hospitality` يخفي العقارات.
+
+### 9.2 — صفحة `/become-a-host`
+- 8 أقسام كاملة وفق UI_UX_VISION §4: HostHero (90vh + gradient + CTAs) → LiveNumbersStrip (يُخفى إذا فاضي) → HostBenefits (3 columns) → HowItWorks (4 steps + خط نقطي بين الكروت) → **EarningsCalculator** (تفاعلي، يحسب: سعر/ليلة مقترح × occupancy × (1 − commission)) → HostTestimonials (carousel) → HostFAQ (`<details>` بدلاً من مكتبة accordion — أبسط وأخف) → HostFinalCTA (gradient banner).
+- Mock data في `data/host-stats.ts` (فاضي الآن)، `data/host-testimonials.ts`، `data/host-faq.ts`، `data/earnings-rates.ts` (مدن + أنواع عقارات + commission bps).
+
+### 9.3 — صفحة `/search` (Server Component)
+- `lib/search-utils.ts`: pure functions `parseSearchParams`, `filterProperties`, `filterHotels`, `sortProperties`, `sortHotels`, `runSearch`. **مفصول كلياً** بين الـ RE والـ Hospitality — لا abstraction موحَّدة.
+- مكونات: `SearchHeader` (sticky search bar + tabs) + `SearchFilters` (Client، tab-aware: يخفي filters غير المناسبة) + `SearchSortBar` + `SearchEmptyState` + `PropertyResultCard` + `HotelResultCard` + `SearchMap` (placeholder بـ pins ملوّنة) + `MapToggleButton` (sticky في الأسفل).
+- جميع الفلاتر تُخزَّن في URL params (city, min_price, max_price, bedrooms, stars, breakfast, property_type[], hotel_type[], amenity[], sort).
+
+### 9.4 — صفحة `/property/[id]` (Airbnb-style)
+- Next.js 16: `params: Promise<{ id: string }>`؛ نستخدم `await params` ثم `findProperty(id)` ونعمل `notFound()` لو غير موجود. `generateStaticParams` يولّد كل الـ IDs الـ mock.
+- مكونات تحت `components/property-detail/`:
+  - `PropertyGallery` (Client — صورة كبيرة + 4 جانبية + lightbox modal بـ thumbnail strip).
+  - `PropertyHeader`, `PropertyStatsStrip`, `PropertyDescription` (Client مع "عرض المزيد").
+  - **`PropertySpaces` المحوري**: per-room cards من `data/property-spaces.ts` — كل غرفة بصور + bedConfig + amenities. هذا التمييز الجوهري عن الفنادق.
+  - `PropertyAmenities`, `PropertyMapAndNearby` (placeholder + قائمة معالم), `PropertyHouseRules`, `PropertyReviewsPlaceholder`, `PropertyHostSnippet`.
+  - **`BookingWidget`** (Client، sticky جانبي): تواريخ + ضيوف → يحسب `subtotal + service_fee = total` فقط. **لا كلمة commission إطلاقاً.** `lib/pricing-display.ts` يحوي `computeGuestBreakdown` و `diffNights` كـ pure functions.
+
+### 9.5 — صفحة `/hotel/[id]` (Booking-style)
+- نفس نمط async params + generateStaticParams.
+- مكونات تحت `components/hotel-detail/` (مفصولة كلياً عن property-detail):
+  - `HotelGallery` (نسبة 16:9 — مختلفة عن العقار 4:3).
+  - `HotelHeader` (نجوم + score من 10 + رقم في badge ذهبي).
+  - `HotelDescription`, `HotelAmenities` (Lucide icons).
+  - **`RoomTypesList` المحوري**: لكل room type كارت بصور + bedConfig + maxOccupancy + إفطار + scarcity ("متبقّي N فقط" إذا ≤2، "نفدت" إذا 0، "N من M متاحة" غير ذلك). الـ scarcity مبني على `availableUnits` فعلي من `data/room-types.ts` — **لا nudges وهمية**.
+  - `HotelMapAndNearby`, `HotelReviewsPlaceholder` (score breakdown بدلاً من ⭐ rating), `HotelCompanySnippet` (مع badge "شركة موثَّقة").
+  - **`HotelDatePickerSticky`** (Client) sticky في الأعلى عند scroll بدلاً من widget جانبي — هذا الفرق التصميمي عن العقار.
+
+### 9.6 — صفحات `/login` و `/signup`
+- ثُبِّتت `react-hook-form@^7.75.0`, `@hookform/resolvers@^5.2.2`, `zod@^4.4.2`.
+- `lib/auth-schemas.ts`: schemas مشتركة (`loginSchema`, `signupSchema`) + types مُصدَّرة. سيُنقل لـ `packages/types` في Phase 2 ليُشاركه الباك‌اند.
+- **`signupSchema`** فيه `superRefine` للـ cross-field validation: لو `intent === "host"`، يجب اختيار `hostCategory` ثم `hostSubtype` متوافق (re_office لا يُسمح في hospitality، hotel_company لا يُسمح في real_estate). هذا يطابق قاعدة `WRONG_HOST_CATEGORY` الحرجة في الباك‌اند.
+- `LoginForm`: tab toggle بصري بين guest/host، intent يقرأ من `?intent=`، password show/hide، loading state، success state.
+- `SignupForm`: wizard خفيف بدون step navigation — كل الحقول في صفحة واحدة، الحقول الإضافية تظهر شرطياً عند `intent === "host"`. استخدام `useWatch` بدلاً من `watch()` لتجنب React Compiler warning.
+- الـ submit في الحالتين mock — يطبع للـ console ويعرض toast نجاح.
+
+### 9.7 — Polish & Glue
+- `app/not-found.tsx` (404 سُكنى-style مع badge "404" + CTAs للرئيسية والبحث).
+- `app/error.tsx` (Client Component إلزامي — يستقبل `error` و `reset`، يطبع للـ console، CTA "حاول مجدداً").
+- `app/manifest.ts` يولّد `/manifest.webmanifest` (theme #C85A3D، lang ar، dir rtl، start_url /).
+- `Suspense` على `FeaturedListings` في app/page.tsx (مطلوب للـ static prerendering في Next 16 لأن `useSearchParams` يتطلبه).
+- البناء: `pnpm run build` نجح بالكامل — 19 صفحة (homepage + become-a-host + 4 hotels SSG + 6 properties SSG + login + signup + search + 404 + manifest).
+- الـ Lint: 0 أخطاء، 0 تحذيرات.
+
+### 9.8 — قرارات تقنية مهمة
+- **Next.js 16 async params/searchParams**: كل dynamic page و كل page تستخدم `searchParams` تكتب `params: Promise<...>` و `await params`. Client components تستمر باستخدام `useSearchParams` hook.
+- **`useSearchParams` يحتاج Suspense**: أي client component يستخدمه في صفحة prerendered static يجب لفّه. حُلّت في layout (للـ Navbar) وفي page (للـ FeaturedListings).
+- **`useWatch` بدلاً من `watch()`**: في React Compiler v19، استدعاء `watch("field")` داخل JSX render يُنتج تحذير "incompatible library". الحل: `useWatch({ control, name })` خارج الـ map.
 
 **السياق**: محمد بدّل صورة `hero-1.jpg` فعلياً (وضع صورة الجامع الأموي) واستبدل اللوجو بنسخة بيضاء، لكن:
 - صورة الـ Hero ما تظهرت رغم استبدال الملف.
 - اللوجو الأبيض اختفى بصرياً فوق الـ navbar الـ glass الأبيض = "abyad ala abyad" (white-on-white).
 
-**ما تم إنجازه في هذه الجلسة (7)**:
+**ما تم إنجازه في الجلسة (7)** (لم تتغير):
 
 ### 7.1 — حل مشكلة cache فعلياً (مش بس توثيق)
 - اكتُشف أن dev server كان شغّال بـ PID 29512 (مع 4 child processes).
@@ -281,14 +349,17 @@ npm run dev
 - إنشاء `COMPREHENSION_REPORT.md` و `ai_memory.md`.
 - اكتشاف ملف `cursorrules` (بدون نقطة) — أُبلغ محمد، واتُّخذ القرار في الجلسة الحالية.
 
-**التالي (ينتظر محمد)**:
-- محمد يقوم بنفسه بـ:
-  1. حجز Hostinger VPS (KVM 2، Frankfurt، Ubuntu 24.04)
-  2. ربط `suknaa.com` بـ Cloudflare
-  3. بدء محادثات Sham Cash + MTN Cash
-  4. بدء التواصل مع 2-3 معارف لـ beta hosts
-- بعد عودة محمد: نبدأ Phase 0 المتبقية (**Docker Compose** للـ local dev). Turborepo اختياري لاحقاً.
-- **لا أكتب أي كود حتى يطلب محمد صراحةً**.
+**التالي (بعد جلسة 9)**:
+- **مراجعة محمد للصفحات الـ 7 المنجَزة** على staging أو محلياً (`pnpm dev` في `apps/web`):
+  - `/` (Homepage الكاملة)
+  - `/become-a-host`
+  - `/search` و `/search?tab=real_estate&city=damascus` للتحقق من الفلاتر
+  - `/property/prop-1` (و prop-2 إلى prop-6)
+  - `/hotel/hotel-1` (إلى hotel-4)
+  - `/login?intent=guest` و `/login?intent=host`
+  - `/signup`
+- **Phase 1.5** (إذا وافق محمد): الصفحات الثابتة (About, How-it-Works, Help, Contact, Terms, Privacy, Cookies) + Host Profile العامة (`/host/[username]`) + Service Worker.
+- **مهام محمد الخارجية**: VPS، DNS، Sham/MTN، beta hosts (لا تزال متبقية من Phase 0).
 
 **ملاحظات للـ AI القادم**:
 - المرجع الوحيد للوثائق هو `/docs/*.md` (10 ملفات). أي إشارة قديمة لـ `docs/mnt/...` يجب تجاهلها — المسار حُذف.
@@ -405,14 +476,26 @@ npm run dev
 - استُخدم --force push لأن GitHub أنشأ initial commit تلقائياً
 - آخر AI عمل: Claude (Antigravity) — جلسة 8
 
-### 2026-05-03 — Monorepo (pnpm workspaces + apps/web)
-- إصلاح `.gitignore` (حذف علامات تعارض الدمج) + قواعد تجاهل مناسبة لـ monorepo (`**/.next`، `node_modules/`، إلخ).
-- نقل تطبيق Next.js إلى [`apps/web/`](apps/web/): `app/`، `components/`، `data/`، `lib/`، `public/`، configs (`next.config.ts`، `tsconfig.json`، `eslint.config.mjs`، `postcss.config.mjs`، `components.json`، `next-env.d.ts`).
-- جذر المستودع: [`package.json`](package.json) (scripts: `pnpm --filter web …`)، [`pnpm-workspace.yaml`](pnpm-workspace.yaml)، حزم placeholder `@suknaa/types` و `@suknaa/ui`، مجلد `infrastructure/` (`.gitkeep`).
-- حزمة الويب: `"name": "web"` في [`apps/web/package.json`](apps/web/package.json)؛ الانتقال من `package-lock.json` إلى **`pnpm-lock.yaml`**.
-- التحقق: `pnpm run build` و `pnpm run lint` من الجذر ناجحان.
-- **Turborepo** لم يُضف؛ يُضاف لاحقاً عند تعدد الـ pipelines إن لزم.
-- مسارات الملفات التاريخية في سجل الجلسات أدناه قد تظهر بدون `apps/web/` — المرجع الفعلي للكود الواجهة هو **`apps/web/`**.
+### 2026-05-03 — Monorepo Restructure (جلسة 8)
+- نُقل كود Next.js من الجذر إلى apps/web/
+- أُنشئ packages/ui و packages/types بـ @suknaa/ui و @suknaa/types
+- أُنشئ infrastructure/ بـ .gitkeep
+- pnpm-workspace.yaml في الجذر
+- package.json الجذر: name=suknaa، packageManager=pnpm@9.15.4
+- حُذف package-lock.json، أُنشئ pnpm-lock.yaml
+- Build + Lint ناجحان
+- corepack EPERM على هذا الجهاز — الحل: npx pnpm@9.15.4 أو pnpm مثبَّت globally
+- آخر AI عمل: Cursor (Claude) + Antigravity — جلسة 8
+
+### 2026-05-04 — Docker Compose Local Dev (جلسة 8)
+- infrastructure/docker-compose.yml يشغّل 3 خدمات: postgis/postgis:16-3.4 + redis:7-alpine + minio/minio:latest
+- Volumes محفوظة: infrastructure_postgres_data + infrastructure_redis_data + infrastructure_minio_data
+- DB: suknaa_dev / user: suknaa / password: suknaa_dev_password
+- MinIO: user: suknaa_minio / password: suknaa_minio_password
+- WSL كان قديماً — حُدّث بـ wsl --update قبل تشغيل Docker
+- للتشغيل: docker compose -f infrastructure/docker-compose.yml up -d
+- للإيقاف: docker compose -f infrastructure/docker-compose.yml down
+- آخر AI عمل: Claude (Antigravity) — جلسة 8
 
 ### 2026-04-30 — Phase 1 Frontend Build (جلسات 4 → 6)
 - **القرار (محدّث 2026-05-03)**: كان البداية Standalone Next في الجذر؛ أصبح التطبيق تحت **`apps/web/`** ضمن **pnpm workspaces**. Turborepo اختياري لاحقاً.
@@ -425,7 +508,14 @@ npm run dev
   3. حذف `apps/web/.next/cache/images/` يدوياً (أو من الجذر إن وُجد symlink)
   ملف `apps/web/public/images/hero/README.md` و `apps/web/public/images/destinations/README.md` يحوي الخطوات بالتفصيل.
 
-### 2026-04-30 — تحسينات تصميم جلسة 4 (بناءً على mockup محمد)
+### 2026-05-04 — Phase 1 Core Pages (جلسة 9)
+- **القرار 1 (النطاق)**: تنفيذ 7 صفحات حرجة فقط (الخيار B) قبل الصفحات الثابتة. السبب: الحصول على tour قابل للعرض على beta hosts/guests بأسرع وقت.
+- **القرار 2 (اللغة)**: AR فقط في Phase 1. `next-intl` + ترجمات EN يُضافان عند بدء الإنجليزية (Phase 2 أو لاحقاً).
+- **القرار 3 (الخريطة)**: placeholder سيستمر خلال Phase 1. Mapbox GL JS الفعلي يُدمج في Phase 3 عند توفر إحداثيات حقيقية للعقارات.
+- **القرار 4 (الفصل المعماري)**: لا component مشترك بين Property و Hotel detail. مجلدات `property-detail/` و `hotel-detail/` مفصولة. الـ data layer مفصول (`PROPERTIES` array مستقل عن `HOTELS`). الـ search utils تفلتر/تفرز كلاًّ بدالة منفصلة. هذا يعكس قاعدة "أبداً لا تخلط properties و hotels في نفس الكود".
+- **القرار 5 (الـ pricing display)**: `lib/pricing-display.ts` يحوي `computeGuestBreakdown` يُرجع `{ propertySubtotal, serviceFee, total }` فقط. **لا حقل ولا متغير ولا تعليق يذكر "commission"** في أي مكان يصل الزبون. الـ commission engine الحقيقي سيكون في `packages/pricing/` server-side.
+- **القرار 6 (Auth schemas مشتركة)**: `lib/auth-schemas.ts` (Zod) يبقى في `apps/web/` مؤقتاً. عند بدء Phase 2 (Backend Auth) سيُنقل لـ `packages/types/` ويستخدمه الباك‌اند كـ DTOs (مع class-validator wrapper).
+- **التأثير**: 19 صفحة مولّدة، lint نظيف، build ناجح، جاهز للعرض على staging.
 - **السياق**: محمد صمّم mockup كامل للصفحة الرئيسية (logo + hero + map + destinations + listings + host banner + footer) وطلب مراجعة وتحسين.
 - **التعليقات الرئيسية من محمد**:
   1. الفوتر يحتاج تحسين.
@@ -474,6 +564,8 @@ npm run dev
 - اسأل قبل ما تنفذ شي مش متأكد منه — **خاصة** أي قرار مالي أو معماري
 - استخدم العربية في الردود مع محمد، والإنجليزية في الكود والـ docstrings والـ commit messages
 - أي تعديل في `/docs/` يجب أن يُذكر هنا في القسم 5
+- cache الصور الآن في apps/web/.next/cache/images/ (وليس .next/ في الجذر)
+- أمر حذف الـ cache المحدَّث: `Remove-Item -Recurse -Force apps/web/.next\cache\images`
 
 ---
 
@@ -496,4 +588,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-03 — Monorepo (`apps/web`) + Cursor (Claude).**
+**نهاية الملف. آخر تحديث: 2026-05-04 (جلسة 8) — Docker Compose + Monorepo + Git/GitHub.**

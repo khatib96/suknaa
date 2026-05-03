@@ -23,11 +23,11 @@
 - [ ] Hostinger VPS provisioned (KVM 2 or KVM 4, Ubuntu 24.04, Frankfurt or Amsterdam DC)
 - [ ] DNS configured: `suknaa.com`, `api.suknaa.com`, `admin.suknaa.com`, `cdn.suknaa.com`
 - [ ] Cloudflare set up (DNS proxied, WAF on, DDoS protection)
-- [ ] Git repository (private GitHub repo)
-- [ ] Monorepo scaffolded with Turborepo + pnpm
-- [ ] All v2 documentation in `/docs/` committed
-- [ ] `.cursorrules` file written and committed
-- [ ] Local dev environment working (Docker Compose: Postgres+PostGIS, Redis, MinIO)
+- [x] Git repository (private GitHub repo)
+- [x] Monorepo scaffolded with Turborepo + pnpm
+- [x] All v2 documentation in `/docs/` committed
+- [x] `.cursorrules` file written and committed
+- [x] Local dev environment working (Docker Compose: Postgres+PostGIS, Redis, MinIO)
 - [ ] **5 visual mockups** (Figma or v0.dev): Homepage with tabs, Real Estate search results, Hotel detail page, Property detail page (with per-room sections), Host commission-passthrough toggle UI
 - [ ] Logo files in SVG, PNG (multiple sizes), and favicon set
 
@@ -40,10 +40,10 @@ You can show a friend the visual mockups and they understand both the Real Estat
 **Estimated:** 3–4 weeks (longer than v1 because of dual systems)
 
 ### Deliverables
-- [ ] Next.js 14 App Router + TypeScript + Tailwind + shadcn/ui
+- [x] Next.js 14 App Router + TypeScript + Tailwind + shadcn/ui
 - [ ] i18n with `next-intl`: full Arabic (RTL) + English (LTR)
-- [ ] Design system implemented (colors, fonts, spacing — incl. map color palette)
-- [ ] **Layout**:
+- [x] Design system implemented (colors, fonts, spacing — incl. map color palette)
+- [x] **Layout**:
   - Header with logo + **persistent tabs `[الكل] [عقارات] [فنادق]`** + **two login buttons** + language switcher
   - Footer
 - [ ] **Homepage**:

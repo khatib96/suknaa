@@ -3,9 +3,9 @@
   "private": true,
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint",
-    "start": "pnpm --filter web start"
+    "dev": "npx pnpm@9.15.4 --filter web dev",
+    "build": "npx pnpm@9.15.4 --filter web build",
+    "lint": "npx pnpm@9.15.4 --filter web lint",
+    "start": "npx pnpm@9.15.4 --filter web start"
   }
 }

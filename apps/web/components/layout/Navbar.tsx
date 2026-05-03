@@ -2,20 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Home, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DEFAULT_TAB, parseTab, type TabValue } from "@/lib/tab";
 
-const NAV_TABS = [
-  { key: "all", label: "الكل", href: "#" },
-  { key: "real-estate", label: "عقارات", href: "#" },
-  { key: "hotels", label: "فنادق", href: "#" },
-] as const;
+const NAV_TABS: ReadonlyArray<{ key: TabValue; label: string }> = [
+  { key: "all", label: "الكل" },
+  { key: "real_estate", label: "عقارات" },
+  { key: "hospitality", label: "فنادق" },
+];
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<(typeof NAV_TABS)[number]["key"]>("all");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const activeTab = useMemo<TabValue>(
+    () => parseTab(searchParams?.get("tab")),
+    [searchParams],
+  );
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 12);
@@ -23,6 +36,23 @@ export function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const buildHref = (tab: TabValue) => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (tab === DEFAULT_TAB) {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    const query = params.toString();
+    return query ? `?${query}` : "?";
+  };
+
+  const onTabClick = (tab: TabValue) => (event: React.MouseEvent) => {
+    event.preventDefault();
+    const href = buildHref(tab);
+    router.replace(href, { scroll: false });
+  };
 
   return (
     <header
@@ -34,7 +64,7 @@ export function Navbar() {
       )}
     >
       <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6 lg:px-8">
-        <div className="relative flex h-11 w-[150px] shrink-0 items-center">
+        <Link href="/" aria-label="الذهاب للصفحة الرئيسية" className="relative flex h-11 w-[150px] shrink-0 items-center">
           <Image
             src="/logo/suknaa-logo-white.png"
             alt="شعار سُكنى"
@@ -57,7 +87,7 @@ export function Navbar() {
               isScrolled ? "opacity-100" : "opacity-0",
             )}
           />
-        </div>
+        </Link>
 
         <nav
           aria-label="تبويبات الموقع"
@@ -66,11 +96,14 @@ export function Navbar() {
           {NAV_TABS.map((tab) => (
             <Link
               key={tab.key}
-              href={tab.href}
-              onClick={() => setActiveTab(tab.key)}
+              href={buildHref(tab.key)}
+              onClick={onTabClick(tab.key)}
+              aria-pressed={activeTab === tab.key}
               className={cn(
                 "rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
-                activeTab === tab.key ? "bg-primary text-white shadow-primary-glow" : "text-muted hover:text-primary",
+                activeTab === tab.key
+                  ? "bg-primary text-white shadow-primary-glow"
+                  : "text-muted hover:text-primary",
               )}
             >
               {tab.label}
@@ -88,14 +121,39 @@ export function Navbar() {
             <User className="h-4 w-4" />
             تسجيل الدخول
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={10} className="w-52 rounded-2xl border border-[#E8E0D3] p-1.5 shadow-warm-md">
-            <DropdownMenuItem className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary">
-              دخول كضيف
+          <DropdownMenuContent
+            align="end"
+            sideOffset={10}
+            className="w-52 rounded-2xl border border-[#E8E0D3] p-1.5 shadow-warm-md"
+          >
+            <DropdownMenuItem
+              render={
+                <Link
+                  href="/login?intent=guest"
+                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
+                />
+              }
+            >
+              دخول كزبون
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary">
-              دخول كمضيف
+            <DropdownMenuItem
+              render={
+                <Link
+                  href="/login?intent=host"
+                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
+                />
+              }
+            >
+              دخول كمؤجِّر
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary">
+            <DropdownMenuItem
+              render={
+                <Link
+                  href="/signup"
+                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
+                />
+              }
+            >
               إنشاء حساب
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -105,17 +163,20 @@ export function Navbar() {
       <div className="border-t border-[#E8E0D3] bg-white/95 px-4 py-2 md:hidden">
         <nav aria-label="تبويبات الموقع للجوال" className="flex items-center gap-2 overflow-x-auto">
           {NAV_TABS.map((tab) => (
-            <button
+            <Link
               key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
+              href={buildHref(tab.key)}
+              onClick={onTabClick(tab.key)}
+              aria-pressed={activeTab === tab.key}
               className={cn(
                 "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200",
-                activeTab === tab.key ? "bg-primary text-white shadow-primary-glow" : "bg-white text-muted hover:text-primary",
+                activeTab === tab.key
+                  ? "bg-primary text-white shadow-primary-glow"
+                  : "bg-white text-muted hover:text-primary",
               )}
             >
               {tab.label}
-            </button>
+            </Link>
           ))}
           <Home className="ms-auto h-4 w-4 shrink-0 text-muted" />
         </nav>
