@@ -1,0 +1,448 @@
+---
+description: Suknaa project rules — dual-system rental platform (Real Estate + Hospitality). Read at the start of every session before generating code.
+alwaysApply: true
+---
+
+# Suknaa — Cursor AI Rules (v2)
+
+> Read this file at the start of every session. These rules govern all code generation for the Suknaa project.
+
+---
+
+## 1. Project Context
+
+You are working on **Suknaa (سُكنى)** — a Syrian rental platform with **TWO DISTINCT SYSTEMS**:
+
+1. **Real Estate System (Real Estate / P2P)**: houses, apartments, villas, farms, cabins, chalets, studios. Modeled after Airbnb (per-property listing with detailed per-room information).
+2. **Hospitality System (Hotels / B2B)**: hotels, hotel-apartments, resorts, hostels. Modeled after Booking.com (one establishment with multiple room types and per-unit inventory).
+
+Bilingual (Arabic RTL + English LTR). Mohammad is the developer; he is a beginner programmer using AI tools as his primary coding partner.
+
+**The full project documentation lives in `/docs/`. Read these files when relevant:**
+- `docs/PROJECT.md` — vision, brand, dual-system overview
+- `docs/ARCHITECTURE.md` — tech stack, system design (note dual-domain module structure)
+- `docs/BUILD_PLAN.md` — phased roadmap (11 phases)
+- `docs/DESIGN_SYSTEM.md` — colors, typography, components, RTL rules, tab navigation
+- `docs/DATABASE_SCHEMA.md` — tables grouped by section A (shared), B (real estate), C (hospitality), D (bookings), E (payments), F (reviews), G (price intelligence), H (anti-circumvention), I (guest features), J (attractions)
+- `docs/API_SPEC.md` — endpoints; note `/properties/*` (RE) vs `/hotels/*` (Hospitality) separation
+- `docs/PAYMENT_SYSTEM.md` — money flow, escrow, withdrawals, **commission passthrough**
+- `docs/SECURITY.md` — auth, KYC, fraud prevention, **anti-circumvention**
+- `docs/DEPLOYMENT.md` — VPS, Docker, CI/CD
+
+**Always read `ai_memory.md` at the workspace root before starting any session.** It contains the latest decisions and progress log.
+
+**Always check the relevant doc before writing code that touches its domain.** Do not invent designs that contradict these documents.
+
+---
+
+## 2. The Dual-System Mental Model (Critical)
+
+These two systems share infrastructure but have **fundamentally different data models**:
+
+| Aspect | Real Estate | Hospitality |
+|---|---|---|
+| Listing unit | One `properties` row | One `hotels` row + many `room_types` |
+| Photos | Per-property + per-space (bedroom/bathroom/kitchen) | Per-hotel (categorized) + per-room-type |
+| Availability | Per-property (the whole property is booked) | Per-room-unit (specific physical room) |
+| Booking | Books the whole property | Books one or more units of a room type |
+| Pricing | Per-property (4 tiers + seasonal) | Per-room-type (4 tiers + seasonal) |
+| Address | Approximate by default | Always precise |
+| Host type | Individual or Real Estate Office | Hotel Company only |
+
+**When writing code, always ask: "Does this apply to RE, Hospitality, or both?"**
+- Both (auth, payments, chat, reviews) → put in shared module
+- RE only → put in `modules/real-estate/`
+- Hospitality only → put in `modules/hospitality/`
+- Touches both via polymorphism (bookings, search) → handle both branches explicitly
+
+---
+
+## 3. Tech Stack (Non-Negotiable)
+
+### Frontend (web + admin)
+- Next.js 14 App Router, React Server Components by default
+- TypeScript (strict mode)
+- Tailwind CSS 3 with project's design tokens
+- shadcn/ui for component primitives
+- next-intl for i18n (AR + EN)
+- React Hook Form + Zod for forms
+- TanStack Query v5 for server state
+- Zustand for client state (sparingly)
+- MapLibre GL JS for maps
+
+### Backend (API)
+- NestJS 10 modular monolith
+- TypeScript (strict)
+- Prisma ORM (PostgreSQL 16 + PostGIS)
+- BullMQ for background jobs
+- Socket.io for chat
+- Passport.js + JWT for auth
+- argon2id for password hashing
+- class-validator + class-transformer
+- Pino for logging
+
+### Mobile (Phase 10 — not yet started)
+- Flutter 3 + Dart 3, Riverpod for state, Dio for HTTP
+
+### Infrastructure
+- Docker + Docker Compose
+- Hostinger VPS (Ubuntu 24.04)
+- Nginx reverse proxy
+- Cloudflare CDN + WAF
+- MinIO for object storage
+- Redis for cache + queue
+
+---
+
+## 4. Code Style
+
+### General
+- **TypeScript strict mode**. Fix all errors; never use `any` to silence them.
+- **Named exports** (except Next.js pages/layouts).
+- File names: **kebab-case** (`user-service.ts`), **PascalCase** for React components (`PropertyCard.tsx`).
+- Variables: **camelCase**. Types/Classes: **PascalCase**. Constants: **UPPER_SNAKE_CASE**.
+- Booleans start with `is`, `has`, `can`, `should`.
+
+### Functions
+- Prefer pure functions; isolate side effects.
+- One responsibility per function.
+- If it doesn't fit on a screen, refactor.
+
+### Imports
+- Order: external libs, internal aliases, relative paths, type-only last.
+- Use **path aliases** (`@/components`, `@suknaa/types`).
+- `import type { ... }` for type-only.
+
+### Comments
+- Code self-explanatory. Comments only for *why*, not *what*.
+- JSDoc for exported library functions.
+- Comments in **English**.
+
+---
+
+## 5. Frontend Conventions
+
+### Components
+- **Server Components by default.** Add `'use client'` only when needed.
+- Co-locate component files: `PropertyCard/index.tsx`, etc.
+- Props typed with explicit interfaces named `<ComponentName>Props`.
+- Use `cn()` utility for conditional classes.
+
+### Forms
+```tsx
+const schema = z.object({ email: z.string().email(), password: z.string().min(10) });
+type FormValues = z.infer<typeof schema>;
+const form = useForm<FormValues>({ resolver: zodResolver(schema) });
+```
+Schemas live in `packages/types/` and are reused by the backend.
+
+### State
+- **Server state**: TanStack Query
+- **Form state**: React Hook Form
+- **URL state**: `nuqs` or Next.js search params
+- **Client state**: useState locally, Zustand globally — only when necessary
+
+### Styling Rules
+- Use Tailwind tokens from `tailwind.config.ts` — never raw hex colors.
+- **Use logical properties** (`ms-4`, `me-4`, `ps-4`, `pe-4`) for RTL safety.
+- No inline styles except for dynamic values.
+- Mobile-first: write base styles for mobile, override with `md:` `lg:` for larger.
+- **Map category colors**: use the dedicated `map-houses`, `map-hotels`, `map-farms`, `map-hotelapt` tokens — never reuse them outside map context.
+
+### i18n
+- Every user-facing string uses `useTranslations()`.
+- Translation keys in `packages/i18n/locales/{ar,en}/<namespace>.json`.
+- Numbers always Latin digits (`123`), never Arabic-Indic (`١٢٣`).
+- Dates: `date-fns` with active locale.
+
+### Tab Navigation (CRITICAL — UI pattern)
+The persistent header shows three tabs: `[الكل] [عقارات] [فنادق]`.
+- Default tab: "الكل" (All).
+- Tab state lives in URL (`?tab=all|real_estate|hospitality`).
+- Switching tab updates filters, search results, and map markers.
+- Components must check current tab and render appropriate UI variants.
+
+### Login Buttons (CRITICAL — UI pattern)
+Two distinct buttons in the header: **"دخول كزبون"** (Login as Guest) and **"دخول كمؤجر"** (Login as Host).
+- Both go to the same auth endpoint with an `intent` parameter.
+- Post-login routing depends on the intent.
+- One account can be both — the buttons select the *experience*, not the account.
+
+---
+
+## 6. Backend Conventions
+
+### Module Structure (see ARCHITECTURE.md Section 3.1)
+```
+apps/api/src/modules/
+├── auth/, users/, kyc/                # Shared
+├── real-estate/                       # RE domain (properties, spaces, etc.)
+├── hospitality/                       # Hotels domain (hotels, room_types, room_units)
+├── search/                            # Unified search
+├── bookings/                          # Polymorphic
+├── payments/, wallet/, pricing/       # Financial
+├── reviews/, chat/, notifications/    # Communication
+├── price-intelligence/                # NEW v2
+├── anti-circumvention/                # NEW v2
+├── nearby-attractions/                # NEW v2
+├── wishlists/, comparisons/, price-alerts/  # NEW v2 guest features
+└── admin/, webhooks/                  # Admin + integration
+```
+
+### Controllers
+- Thin: parse → call service → return.
+- NestJS decorators: `@Get`, `@Post`, `@UseGuards`, `@Roles`.
+- Validate input with class-validator DTOs.
+- Document with Swagger decorators.
+
+### Services
+- Hold all business logic.
+- Inject Prisma, other services via constructor.
+- Throw typed exceptions (never raw strings).
+- Wrap multi-step DB ops in transactions (`prisma.$transaction`).
+
+### Authentication / Authorization
+- All endpoints **require auth by default** (global `JwtAuthGuard`).
+- Public endpoints opt-out with `@Public()`.
+- Role-restricted: `@Roles(UserRole.ADMIN)`.
+- **Object-level authorization in service layer** (always check ownership).
+- **Category-level authorization**: a real-estate host attempting `/me/hotels/*` returns `WRONG_HOST_CATEGORY` error.
+
+### Money Handling (CRITICAL — see PAYMENT_SYSTEM.md)
+- All amounts in **`BIGINT` cents** in PostgreSQL.
+- All amounts in **`bigint`** in TypeScript (or use a `Money` value object).
+- **Never** store/handle money as `number` (float disaster).
+- Always apply commission via `CommissionService.calculate()` — never inline.
+- **Commission passthrough math is non-trivial — always use the central pricing engine in `packages/pricing/`.**
+- Wallet mutations always go through `WalletService` and emit a `wallet_transactions` row.
+- **Invoice given to guest must NEVER show commission.** It shows: property_subtotal + service_fee = total.
+
+### Database
+- All access via **Prisma**. Raw SQL only for PostGIS, always parameterized.
+- Migrations: `pnpm --filter api prisma migrate dev --name <description>`.
+- Schema changes must be **backward-compatible** (add nullable, deploy, backfill, then NOT NULL).
+- Use **transactions** for multi-row writes.
+- Use **advisory locks** for race-prone operations like booking creation (especially for hotels — `pg_advisory_xact_lock(hotel_id, room_type_id)`).
+
+### Polymorphic Bookings (CRITICAL — new in v2)
+The `bookings` table is polymorphic: it has either `property_id` (for RE) or `(hotel_id, room_type_id)` (for Hospitality). When writing booking code:
+- Always check `booking.kind` first
+- Branch logic accordingly
+- Never assume one type
+- Tests must cover both kinds
+
+### Errors
+- Use NestJS `HttpException` subclasses or custom exceptions.
+- Return errors in standardized format from `API_SPEC.md`.
+- Always include `error.code` (e.g., `INSUFFICIENT_PERMISSIONS`).
+- Never leak stack traces to clients.
+
+### Logging
+- Use **Pino** via NestJS's built-in logger.
+- Levels: `error`, `warn`, `info`, `debug`.
+- **Never log** passwords, tokens, full phone numbers, full card numbers.
+- Include correlation ID on every log line.
+
+---
+
+## 7. Security Rules (Non-Negotiable)
+
+- **Never** trust client input — validate at every boundary.
+- **Never** put secrets in code, logs, or error messages.
+- **Never** use `eval`, `Function()`, or other dynamic code execution.
+- **Never** use `dangerouslySetInnerHTML` without DOMPurify.
+- **Always** use parameterized queries.
+- **Always** check authorization in services, not just controllers.
+- **Always** rate-limit auth endpoints.
+- **Always** verify webhook signatures.
+- **Always** use `httpOnly` + `Secure` + `SameSite=Strict` for refresh tokens.
+- **Always** treat user-uploaded files as hostile.
+
+### Anti-Circumvention Specific (NEW v2)
+- **Every** call that reduces availability MUST require a `reason` field (enum from `reduction_reason`).
+- **Every** reduction event MUST be logged in `availability_reduction_events`.
+- Risk score recomputation is async (BullMQ job), never blocks the user request.
+- **Don't auto-suspend hosts.** Always require admin review.
+
+---
+
+## 8. Testing
+
+- Write unit tests for **business logic**:
+  - Pricing tier resolver (4 tiers + weekend uplift + seasonal)
+  - Commission calculator (both absorb + passthrough modes — gross-up math)
+  - Service fee calculator
+  - Refund calculator (3 policies)
+  - Availability conflict detection (RE + Hospitality)
+  - Hotel inventory engine (race conditions)
+  - Risk score computation
+- Write integration tests for **critical flows** (signup, booking, payment).
+- Use **Jest** for backend, **Vitest** for frontend.
+- Use **Playwright** for E2E (critical user flows only).
+- Aim for high coverage on business-critical code.
+
+When asked to add a feature, also add at least one test that demonstrates it works.
+
+---
+
+## 9. Common Patterns
+
+### Database query
+```typescript
+// ❌ Don't
+const user = await prisma.user.findFirst({ where: { id } });
+if (user.is_host) { ... }   // could be undefined
+
+// ✅ Do
+const user = await prisma.user.findUniqueOrThrow({ where: { id } });
+if (user.isHost) { ... }
+```
+
+### Money calculation
+```typescript
+// ❌ Don't
+const total = nightly * nights + 5.99;  // float disaster
+
+// ✅ Do
+import { calculateBookingPrice } from '@suknaa/pricing';
+const result = calculateBookingPrice({ ... });
+// result.guestTotalCents (bigint)
+```
+
+### Auth check
+```typescript
+// ❌ Don't (only checks at controller)
+@Get(':id')
+@UseGuards(JwtAuthGuard)
+async getProperty(@Param('id') id: string) { ... }
+
+// ✅ Do (also check at service)
+async getPropertyForUser(propertyId: string, userId: string) {
+  const property = await prisma.property.findUniqueOrThrow({ where: { id: propertyId } });
+  if (property.hostId !== userId) {
+    throw new ForbiddenException({ code: 'NOT_PROPERTY_OWNER' });
+  }
+  return property;
+}
+```
+
+### Category check (NEW v2)
+```typescript
+// When a host calls a hotel-specific endpoint, verify they're a hotel host
+async createHotel(dto: CreateHotelDto, userId: string) {
+  const profile = await prisma.hostProfile.findUniqueOrThrow({ where: { userId } });
+  if (profile.hostCategory !== 'hospitality') {
+    throw new ForbiddenException({ code: 'WRONG_HOST_CATEGORY' });
+  }
+  // ... create hotel
+}
+```
+
+### Polymorphic booking
+```typescript
+async getBookingDetails(bookingId: string) {
+  const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
+  if (booking.kind === 'real_estate') {
+    return { ...booking, property: await prisma.property.findUnique({ where: { id: booking.propertyId! } }) };
+  } else {
+    return {
+      ...booking,
+      hotel: await prisma.hotel.findUnique({ where: { id: booking.hotelId! } }),
+      roomType: await prisma.roomType.findUnique({ where: { id: booking.roomTypeId! } }),
+    };
+  }
+}
+```
+
+### Form validation (shared schema)
+```typescript
+// packages/types/src/schemas/property.ts
+export const createPropertySchema = z.object({
+  titleAr: z.string().min(5).max(200),
+  basePriceCents: z.bigint().positive(),
+  // ...
+});
+// Used in apps/web (React Hook Form) AND apps/api (DTO validation)
+```
+
+---
+
+## 10. RTL & Localization Checklist
+
+When generating UI code:
+- [ ] Use logical properties (`ms-4`, not `ml-4`)
+- [ ] Add translations for both `ar` and `en`
+- [ ] Test mentally: would this layout flip correctly in RTL?
+- [ ] Arabic text is generally 20–30% wider than English
+- [ ] Numbers stay LTR even inside Arabic text
+- [ ] Phone numbers, emails, URLs stay LTR
+
+---
+
+## 11. What NOT to Do
+
+- ❌ Don't add libraries without good reason. Check `package.json` first.
+- ❌ Don't merge real-estate and hospitality logic in one file/function.
+- ❌ Don't show commission to guests (anywhere, ever).
+- ❌ Don't create new architectural patterns when an existing one fits.
+- ❌ Don't optimize prematurely.
+- ❌ Don't write a wrapper around a wrapper.
+- ❌ Don't generate "TODO" comments — finish the work or ask Mohammad.
+- ❌ Don't create utility files named `helpers.ts` or `utils.ts` with random functions. Be specific.
+- ❌ Don't add features not in the relevant phase plan.
+- ❌ Don't suggest "pivots" without raising it for discussion first.
+- ❌ Don't write English-only UI text — always pair with translation key.
+- ❌ Don't trust client-provided `is_host`, `is_admin` flags — always verify from DB.
+- ❌ Don't auto-suspend hosts on risk score (NEW v2) — always admin review.
+
+---
+
+## 12. When in Doubt
+
+- Re-read the relevant `docs/*.md` file.
+- Re-read `ai_memory.md` to see the latest decisions and open questions.
+- If still unclear, **ask Mohammad** rather than guessing.
+- Prefer the conservative, well-documented choice over the clever one.
+- Match the existing code style in the file you're editing.
+
+---
+
+## 13. Communication Style with Mohammad
+
+- Mohammad is a **beginner programmer** — explain technical decisions briefly when relevant.
+- Communicate in **Arabic** when chatting with Mohammad; use **English** in code, comments, docstrings, and commit messages.
+- For commits and PR descriptions: short imperative messages.
+- When generating code, **summarize what you did** at the end so Mohammad can verify.
+- If a request seems to violate the dual-system architecture, **flag it before writing code**.
+
+---
+
+## 14. Phase Awareness
+
+Currently in: **Phase 0 → Phase 1** (foundation, public website skeleton).
+
+When generating code, ensure it matches the current phase scope. Don't build Phase 5 features in Phase 1. If a request seems to require future-phase work, flag it and ask Mohammad whether to:
+- Build it now (re-prioritize)
+- Stub it for later (placeholder)
+- Reject (out of scope)
+
+---
+
+## 15. Critical v2 Reminders
+
+1. **Two systems, never confused** — Real Estate ≠ Hospitality at every layer.
+2. **Commission passthrough is invisible to guest** — invoice never mentions commission.
+3. **Service fee is always visible to guest** — clear line item, 2% by default.
+4. **Pricing has 4 tiers** — base, weekly, monthly, seasonal overrides.
+5. **Hotel inventory is per-unit** — not just a counter.
+6. **Anti-circumvention requires reason** — every availability reduction logs an event.
+7. **Dual reviews** — separate ratings for property/hotel AND host.
+8. **Map markers are color-coded** — by category, not arbitrary.
+9. **Login buttons are dual** — "as Guest" and "as Host" with same account.
+10. **Tabs are persistent** — `[الكل] [عقارات] [فنادق]` on every public page.
+
+---
+
+## 16. Final Reminder
+
+This is a **production system handling real money and personal data of real people**. Take security seriously. Take correctness over cleverness. Take maintainability over brevity. When you ship something, Mohammad — and his users — depend on it working.
