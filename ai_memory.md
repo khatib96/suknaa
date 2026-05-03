@@ -20,8 +20,8 @@
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 1 — Public Website Skeleton (قيد التنفيذ — Homepage مبنية كاملة، جاهزة لتطوير صفحات أخرى)
 - **آخر مرحلة مكتملة**: Phase 0 + Layout + Homepage sections كاملة + معمارية بيانات + Adaptive Logo + Cache fix workflow
-- **آخر تحديث للذاكرة**: 2026-05-03 (جلسة 7) — Adaptive Logo + حل cache فعلياً + ملاحظات أداء
-- **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
+- **آخر تحديث للذاكرة**: 2026-05-03 — Monorepo: نقل Next.js إلى `apps/web/` + pnpm workspaces + إصلاح `.gitignore`
+- **آخر AI عمل على المشروع**: Cursor (Claude)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
@@ -36,7 +36,7 @@
 - `bookings` polymorphic بـ discriminator (`booking_kind` enum) و CHECK constraint
 - Modular monolith، **ليس** microservices
 - **Stack**: Next.js 14 (App Router) + NestJS 10 + PostgreSQL 16 + PostGIS + Redis 7 + MinIO + Flutter (Phase 10)
-- Monorepo بـ Turborepo + pnpm
+- Monorepo: **pnpm workspaces** (`apps/web`، `packages/*`)؛ **Turborepo** لاحقاً عند الحاجة لتنسيق build عبر عدة apps
 - Hosting: **Hostinger VPS** (KVM 2 → KVM 4 → KVM 8) + Cloudflare. **ليس** Hetzner.
 - OS: Ubuntu 24.04 LTS، Datacenter: Frankfurt أو Amsterdam
 
@@ -111,8 +111,8 @@
 - [ ] **تجهيز DNS وCloudflare**: الدومين `suknaa.com` مسجّل، لكن لم يُربط بـ Cloudflare بعد — مهمة محمد
 - [ ] **بدء محادثات Sham Cash + MTN Cash**: لم تبدأ بعد — مهمة محمد في Phase 0
 - [ ] **بدء التواصل مع 2-3 معارف لـ beta hosts** (بيوت/شاليهات) — مهمة محمد
-- [ ] إنشاء Git repo (private GitHub)
-- [ ] Monorepo scaffold بـ Turborepo + pnpm
+- [x] إنشاء Git repo (private GitHub) ✓ 2026-05-03 — repo: https://github.com/khatib96/suknaa (private, main branch, 72 files, 10.51 MiB)
+- [x] Monorepo scaffold (pnpm workspaces + `apps/web` + `packages/types` + `packages/ui` + `infrastructure/`) ✓ 2026-05-03 — **Turborepo** لم يُضف بعد (`turbo.json` لاحقاً)
 - [ ] تثبيت Local Dev Environment (Docker Compose: Postgres+PostGIS، Redis، MinIO)
 - [ ] **Mockups**: تأجيل Figma — قرار محمد: نسكافولد Next.js skeleton مع شاشات placeholder (نبني ونرى مباشرة) — يبدأ في Phase 1
 - [ ] إصدار logo بصيغة SVG — مؤجَّل (PNG كافٍ الآن، سيُطلب من مصمم لاحقاً)
@@ -125,7 +125,7 @@
 - [x] **Destinations carousel** (data-driven, scroll أفقي) ✓ 2026-04-30
 - [x] **FeaturedListings** + PropertyCard + HotelCard (reusable) ✓ 2026-04-30
 - [x] **معمارية بيانات مرنة** (`data/hero-slides.ts` + `data/destinations.ts`) ✓ 2026-04-30
-- [ ] إضافة الصور الفعلية (محمد يضيفها لـ `public/images/hero/` و `public/images/destinations/`)
+- [ ] إضافة الصور الفعلية (محمد يضيفها لـ `apps/web/public/images/hero/` و `apps/web/public/images/destinations/`)
 - [ ] دمج Mapbox GL JS فعلياً على `#map-container`
 - [ ] صفحة Search Results
 - [ ] صفحة Property Detail (RE)
@@ -287,7 +287,7 @@ npm run dev
   2. ربط `suknaa.com` بـ Cloudflare
   3. بدء محادثات Sham Cash + MTN Cash
   4. بدء التواصل مع 2-3 معارف لـ beta hosts
-- بعد عودة محمد: نبدأ Phase 0 المتبقية (Git repo + Turborepo monorepo scaffold + Docker Compose للـ local dev).
+- بعد عودة محمد: نبدأ Phase 0 المتبقية (**Docker Compose** للـ local dev). Turborepo اختياري لاحقاً.
 - **لا أكتب أي كود حتى يطلب محمد صراحةً**.
 
 **ملاحظات للـ AI القادم**:
@@ -389,23 +389,41 @@ npm run dev
 - **الحل العملي المُعتمد**:
   ```powershell
   taskkill /F /IM node.exe
-  Remove-Item -Recurse -Force .next\cache\images
-  npm run dev
+  Remove-Item -Recurse -Force apps\web\.next\cache\images
+  pnpm dev
   # ثم Ctrl+Shift+R في المتصفح
   ```
-- مُوثَّق بالكامل في `public/images/hero/README.md` + `public/images/destinations/README.md`.
+- مُوثَّق بالكامل في `apps/web/public/images/hero/README.md` + `apps/web/public/images/destinations/README.md`.
 - **القاعدة**: لما محمد يستبدل أي صورة بنفس الاسم في dev، ينفّذ هذا الـ workflow.
 
+### 2026-05-03 — Git + GitHub Setup (جلسة 8)
+- git init + ربط remote + أول commit (72 ملف) + push ناجح
+- Repo: https://github.com/khatib96/suknaa (private)
+- Branch الرئيسي: main
+- git config: user.name=khatib96, user.email=m.khatib.1996@gmail.com
+- core.autocrlf=true (Windows)
+- استُخدم --force push لأن GitHub أنشأ initial commit تلقائياً
+- آخر AI عمل: Claude (Antigravity) — جلسة 8
+
+### 2026-05-03 — Monorepo (pnpm workspaces + apps/web)
+- إصلاح `.gitignore` (حذف علامات تعارض الدمج) + قواعد تجاهل مناسبة لـ monorepo (`**/.next`، `node_modules/`، إلخ).
+- نقل تطبيق Next.js إلى [`apps/web/`](apps/web/): `app/`، `components/`، `data/`، `lib/`، `public/`، configs (`next.config.ts`، `tsconfig.json`، `eslint.config.mjs`، `postcss.config.mjs`، `components.json`، `next-env.d.ts`).
+- جذر المستودع: [`package.json`](package.json) (scripts: `pnpm --filter web …`)، [`pnpm-workspace.yaml`](pnpm-workspace.yaml)، حزم placeholder `@suknaa/types` و `@suknaa/ui`، مجلد `infrastructure/` (`.gitkeep`).
+- حزمة الويب: `"name": "web"` في [`apps/web/package.json`](apps/web/package.json)؛ الانتقال من `package-lock.json` إلى **`pnpm-lock.yaml`**.
+- التحقق: `pnpm run build` و `pnpm run lint` من الجذر ناجحان.
+- **Turborepo** لم يُضف؛ يُضاف لاحقاً عند تعدد الـ pipelines إن لزم.
+- مسارات الملفات التاريخية في سجل الجلسات أدناه قد تظهر بدون `apps/web/` — المرجع الفعلي للكود الواجهة هو **`apps/web/`**.
+
 ### 2026-04-30 — Phase 1 Frontend Build (جلسات 4 → 6)
-- **القرار**: Standalone Next.js (وليس Turborepo monorepo). نهاجر للـ monorepo لاحقاً عند الحاجة لـ apps/api.
+- **القرار (محدّث 2026-05-03)**: كان البداية Standalone Next في الجذر؛ أصبح التطبيق تحت **`apps/web/`** ضمن **pnpm workspaces**. Turborepo اختياري لاحقاً.
 - **Stack الفعلي**: Next.js 16.2.4 (Turbopack) + React 19 + TypeScript 5 + Tailwind CSS 4 + shadcn/ui + lucide-react + clsx + cva + tailwind-merge.
 - **i18n**: مؤجَّل (AR-only الآن). next-intl سيُضاف عندما نبدأ بناء الإنجليزية (Phase 2 أو لاحقاً).
-- **معمارية البيانات**: قرار اعتماد مجلد `data/*.ts` كنمط موحَّد لكل بيانات الواجهة (hero-slides، destinations، وفي المستقبل featured-listings، testimonials، etc.) قبل ما يصير عندنا backend. هذا يفصل البيانات عن الـ components ويسهل التعديل لمحمد.
+- **معمارية البيانات**: قرار اعتماد مجلد `data/*.ts` داخل **`apps/web/`** كنمط موحَّد لكل بيانات الواجهة (hero-slides، destinations، وفي المستقبل featured-listings، testimonials، etc.) قبل ما يصير عندنا backend. هذا يفصل البيانات عن الـ components ويسهل التعديل لمحمد.
 - **حل مشكلة cache الصور**: Next.js Image Optimization يحفظ نسخ في `.next/cache/images/` بناءً على hash المسار. استبدال ملف بنفس الاسم لا يبطل الـ cache. الحل الموثَّق:
   1. Hard Refresh (Ctrl+Shift+R)
   2. Restart dev server
-  3. حذف `.next/cache/images/` يدوياً
-  ملف `public/images/hero/README.md` و `public/images/destinations/README.md` يحوي الخطوات بالتفصيل.
+  3. حذف `apps/web/.next/cache/images/` يدوياً (أو من الجذر إن وُجد symlink)
+  ملف `apps/web/public/images/hero/README.md` و `apps/web/public/images/destinations/README.md` يحوي الخطوات بالتفصيل.
 
 ### 2026-04-30 — تحسينات تصميم جلسة 4 (بناءً على mockup محمد)
 - **السياق**: محمد صمّم mockup كامل للصفحة الرئيسية (logo + hero + map + destinations + listings + host banner + footer) وطلب مراجعة وتحسين.
@@ -478,4 +496,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-03 (جلسة 7) — Cursor (Claude Opus 4.7).**
+**نهاية الملف. آخر تحديث: 2026-05-03 — Monorepo (`apps/web`) + Cursor (Claude).**
