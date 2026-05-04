@@ -17,6 +17,12 @@ export type SearchParamsRecord = Record<string, string | string[] | undefined>;
 export type ParsedSearchParams = {
   tab: TabValue;
   city?: string;
+  /** From hero search bar (`checkin` query param), yyyy-mm-dd */
+  checkIn?: string;
+  /** From hero search bar (`checkout` query param), yyyy-mm-dd */
+  checkOut?: string;
+  /** From hero search bar (`guests` query param) */
+  guests?: number;
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -62,9 +68,14 @@ export function parseSearchParams(sp: SearchParamsRecord): ParsedSearchParams {
     ? (sortRaw as SortValue)
     : "relevance";
 
+  const cityFromQuery = asString(sp.city) ?? asString(sp.location);
+
   return {
     tab,
-    city: asString(sp.city),
+    city: cityFromQuery,
+    checkIn: asString(sp.checkin),
+    checkOut: asString(sp.checkout),
+    guests: asNumber(sp.guests),
     minPrice: asNumber(sp.min_price),
     maxPrice: asNumber(sp.max_price),
     bedrooms: asNumber(sp.bedrooms),

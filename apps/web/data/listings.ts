@@ -25,6 +25,7 @@ export type CityId =
   | "aleppo"
   | "homs"
   | "hamah"
+  | "daraa"
   | "sweida"
   | "rural-damascus"
   | "zabadani";
@@ -36,6 +37,7 @@ export const CITY_LABELS: Record<CityId, string> = {
   aleppo: "حلب",
   homs: "حمص",
   hamah: "حماة",
+  daraa: "درعا",
   sweida: "السويداء",
   "rural-damascus": "ريف دمشق",
   zabadani: "الزبداني",

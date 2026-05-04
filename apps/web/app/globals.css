@@ -55,6 +55,15 @@
 }
 
 @layer utilities {
+  /** iOS safe areas — Hero / fixed bottom sheets */
+  .pt-safe {
+    padding-top: max(1.75rem, env(safe-area-inset-top));
+  }
+
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
   .font-numeric {
     font-family: var(--font-inter), var(--font-tajawal), sans-serif;
     font-variant-numeric: tabular-nums;

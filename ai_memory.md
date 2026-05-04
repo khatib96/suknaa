@@ -20,7 +20,7 @@
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 1.5 منجز — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
 - **آخر مرحلة مكتملة**: Phase 1.5 — الصفحات الثابتة (About, How-it-Works, Help, Contact, Terms, Privacy, Cookies) + Host Profile العامة (`/host/[username]`) + Footer كامل + Host Links في الـ Cards و Detail Snippets
-- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة 11) — Phase 1.5 Static Pages + Public Host Profile
+- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة Codex) — مراجعة الخطة + Docker + Hero Floating Map
 - **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -123,6 +123,7 @@
 - [x] **Setup**: Next.js 16 + TS + Tailwind v4 + shadcn/ui + lucide ✓ 2026-04-30
 - [x] **Global Layout**: Navbar (glass + scroll-aware) + Footer (3-layer) + RTL + design tokens ✓ 2026-04-30
 - [x] **Homepage Hero** مع cinematic slider (4 صور + Ken Burns motion + glass search pill) ✓ 2026-04-30
+- [x] **Homepage Hero search bar** (تفاعلي: `destinations` + `input type=date` + ضيوف + `→ /search?location&checkin&checkout&guests` + validation) ✓ 2026-05-04
 - [x] **MapExplorer** (placeholder + pins ملوّنة + toolbar + container جاهز لـ Mapbox) ✓ 2026-04-30
 - [x] **Destinations carousel** (data-driven, scroll أفقي) ✓ 2026-04-30
 - [x] **FeaturedListings** + PropertyCard + HotelCard (reusable) ✓ 2026-04-30
@@ -190,9 +191,20 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-04 (جلسة 11 — Phase 1.5 Static Pages + Public Host Profile)
+**التاريخ**: 2026-05-04 (جلسة 13 — Hero responsive: Drawer موبايل + شريط مدمج تابلت)
 **الـ AI المستخدم**: Cursor (Claude Opus 4.7)
 
+**السياق**: تحسين الـ Mobile/Tablet لـ Hero: أقل من `md` — زر CTA **ابحث عن سكنك** يفتح `Drawer` من `@base-ui/react/drawer` (bottom sheet + حقول كاملة + `pb-safe`). بين `md` و`lg` — شريط بحث compact في صف واحد (حقول أصغر، أيقونات 3.5، زر بحث 44px). من `lg` فما فوق — نفس شريط الـ Desktop السابق دون تغيير سلوكي. **`Hero.tsx`**: `min-h-dvh` على الموبايل، `pt-safe`، عنوان أصغر مع `max-w-[20ch]`، وتدرج `lg:text-6xl` كالسابق. **`globals.css`**: `.pt-safe` / `.pb-safe` لـ env(safe-area-inset). **`HeroPresentation`**: مؤشرات شرائح `mt-6 md:mt-8` + `@container` للاستعداد لـ container queries.
+
+---
+
+### جلسة سابقة (مرجعية)
+
+**التاريخ**: 2026-05-04 (جلسة 12 — Home Hero search + URL sync لصفحة البحث)
+
+**السياق**: إصلاح شريط البحث في الـ Hero (كان UI فقط). أصبح تفاعلياً: اقتراحات من `data/destinations.ts`، تواريخ بـ `<input type="date">` (LTR + `font-numeric`)، عداد ضيوف، تحقق عبر `lib/hero-search-validation.ts`، والانتقال إلى `/search?location=&checkin=&checkout=&guests=`. في `lib/search-utils.ts` أصبح `city` يُستمد من `city` أو `location`، مع حقول `checkIn` / `checkOut` / `guests` في `ParsedSearchParams` لعرضها في `SearchHeader`. `SearchFilters` يزامن `initialCity` عند تغيّر الـ URL ويحذف `location` عند تطبيق/إعادة تعيين الفلاتر لتفادي التكرار. أضيف `daraa` إلى `CityId` و`CITY_LABELS` لمواءمة `destinations.ts`. `Hero.tsx` Server Component: `HeroPresentation` (client) يستقبل العنوان كأطفال من السيرفر + `footer={<HeroSearchBar />}` للحدّ من `'use client'` مع الحفاظ على slider واحد للمصدر الوحيد للـ slide index.
+
+### جلسة 11 (أرشيف) — Phase 1.5 Static Pages + Public Host Profile
 **السياق**: بعد إنجاز Phase 1 Core (الصفحات الـ 7 الحرجة) وإعادة هيكلة الـ Auth في الجلسة 10، طلب محمد إكمال Phase 1.5 — الصفحات الثابتة (About/How-it-Works/Help/Contact/Terms/Privacy/Cookies) + صفحة المضيف العامة `/host/[username]`. القرار: محتوى placeholder للصفحات القانونية مع disclaimer واضح بأنه "محتوى مبدئي سيُحدَّث قانونياً قبل الإطلاق".
 
 ### 11.1 — مصادر البيانات الجديدة
@@ -743,6 +755,34 @@ npm run dev
 
 ---
 
+### 2026-05-04 — مراجعة الخطة + Docker + Hero Floating Map (جلسة Codex)
+- **طلب محمد**: مراجعة المجلد ومعرفة أين وصل المشروع بناءً على `docs/BUILD_PLAN.md`، مع عدم تعديل ملف الخطة إلا لتعليم البنود المنتهية فقط.
+- **حالة المشروع حسب الخطة**:
+  - المشروع حالياً في Phase 1: Public Website Skeleton ببيانات mock.
+  - Phase 0 مؤكد محلياً من ناحية Docker Compose بعد تشغيل Docker: `suknaa_postgres` و`suknaa_redis` و`suknaa_minio` كلها `healthy`.
+  - لا يوجد backend بعد: لا `apps/api`، لا NestJS، لا Prisma، لا Auth/KYC APIs.
+  - i18n/English مؤجل بقرار محمد، لذلك يبقى غير مؤشّر في الخطة.
+- **قاعدة مهمة أعاد محمد تأكيدها**: الالتزام بتعليمات `AGENTS.md`، خصوصاً قراءة docs المحلية لـ Next قبل تعديل كود Next. في هذه الجلسة تمت قراءة:
+  - `apps/web/node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md`
+  - `apps/web/node_modules/next/dist/docs/01-app/01-getting-started/12-images.md`
+  - `apps/web/node_modules/next/dist/docs/01-app/01-getting-started/11-css.md`
+- **مشكلة التصميم**: الخريطة كانت مطلوبة كطبقة عائمة فوق صورة الـ hero، لكن dropdowns/خيارات البحث كانت تظهر خلف الخريطة أو تم نقل الخريطة خلف الصور عند محاولات الإصلاح.
+- **القرار التصميمي**: جعل الخريطة جزءاً من طبقات الـ hero نفسه بدل section مستقل بـ negative margin. ترتيب الطبقات المقصود: صورة الـ hero، ثم overlay، ثم `FloatingMapPreview`، ثم headline + `HeroSearchBar`، ثم dropdowns/popovers فوق الجميع.
+- **التنفيذ**:
+  - `apps/web/components/home/Hero.tsx`: إضافة `FloatingMapPreview` كطبقة عائمة داخل الـ hero، مع إبقاء البحث فوقها.
+  - `apps/web/components/home/MapExplorer.tsx`: استخراج `FloatingMapPreview` من جسم الخريطة، تقليل ارتفاع preview، والإبقاء على `MapExplorer` كقسم مستقل قابل للاستخدام لاحقاً إن لزم.
+  - `apps/web/app/(public)/page.tsx`: إزالة استدعاء `MapExplorer` كقسم مستقل بعد الـ hero، وإضافة padding قبل `Destinations` حتى لا تتداخل مع الخريطة العائمة.
+  - `apps/web/components/search/SearchFilters.tsx`: إصلاح خطأ lint القديم بإزالة `setState` داخل `useEffect`.
+  - `apps/web/app/(public)/search/page.tsx`: إضافة `filterStateKey` لإعادة تهيئة فلاتر البحث عند تغيّر قيم الرابط بدلاً من مزامنة state داخل effect، مع دعم `location` القادم من hero search.
+- **التحقق**:
+  - `npx pnpm@9.15.4 --filter web lint` نجح.
+  - `npx pnpm@9.15.4 --filter web build` نجح.
+  - `http://localhost:3000` رجع status `200`.
+- **ملاحظة أدوات**: محاولة المعاينة الآلية عبر `node_repl` فشلت لأن أداة REPL الداخلية تحتاج Node `>=22.22.0` بينما جهاز محمد يستخدم Node `v20.20.1`. هذا لا يؤثر على المشروع؛ Next build/lint يعملان على Node الحالي.
+- **ملاحظة Git**: توجد تغييرات أخرى غير هذه الجلسة في working tree من جلسات سابقة/عمل محمد، لذلك عند commit يجب مراجعة `git status` واختيار الملفات المقصودة فقط.
+
+---
+
 ## 7. أخطاء وقعت سابقاً (Don't Repeat)
 
 > أي خطأ أو سوء فهم وقع سابقاً، يُسجَّل هنا حتى لا يتكرر.
@@ -794,4 +834,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-04 (جلسة 8) — Docker Compose + Monorepo + Git/GitHub.**
+**نهاية الملف. آخر تحديث: 2026-05-04 (جلسة Codex) — مراجعة الخطة + Docker + Hero Floating Map.**

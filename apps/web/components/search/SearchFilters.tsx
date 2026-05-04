@@ -77,6 +77,7 @@ export function SearchFilters({
     };
 
     setOrDelete("city", city);
+    params.delete("location");
     setOrDelete("min_price", minPrice);
     setOrDelete("max_price", maxPrice);
     if (showRealEstate) setOrDelete("bedrooms", bedrooms);
@@ -119,6 +120,7 @@ export function SearchFilters({
     const params = new URLSearchParams(searchParams?.toString() ?? "");
     [
       "city",
+      "location",
       "min_price",
       "max_price",
       "bedrooms",
