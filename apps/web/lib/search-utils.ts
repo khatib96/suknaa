@@ -11,6 +11,7 @@ import {
 } from "@/data/listings";
 import type { TabValue } from "@/lib/tab";
 import type { SortValue } from "@/components/search/SearchSortBar";
+import { isGovernorateId } from "@/data/syrian-governorates";
 
 export type SearchParamsRecord = Record<string, string | string[] | undefined>;
 
@@ -58,6 +59,19 @@ function asNumber(value: string | string[] | undefined): number | undefined {
   return Number.isFinite(num) ? num : undefined;
 }
 
+const LOCATION_ALIASES: Record<string, string> = {
+  "rural-damascus": "rif_dimashq",
+  zabadani: "rif_dimashq",
+  hamah: "hama",
+  sweida: "suwayda",
+};
+
+function normalizeLocation(value: string | undefined): string | undefined {
+  if (!value || value === "all") return value;
+  const normalized = LOCATION_ALIASES[value] ?? value;
+  return isGovernorateId(normalized) ? normalized : value;
+}
+
 export function parseSearchParams(sp: SearchParamsRecord): ParsedSearchParams {
   const tabRaw = asString(sp.tab);
   const tab: TabValue =
@@ -68,7 +82,7 @@ export function parseSearchParams(sp: SearchParamsRecord): ParsedSearchParams {
     ? (sortRaw as SortValue)
     : "relevance";
 
-  const cityFromQuery = asString(sp.city) ?? asString(sp.location);
+  const cityFromQuery = normalizeLocation(asString(sp.city) ?? asString(sp.location));
 
   return {
     tab,

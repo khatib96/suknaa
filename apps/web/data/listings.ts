@@ -13,35 +13,18 @@ import {
   SAMPLE_NEARBY_LATAKIA,
   type NearbyAttraction,
 } from "@/data/nearby-attractions";
+import {
+  GOVERNORATE_LABELS,
+  type GovernorateId,
+} from "@/data/syrian-governorates";
 
 // ---------------------------------------------------------------------------
 // Shared
 // ---------------------------------------------------------------------------
 
-export type CityId =
-  | "damascus"
-  | "latakia"
-  | "tartus"
-  | "aleppo"
-  | "homs"
-  | "hamah"
-  | "daraa"
-  | "sweida"
-  | "rural-damascus"
-  | "zabadani";
+export type CityId = GovernorateId;
 
-export const CITY_LABELS: Record<CityId, string> = {
-  damascus: "دمشق",
-  latakia: "اللاذقية",
-  tartus: "طرطوس",
-  aleppo: "حلب",
-  homs: "حمص",
-  hamah: "حماة",
-  daraa: "درعا",
-  sweida: "السويداء",
-  "rural-damascus": "ريف دمشق",
-  zabadani: "الزبداني",
-};
+export const CITY_LABELS = GOVERNORATE_LABELS;
 
 // ---------------------------------------------------------------------------
 // Real Estate (Airbnb-style)
@@ -218,7 +201,7 @@ export const PROPERTIES: PropertyListing[] = [
     title: "مزرعة في ريف الزبداني",
     description:
       "مزرعة هادئة بين الجبال، أشجار مثمرة، شواء، وموقد حطب. مكان مثالي للهروب من ضجيج المدينة.",
-    cityId: "zabadani",
+    cityId: "rif_dimashq",
     neighbourhood: "الريف",
     approximateAddress: "الزبداني، ريف دمشق",
     lat: 33.722,

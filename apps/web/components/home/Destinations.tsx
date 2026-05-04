@@ -1,7 +1,9 @@
 import Image from "next/image";
-import { DESTINATIONS } from "@/data/destinations";
+import { getFeaturedDestinations } from "@/data/destinations";
 
 export function Destinations() {
+  const destinations = getFeaturedDestinations();
+
   return (
     <section className="bg-white px-4 py-16 md:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -13,7 +15,7 @@ export function Destinations() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2">
-          {DESTINATIONS.map((destination) => (
+          {destinations.map((destination) => (
             <article
               key={destination.id}
               className="group relative h-[250px] w-[200px] shrink-0 overflow-hidden rounded-[16px] shadow-warm-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-warm-md"
@@ -29,7 +31,7 @@ export function Destinations() {
               <div className="absolute bottom-4 right-4 left-4 text-white">
                 <h3 className="text-xl font-bold">{destination.city}</h3>
                 <span className="mt-1 inline-flex rounded-full border border-white/35 bg-white/15 px-2.5 py-1 text-xs">
-                  {destination.count}
+                  {destination.countLabel}
                 </span>
               </div>
             </article>

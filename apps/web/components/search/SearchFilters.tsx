@@ -5,7 +5,8 @@ import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { TabValue } from "@/lib/tab";
 import { AMENITIES } from "@/data/amenities";
-import { CITY_LABELS, HOTEL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/data/listings";
+import { HOTEL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/data/listings";
+import { SYRIAN_GOVERNORATES } from "@/data/syrian-governorates";
 
 type Props = {
   activeTab: TabValue;
@@ -143,9 +144,9 @@ export function SearchFilters({
           className="h-10 w-full rounded-xl border border-[#E8E0D3] bg-white px-3 text-sm text-charcoal focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
         >
           <option value="all">كل المدن</option>
-          {Object.entries(CITY_LABELS).map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
+          {SYRIAN_GOVERNORATES.map((governorate) => (
+            <option key={governorate.id} value={governorate.id}>
+              {governorate.labelAr}
             </option>
           ))}
         </select>

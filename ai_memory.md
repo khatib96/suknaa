@@ -20,7 +20,7 @@
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 1 (UI skeleton) منجز فعلياً — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
 - **آخر مرحلة مكتملة**: Phase 1 + 1.5 — كل الصفحات العامة + Hero responsive (Drawer موبايل) + إصلاح overlap الـ Navbar الموبايل + sticky search header. البنود المؤجلة بوضوح: i18n / next-intl، service worker، Mapbox الحقيقي، deploy staging.
-- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة 14) — مراجعة Phase 1 + إصلاح Navbar/SearchHeader overlap على الموبايل + تحديث BUILD_PLAN.md
+- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة Codex) — Data-driven governorates/search/destinations
 - **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -819,6 +819,24 @@ npm run dev
 
 ---
 
+### 2026-05-04 — Data-driven Governorates/Search/Destinations (جلسة Codex)
+- **طلب محمد**: إزالة القيم اليدوية من وجهات الصفحة الرئيسية والبحث، وتوحيد المدن/المحافظات قبل بدء Phase 2 backend. ملاحظة محمد: مناطق مثل الزبداني/تدمر ليست محافظات ويجب التعامل معها لاحقاً كأماكن/مناطق ضمن محافظة، لا كمحافظة مستقلة.
+- **الالتزام بالقواعد**: قبل تعديل كود Next تمت قراءة docs المحلية من `apps/web/node_modules/next/dist/docs/` الخاصة بـ Server/Client Components وLinking/Navigating وCSS. لم تتم إضافة backend أو i18n، ولم يتم تعديل `docs/BUILD_PLAN.md`.
+- **مصدر البيانات الموحد**: تم جعل `apps/web/data/syrian-governorates.ts` المصدر المركزي للمحافظات السورية الـ 14: دمشق، ريف دمشق، حلب، حمص، حماة، اللاذقية، طرطوس، إدلب، درعا، السويداء، القنيطرة، دير الزور، الرقة، الحسكة. الملف يصدّر `GovernorateId` و`GOVERNORATE_LABELS` و`isGovernorateId`.
+- **تعديل listings**: `apps/web/data/listings.ts` أصبح يستخدم `GovernorateId` كـ `CityId`، و`CITY_LABELS` صار alias من `GOVERNORATE_LABELS`. عقار الزبداني صار `cityId: "rif_dimashq"` مع بقاء الزبداني في `neighbourhood`/العنوان.
+- **وجهات الصفحة الرئيسية**: `apps/web/data/destinations.ts` لم يعد يحتوي أرقاماً يدوية. أضيف `SEARCH_DESTINATIONS` لكل المحافظات، و`getFeaturedDestinations()` يحسب عدد الإقامات من `PROPERTIES + HOTELS` ويعرض فقط المحافظات التي لديها mock inventory وصورة محلية.
+- **الربط في الواجهة**:
+  - `HeroSearchBar` يقرأ اقتراحات الموقع من `SEARCH_DESTINATIONS` بدل `DESTINATIONS` اليدوية.
+  - `SearchFilters` يقرأ قائمة المدن من `SYRIAN_GOVERNORATES` بدل `CITY_LABELS` المحلي.
+  - `Destinations` يستخدم `getFeaturedDestinations()` ويعرض `countLabel` المحسوب.
+  - `search-utils` أضيف له normalization بسيط للروابط القديمة: `zabadani` و`rural-damascus` → `rif_dimashq`، و`hamah` → `hama`، و`sweida` → `suwayda`.
+- **ما لم يتم عمله الآن**: لم تتم إضافة تصنيفات عقارات تحت المدن، ولم تتم إضافة نظام أماكن سياحية مثل تدمر/الزبداني ككيان مستقل. القرار: هذا مناسب لاحقاً كطبقة `places/areas` أو `destination groups` بعد تثبيت البحث الأساسي وربطه بالباك اند.
+- **التحقق**:
+  - `npx pnpm@9.15.4 --filter web lint` نجح.
+  - `npx pnpm@9.15.4 --filter web build` نجح وولّد 33 route.
+
+---
+
 ## 7. أخطاء وقعت سابقاً (Don't Repeat)
 
 > أي خطأ أو سوء فهم وقع سابقاً، يُسجَّل هنا حتى لا يتكرر.
@@ -870,4 +888,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-04 (جلسة Codex) — مراجعة الخطة + Docker + Hero Floating Map.**
+**نهاية الملف. آخر تحديث: 2026-05-04 (جلسة Codex) — Data-driven governorates/search/destinations.**

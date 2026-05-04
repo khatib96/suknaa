@@ -13,20 +13,19 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { DESTINATIONS } from "@/data/destinations";
-import { CITY_LABELS, type CityId } from "@/data/listings";
+import { SEARCH_DESTINATIONS } from "@/data/destinations";
+import {
+  GOVERNORATE_LABELS,
+  isGovernorateId,
+} from "@/data/syrian-governorates";
 import { validateHeroSearch } from "@/lib/hero-search-validation";
 
 type OpenPanel = "location" | "checkin" | "checkout" | "guests" | null;
 
-function isCityId(id: string): id is CityId {
-  return id in CITY_LABELS;
-}
-
 function labelForLocationId(id: string | null): string {
   if (!id) return "إلى أين تريد الذهاب؟";
-  if (isCityId(id)) return CITY_LABELS[id];
-  const d = DESTINATIONS.find((x) => x.id === id);
+  if (isGovernorateId(id)) return GOVERNORATE_LABELS[id];
+  const d = SEARCH_DESTINATIONS.find((x) => x.id === id);
   return d?.city ?? id;
 }
 
@@ -48,8 +47,8 @@ export function HeroSearchBar() {
 
   const suggestions = useMemo(() => {
     const q = locationQuery.trim().toLowerCase();
-    if (!q) return DESTINATIONS;
-    return DESTINATIONS.filter(
+    if (!q) return SEARCH_DESTINATIONS;
+    return SEARCH_DESTINATIONS.filter(
       (d) => d.city.toLowerCase().includes(q) || d.id.toLowerCase().includes(q),
     );
   }, [locationQuery]);

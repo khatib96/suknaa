@@ -1,60 +1,76 @@
 /**
- * Destinations carousel configuration.
+ * Data-driven destination helpers for Phase 1.
  *
- * كيف تغيّر الوجهات:
- * 1) ضع الصور في: public/images/destinations/
- * 2) أضف/عدّل/احذف عناصر من المصفوفة أدناه
- * 3) العدد مرن — يمكن إضافة 4 أو 6 أو 10 وجهات (الـ scroll أفقي)
- *
- * إذا غيّرت ملف بنفس الاسم — Hard Refresh للمتصفح (Ctrl+Shift+R) أو
- * أعد تشغيل dev server (Ctrl+C ثم npm run dev) لإعادة بناء cache الصور.
+ * Search uses every Syrian governorate. The homepage "featured destinations"
+ * is derived from current mock inventory and only shows governorates that have
+ * both inventory and a local image.
  */
-export type Destination = {
-  /** معرّف فريد، يستخدم كـ key */
-  id: string;
-  /** اسم المدينة بالعربية */
+
+import { HOTELS, PROPERTIES } from "@/data/listings";
+import {
+  SYRIAN_GOVERNORATES,
+  type Governorate,
+  type GovernorateId,
+} from "@/data/syrian-governorates";
+
+export type SearchDestination = {
+  id: GovernorateId;
   city: string;
-  /** نص يصف عدد العقارات (مثل "120 عقار") */
-  count: string;
-  /** مسار الصورة (نسبي للـ public/) */
-  image: string;
 };
 
-export const DESTINATIONS: Destination[] = [
-  {
-    id: "damascus",
-    city: "دمشق",
-    count: "120 عقار",
-    image: "/images/destinations/damascus.jpg",
-  },
-  {
-    id: "latakia",
-    city: "اللاذقية",
-    count: "86 عقار",
-    image: "/images/destinations/latakia.jpg",
-  },
-  {
-    id: "tartus",
-    city: "طرطوس",
-    count: "54 عقار",
-    image: "/images/destinations/tartus.jpg",
-  },
-  {
-    id: "hamah",
-    city: "حماة",
-    count: "38 عقار",
-    image: "/images/destinations/hamah.jpg",
-  },
-  {
-    id: "daraa",
-    city: "درعا",
-    count: "27 عقار",
-    image: "/images/destinations/daraa.jpg",
-  },
-  {
-    id: "aleppo",
-    city: "حلب",
-    count: "62 عقار",
-    image: "/images/destinations/aleppo.jpg",
-  },
-];
+export type FeaturedDestination = SearchDestination & {
+  image: string;
+  staysCount: number;
+  countLabel: string;
+};
+
+export const SEARCH_DESTINATIONS: SearchDestination[] = SYRIAN_GOVERNORATES.map(
+  (g) => ({
+    id: g.id,
+    city: g.labelAr,
+  }),
+);
+
+function countStays(governorateId: GovernorateId) {
+  return (
+    PROPERTIES.filter((p) => p.cityId === governorateId).length +
+    HOTELS.filter((h) => h.cityId === governorateId).length
+  );
+}
+
+function countLabel(count: number) {
+  if (count === 1) return "إقامة واحدة";
+  if (count === 2) return "إقامتان";
+  if (count >= 3 && count <= 10) return `${count} إقامات`;
+  return `${count} إقامة`;
+}
+
+function hasImage(
+  governorate: Governorate,
+): governorate is Governorate & { image: string } {
+  return (
+    "image" in governorate &&
+    typeof governorate.image === "string" &&
+    governorate.image.length > 0
+  );
+}
+
+export function getFeaturedDestinations(limit = 6): FeaturedDestination[] {
+  return SYRIAN_GOVERNORATES.map((g) => ({
+    governorate: g,
+    staysCount: countStays(g.id),
+  }))
+    .filter(
+      (item): item is { governorate: Governorate & { image: string }; staysCount: number } =>
+        item.staysCount > 0 && hasImage(item.governorate),
+    )
+    .sort((a, b) => b.staysCount - a.staysCount)
+    .slice(0, limit)
+    .map(({ governorate, staysCount }) => ({
+      id: governorate.id,
+      city: governorate.labelAr,
+      image: governorate.image,
+      staysCount,
+      countLabel: countLabel(staysCount),
+    }));
+}
