@@ -3,54 +3,20 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { HotelCard, type HotelCardData } from "@/components/home/cards/HotelCard";
-import { PropertyCard, type PropertyCardData } from "@/components/home/cards/PropertyCard";
+import { HotelResultCard } from "@/components/search/HotelResultCard";
+import { PropertyResultCard } from "@/components/search/PropertyResultCard";
+import { HOTELS, PROPERTIES } from "@/data/listings";
 import { cn } from "@/lib/utils";
-import { DEFAULT_TAB, parseTab, TAB_LABELS, TAB_VALUES, type TabValue } from "@/lib/tab";
+import {
+  DEFAULT_TAB,
+  parseTab,
+  TAB_LABELS,
+  TAB_VALUES,
+  type TabValue,
+} from "@/lib/tab";
 
-const properties: PropertyCardData[] = [
-  {
-    id: 1,
-    title: "فيلا فاخرة بإطلالة بانورامية",
-    location: "دمشق، أبو رمانة",
-    price: 95,
-    rating: 4.9,
-    image:
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: 2,
-    title: "شقة عصرية قريبة من المركز",
-    location: "اللاذقية، المشروع السابع",
-    price: 52,
-    rating: 4.7,
-    image:
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1000&q=80",
-  },
-];
-
-const hotels: HotelCardData[] = [
-  {
-    id: 1,
-    title: "فندق البحر الكبير",
-    location: "اللاذقية، الكورنيش",
-    fromPrice: 78,
-    score: 8.9,
-    stars: 4,
-    image:
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: 2,
-    title: "منتجع الشاطئ الذهبي",
-    location: "طرطوس، الساحل",
-    fromPrice: 120,
-    score: 9.2,
-    stars: 5,
-    image:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1000&q=80",
-  },
-];
+const FEATURED_PROPERTIES = PROPERTIES.slice(0, 4);
+const FEATURED_HOTELS = HOTELS.slice(0, 4);
 
 export function FeaturedListings() {
   const router = useRouter();
@@ -79,6 +45,10 @@ export function FeaturedListings() {
   const showProperties = activeTab !== "hospitality";
   const showHotels = activeTab !== "real_estate";
 
+  // For "all" we mix and limit to ~4 of each so the grid stays balanced.
+  const properties = showProperties ? FEATURED_PROPERTIES : [];
+  const hotels = showHotels ? FEATURED_HOTELS : [];
+
   return (
     <section className="bg-cream px-4 py-16 md:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -105,12 +75,15 @@ export function FeaturedListings() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {showProperties &&
-            properties.map((property) => (
-              <PropertyCard key={`property-${property.id}`} item={property} />
-            ))}
-          {showHotels &&
-            hotels.map((hotel) => <HotelCard key={`hotel-${hotel.id}`} item={hotel} />)}
+          {properties.map((property) => (
+            <PropertyResultCard
+              key={`property-${property.id}`}
+              item={property}
+            />
+          ))}
+          {hotels.map((hotel) => (
+            <HotelResultCard key={`hotel-${hotel.id}`} item={hotel} />
+          ))}
         </div>
       </div>
     </section>

@@ -18,9 +18,9 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 1 — Public Website Skeleton (الـ 7 صفحات الحرجة مكتملة؛ الصفحات الثابتة About/Terms/… مؤجلة لـ Phase 1.5)
-- **آخر مرحلة مكتملة**: Phase 1 Core — Homepage كاملة + /become-a-host + /search + /property/[id] + /hotel/[id] + /login + /signup + 404/500 + PWA manifest
-- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة 9) — Phase 1 Core Pages + URL tab state + Booking widget بدون commission + RHF/Zod auth
+- **المرحلة الحالية**: Phase 1.5 منجز — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
+- **آخر مرحلة مكتملة**: Phase 1.5 — الصفحات الثابتة (About, How-it-Works, Help, Contact, Terms, Privacy, Cookies) + Host Profile العامة (`/host/[username]`) + Footer كامل + Host Links في الـ Cards و Detail Snippets
+- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة 11) — Phase 1.5 Static Pages + Public Host Profile
 - **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -138,11 +138,23 @@
 - [x] **PWA manifest** (`app/manifest.ts` → `/manifest.webmanifest`) ✓ 2026-05-04
 - [ ] إضافة الصور الفعلية (محمد يضيفها لـ `apps/web/public/images/hero/` و `apps/web/public/images/destinations/`)
 - [ ] دمج Mapbox GL JS فعلياً على `#map-container`
-- [ ] الصفحات الثابتة (Phase 1.5): About, How-it-Works, Help, Contact, Terms, Privacy, Cookies
-- [ ] صفحة Host Profile العامة (`/host/[username]`) — مؤجَّلة لـ Phase 1.5
 - [ ] Service Worker الفعلي (الـ manifest جاهز، الـ SW يحتاج إعدادات إضافية)
 - [ ] next-intl (AR + EN) — مؤجَّل
 - [ ] Deploy إلى staging
+
+### Phase 1.5 — Static Pages + Public Host Profile (جلسة 11)
+- [x] **`/about`** (7 أقسام: Hero + Vision + Features + Numbers + Values + Team placeholder + CTA) ✓ 2026-05-04
+- [x] **`/how-it-works`** (Hero + Tabs Client بـ URL state `?audience=guest|host` مع 4 خطوات لكل + dual CTA) ✓ 2026-05-04
+- [x] **`/help`** (Hero + شريط بحث UI placeholder + 6 categories + FAQ accordion من 15 سؤال + Empty CTA) ✓ 2026-05-04
+- [x] **`/contact`** (Hero + ContactForm Client بـ Zod + Sidebar بـ WhatsApp/Email/أوقات الدوام/Help link) ✓ 2026-05-04
+- [x] **`/terms`** (12 قسم placeholder + LegalPageShell + Disclaimer "محتوى مبدئي") ✓ 2026-05-04
+- [x] **`/privacy`** (10 أقسام placeholder مستوحى من SECURITY.md §8) ✓ 2026-05-04
+- [x] **`/cookies`** (4 أقسام + جدول essential/analytics/marketing) ✓ 2026-05-04
+- [x] **`/host/[username]`** (Header + Bio + Listings Tabs Client + Reviews — generateStaticParams لـ 5 hosts) ✓ 2026-05-04
+- [x] **Footer جديد**: كل الروابط حقيقية الآن، 5 أعمدة (سُكنى، اكتشف، الدعم، للمضيفين، القانوني) ✓ 2026-05-04
+- [x] **Refactor FeaturedListings**: يقرأ من `data/listings.ts` ويستخدم Result Cards (مصدر بيانات موحَّد) ✓ 2026-05-04
+- [x] **Host Links**: PropertyResultCard + HotelResultCard + PropertyHostSnippet + HotelCompanySnippet كلها تربط بـ `/host/[hostSlug]` ✓ 2026-05-04
+- [x] **Mock data جديد**: `data/help-faq.ts` (6 categories + 15 سؤال) و `data/hosts.ts` (5 hosts + findHost + format helpers) ✓ 2026-05-04
 
 ### Phase 2 — Backend Foundation + Auth + KYC
 - لم يبدأ بعد
@@ -178,8 +190,181 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-04 (جلسة 9 — Phase 1 Core Pages)
+**التاريخ**: 2026-05-04 (جلسة 11 — Phase 1.5 Static Pages + Public Host Profile)
 **الـ AI المستخدم**: Cursor (Claude Opus 4.7)
+
+**السياق**: بعد إنجاز Phase 1 Core (الصفحات الـ 7 الحرجة) وإعادة هيكلة الـ Auth في الجلسة 10، طلب محمد إكمال Phase 1.5 — الصفحات الثابتة (About/How-it-Works/Help/Contact/Terms/Privacy/Cookies) + صفحة المضيف العامة `/host/[username]`. القرار: محتوى placeholder للصفحات القانونية مع disclaimer واضح بأنه "محتوى مبدئي سيُحدَّث قانونياً قبل الإطلاق".
+
+### 11.1 — مصادر البيانات الجديدة
+- **`data/help-faq.ts`**: 6 categories (booking/payment/cancellation/safety/account/communication) + 15 سؤال (3 لكل category تقريباً). Iconography enum-based (`iconName`) يُحلّ لـ `LucideIcon` في component الـ HelpCategories لتجنُّب جلب الأيقونات في data layer.
+- **`data/hosts.ts`**: 5 hosts (3 individual/re_office + 2 hotel_company) — slugs مطابقة لـ `hostSlug` في `data/listings.ts` (`abu-omar`, `rana`, `office-cham`, `blue-coast-hospitality`, `golden-beach-group`). تشمل: `bio`, `languages`, `responseTimeMinutes`, `responseRatePercent`, `memberSince` (ISO month "YYYY-MM"), `rating`, `reviewsCount`, `verified`, `superHost`, `reviews[]` (3-4). Helper functions: `findHost(slug)`, `getAllHostSlugs()`, `formatResponseTime()`, `formatMemberSince()`.
+
+### 11.2 — الصفحات القانونية + LegalPageShell
+- **`components/legal/LegalPageShell.tsx`**: wrapper مشترك يستقبل `{ title, subtitle?, lastUpdatedISO, children }`. يعرض hero بسيط + disclaimer "محتوى مبدئي" بصراحة كاملة + container بـ `prose`-style. يصدّر أيضاً `LegalSection` لكل قسم (`{ index, title, children }`) مع رقم تسلسلي بالـ `font-numeric` بلون primary.
+- **`/cookies`**: 4 أقسام + جدول HTML بـ Tailwind (Essential / Analytics / Marketing) — لا dependency جديدة.
+- **`/privacy`**: 10 أقسام (مستوحاة من SECURITY.md §8: Encryption، PII Handling، Data Subject Rights). تذكر تشفير TLS 1.3 و LUKS و pgcrypto بشكل عام دون تفاصيل تنفيذية.
+- **`/terms`**: 12 قسم تشمل القبول، التعريفات، مسؤوليات الزبائن، مسؤوليات المضيفين، الإلغاء (3 سياسات)، السلوكيات المحظورة، حدود المسؤولية، القانون الحاكم (سوريا، محاكم دمشق).
+
+### 11.3 — صفحات المحتوى
+- **`/about`**: 7 components تحت `components/about/`:
+  - `AboutHero` — gradient primary→#A84A33→#8a3d2a + blur orbs + central title
+  - `AboutVision` — Compass icon + 3 paragraphs مستوحاة من PROJECT.md §1-2
+  - `AboutFeatures` — 6 features (Building2/Wallet/ShieldCheck/Eye/HeartHandshake/Sparkles) في grid 2-3 columns
+  - `AboutNumbers` — bg-charcoal بلون gold للأرقام: +500/+50/+1,000/+200 + ملاحظة "أهداف السنة الأولى"
+  - `AboutValues` — 3 قِيَم (الشفافية/الأمان/الدعم المحلي)
+  - `AboutTeam` — placeholder بسيط مع Users2 icon
+  - `AboutCTA` — gradient banner مع dual CTA (/signup + /become-a-host)
+- **`/how-it-works`**: 3 components — `HowItWorksHero`, `HowItWorksTabs` (Client بـ URL state `?audience=guest|host`، افتراضي guest)، `HowItWorksCTA`. `HowItWorksTabs` مُلَفّ بـ `<Suspense>` على الصفحة لأنه يستخدم `useSearchParams`. أيقونات الخطوات: للضيوف (Search/Calendar/CreditCard/Smile)، للمضيفين (UserPlus/ShieldCheck/Home/Inbox).
+- **`/help`**: 4 components — `HelpHero` (شريط بحث `disabled` بـ placeholder "ابحث عن سؤال... (قريباً)")، `HelpCategories` (6 cards مع hash anchors `#category-X`)، `HelpFAQAccordion` (يجمع الأسئلة بحسب category مع `<details>`)، `HelpEmptyCTA` (CTA لـ /contact).
+- **`/contact`**: 3 components — `ContactHero`, `ContactForm` (Client + Zod + RHF + reset+success state)، `ContactSidebar` (4 cards: WhatsApp `wa.me/963000000000`، email `mailto:support@suknaa.com`، أوقات الدوام، رابط /help). `lib/contact-schema.ts` جديد (name/email/subject/message).
+
+### 11.4 — Host Profile (`/host/[username]`)
+- 5 components تحت `components/host-profile/`:
+  - `HostProfileHeader`: avatar متكيِّف (initial في دائرة primary للأفراد، Building2 في مربع gold للشركات) + verified badge + Super Host badge (إذا rating ≥ 4.8) + member since + rating + listings count
+  - `HostProfileBio`: نبذة + 3 BioStats (اللغات/وقت الاستجابة/معدَّل الاستجابة) — في layout 2-columns على lg
+  - `HostListingsTabs`: Client + URL state `?tab=all|real_estate|hospitality` + يستخدم `PropertyResultCard` و `HotelResultCard`. **Edge case معالج**: tab disabled إذا الـ array فارغ (شركة فنادق لن يكون لها properties). رسالة فارغة إذا كل الـ tabs فارغة.
+  - `HostReviewsPlaceholder`: 3-4 reviews mock من `host.reviews[]` + متوسط rating في badge cream.
+- `params: Promise<{ username: string }>` (Next.js 16 async). `generateStaticParams()` يولّد 5 host slugs. `findHost()` يرجع undefined → `notFound()`.
+
+### 11.5 — Footer + Host Links
+- **Footer**: استبدال كامل لكل `href="#"` بروابط حقيقية. الأعمدة الجديدة:
+  - **سُكنى** (نص + 4 social icons placeholder)
+  - **اكتشف**: / + /search + /how-it-works
+  - **الدعم**: /help + /contact + /about
+  - **للمضيفين**: /become-a-host + /become-a-host/apply + /host/login
+  - **القانوني**: /terms + /privacy + /cookies
+  - Bottom Bar: AR/EN buttons + الكوكيز/الخصوصية/الشروط
+  - `FooterColumn` يقبل الآن `links: { label: string; href: string }[]` بدلاً من `string[]`.
+  - عمود "التطبيق" (Google Play/App Store) أُزيل لأنه placeholder غير فعَّال — سيُعاد لاحقاً عند توفر الروابط الفعلية.
+- **Host Links في 4 أماكن**:
+  - `PropertyResultCard` — سطر "بواسطة [host]" بين title و stats
+  - `HotelResultCard` — سطر مماثل بعد الـ stars
+  - `PropertyHostSnippet` — اسم المضيف صار Link + الزر "عرض كل عقارات هذا المضيف" صار Link حقيقي مع ArrowLeft icon
+  - `HotelCompanySnippet` — نفس التحديث + "عرض كل فنادق هذه الشركة"
+- **Refactor `FeaturedListings`**: حُذف الـ mock data المضمَّن (`PropertyCardData`/`HotelCardData`) واستُبدل بقراءة من `PROPERTIES` و `HOTELS` في `data/listings.ts` + استخدام `PropertyResultCard` و `HotelResultCard` (مصدر بيانات موحَّد). الـ home cards `PropertyCard.tsx` و `HotelCard.tsx` احتُفظ بهما في `components/home/cards/` كاحتياط (لم تُحذف، يمكن أن تُحذف في تنظيف لاحق).
+
+### 11.6 — إصلاح صغير في HostApplyWizard
+- ESLint اكتشف خطأ كان مخفياً سابقاً: `<a href="/host/login">` في `HostApplyWizard.tsx` (سطر 193). الـ rule `@next/next/no-html-link-for-pages` اكتشفها لأن `/host/login` صار يُعتبر صفحة موجودة الآن (ربما بعد إضافة `/host/[username]`). الإصلاح: استبدال `<a>` بـ `<Link>` من `next/link` + إضافة الـ import.
+
+### 11.7 — التحقق
+- `pnpm --filter web build`: 0 errors، 0 warnings، **33 صفحة** (كانت 21).
+  - Static (○): 18 (الرئيسية + about + become-a-host + become-a-host/apply + contact + cookies + help + host/login + how-it-works + manifest + privacy + terms + 404)
+  - SSG (●): 15 (5 hosts + 6 properties + 4 hotels)
+  - Dynamic (ƒ): 3 (login، search، signup — لأنها تستخدم `searchParams`)
+- `pnpm --filter web lint`: نظيف بعد إصلاح HostApplyWizard.
+- `ReadLints` على كل الملفات الجديدة والمعدّلة: 0 errors.
+
+### 11.8 — قرارات تقنية
+- **مصدر بيانات الـ host**: قرار محمد كان "refactor FeaturedListings" بدلاً من تمديد الـ types المبسطة — لذا `data/listings.ts` صار المصدر الموحَّد لكل cards الموقع العام.
+- **avatar للـ host**: "mixed" — initials في دائرة primary للأفراد، Building2 icon في مربع gold للشركات (متَّسق مع `PropertyHostSnippet` و `HotelCompanySnippet` الموجودين).
+- **Counters في `/about`**: أرقام ثابتة بدون animation معقَّد. ملاحظة "أهداف السنة الأولى" تحتها لتجنب الادعاء الكاذب بأنها أرقام حالية.
+- **`/help` search bar**: `disabled` بـ placeholder صريح "(قريباً)" — مفضَّل على إضافة منطق بحث وهمي.
+- **WhatsApp link**: `wa.me/963000000000` placeholder + ملاحظة "(الرقم الرسمي قريباً)" تحت الزر.
+- **عمود "التطبيق" في Footer**: حُذف (كان placeholder Google Play/App Store غير فعَّال). سيُعاد عند توفر روابط حقيقية.
+
+---
+
+**جلسة 10 (سابقة) — Auth Restructure: Guest vs Host**
+
+**السياق**: محمد راجع التصميم الحالي للـ Auth وقال: "التسجيل كمضيف لازم يكون منفصل تماماً عن التسجيل كضيف. المضيف شي خاص لهم، صفحاتهم وهدفهم مختلفة." اعتُمدت فلسفة **"Guest is Default (Fast), Host is Premium (Curated Onboarding)"**.
+
+### 10.1 — قرار معماري: Next.js Route Groups
+- **المشكلة**: مسارات المضيف تحتاج header مختلف (بدون tabs `[الكل][عقارات][فنادق]` ولا الـ navbar الكاملة) لكن الـ root layout يفرض الـ Navbar+Footer على كل صفحة.
+- **القرار**: إعادة هيكلة `app/` بـ Route Groups:
+  - `app/layout.tsx` يُبسَّط ليحوي html/body/fonts فقط.
+  - `app/(public)/layout.tsx` يضيف Navbar+Footer لكل الصفحات العامة.
+  - `app/(host-auth)/layout.tsx` يضيف `HostAuthShell` (header مخصّص للمضيفين: logo ملوّن + "لوحة المضيفين" + رابط "الصفحة العامة").
+- **النقل**: 7 صفحات حالية (`page.tsx`, `login/`, `signup/`, `become-a-host/`, `search/`, `property/`, `hotel/`) نُقلت إلى `(public)/`. الصفحات الجذرية الأخرى (layout, globals.css, manifest.ts, not-found.tsx, error.tsx, favicon.ico) بقيت في `app/`.
+- **ملاحظة Windows مهمّة**: `Move-Item` أعطى "Access denied" على `property/` و `hotel/` لأن dev server شغّال يقفل الملفات. الحل: `Get-Process -Name node | Stop-Process -Force` قبل النقل، ثم حذف `.next/` بعد النقل لتجنُّب stale type cache (`validator.ts` يشير لمسار قديم).
+
+### 10.2 — المسارات الأربعة النهائية
+| المسار | المجموعة | الوصف |
+|---|---|---|
+| `/login` | `(public)` | Guest only — بسيط، دافئ، لا tabs |
+| `/host/login` | `(host-auth)` | Host only — gold accent، header بزنس |
+| `/signup` | `(public)` | Guest only — 30 ثانية: email + password + اسم اختياري |
+| `/become-a-host/apply` | `(host-auth)` | Host wizard من 5 خطوات + URL state (`?step=N`) |
+
+**Backward-compat**: `/login?intent=host` → `redirect('/host/login')`، `/signup?intent=host` → `redirect('/become-a-host/apply')` (الـ bookmarks القديمة لا تنكسر).
+
+### 10.3 — Schemas (`apps/web/lib/auth-schemas.ts`) — إعادة كتابة كاملة
+- حُذف حقل `intent` من الـ schemas — لكل صفحة schema منفصل (لا حاجة للـ flag).
+- 4 schemas: `guestLoginSchema`, `hostLoginSchema`, `guestSignupSchema`, `hostApplySchema`.
+- `hostApplySchema` فيه كل الـ 9 حقول مسطّحة + `superRefine` يفرض قاعدة `WRONG_HOST_CATEGORY` (real_estate ↔ individual/re_office، hospitality ↔ hotel_company).
+- `HOST_APPLY_STEP_FIELDS` يصف لكل خطوة الحقول المطلوب التحقق منها — يستخدمه الـ wizard بـ `form.trigger([...stepFields])` لـ per-step validation.
+- `categorySubtypeMismatch()` و `parseHostApplyStep()` و `isHostApplyStep()` كـ pure helpers مُصدَّرة.
+
+### 10.4 — Wizard Pattern (`HostApplyWizard.tsx`)
+- **single useForm** مع `FormProvider` يُشارَك بين الـ 5 خطوات عبر `useFormContext()` — لا prop drilling.
+- **URL-driven state**: الخطوة الحالية في `?step=N` فقط؛ form values في React state (refresh يعيد البداية، مقبول لـ Phase 1 mock).
+- `validateStep(N)` يستخدم `form.trigger([...HOST_APPLY_STEP_FIELDS[N]])` ولا يتقدّم إلا عند النجاح.
+- زر "تخطي" يعمل **فقط** على Step 4 (الأسئلة النوعية الاختيارية).
+- بعد submit: `Step5Review` يبدّل لـ `SuccessPanel` يعرض الخطوات التالية (تأكيد البريد، KYC، إضافة عقار) + CTAs لـ `/host/login` و `/`.
+
+### 10.5 — التوزيع البصري (Design System)
+- **Guest** (primary `#C85A3D`): `LoginForm`، `SignupForm`، الـ wizard كله، CTAs الصفحات العامة.
+- **Host** (gold `#D4A24C`): `HostLoginForm` (زر دخول gold + badge "منطقة المضيفين")، الـ checkmarks الإيجابية في `WizardProgressBar` (مكتمل = gold، حالي = primary، قادم = muted).
+- لا أسود نقي، logical CSS (`ms-`, `me-`, `pe-`)، Latin digits دائماً (`الخطوة 1 من 5` بـ `font-numeric`).
+
+### 10.6 — Navbar Dropdown (4 عناصر بدلاً من 3)
+- **دخول** → `/login`
+- **دخول كمؤجِّر** → `/host/login`
+- (فاصل بصري `<div className="my-1 h-px bg-[#F1ECE2]"/>`)
+- **إنشاء حساب** → `/signup`
+- **كن مضيفاً** → `/become-a-host` (gold-text، آخر عنصر — يميِّزه عن الـ guest options)
+
+### 10.7 — تحديثات على الـ CTAs الموجودة
+3 ملفات في `components/become-host/` كانت تشير لـ `/signup?intent=host`، حُدِّثت كلها لـ `/become-a-host/apply`:
+- `HostHero.tsx` (الزر الرئيسي في الـ hero)
+- `HostFinalCTA.tsx` (البانر الأخير قبل الفوتر)
+- `EarningsCalculator.tsx` (CTA "ابدأ بهذا السعر" بعد حساب الأرباح)
+
+### 10.8 — البنية النهائية للملفات
+**جديدة (15 ملف)**:
+```
+apps/web/
+├── app/(public)/layout.tsx                 (Navbar+Footer)
+├── app/(host-auth)/layout.tsx              (HostAuthShell)
+├── app/(host-auth)/host/login/page.tsx
+├── app/(host-auth)/become-a-host/apply/page.tsx
+├── components/auth/form-primitives.tsx
+├── components/auth/host/HostAuthShell.tsx
+├── components/auth/host/HostLoginForm.tsx
+├── components/auth/host/HostApplyWizard.tsx
+├── components/auth/host/WizardProgressBar.tsx
+├── components/auth/host/wizard-steps/Step1Category.tsx
+├── components/auth/host/wizard-steps/Step2Subtype.tsx
+├── components/auth/host/wizard-steps/Step3BasicInfo.tsx
+├── components/auth/host/wizard-steps/Step4QuickContext.tsx
+├── components/auth/host/wizard-steps/Step5Review.tsx
+├── data/syrian-governorates.ts             (14 محافظة)
+└── data/host-onboarding-options.ts         (enums + labels + subtypesForCategory helper)
+```
+
+**معدّلة (7 ملفات)**:
+- `app/layout.tsx` — استخراج Navbar/Footer (انتقلوا لـ `(public)/layout.tsx`)
+- `lib/auth-schemas.ts` — إعادة كتابة شاملة
+- `components/auth/LoginForm.tsx` — guest-only، شال tabs
+- `components/auth/SignupForm.tsx` — guest-only، شال host fields
+- `app/(public)/login/page.tsx` — redirect لـ `?intent=host`
+- `app/(public)/signup/page.tsx` — redirect لـ `?intent=host`
+- `components/layout/Navbar.tsx` — dropdown 4 عناصر
+- `components/become-host/{HostHero,HostFinalCTA,EarningsCalculator}.tsx` — تحديث CTAs
+
+**منقولة (7 مجلدات)**: `app/{page.tsx, login, signup, become-a-host, search, property, hotel}` → `app/(public)/...`
+
+### 10.9 — التحقق
+- `pnpm --filter web build` نظيف: 0 errors، 0 warnings، **21 صفحة** (كانت 19) — جديد: `/host/login` و `/become-a-host/apply`.
+- `pnpm --filter web lint` نظيف.
+- اختبار يدوي عبر `Invoke-WebRequest`: 12 رابط (الـ 4 الرئيسية + 5 خطوات الـ wizard + 2 redirect + الرئيسية) كلها 200 (أو 307 للـ redirects ثم 200).
+- Dev server logs نظيفة — لا runtime errors.
+
+
+
+### إصلاح سريع — `/search` 500 بسبب `next/image` (2026-05-04)
+- **المشكلة**: صفحة `/search` كانت ترجع خطأ 500 عند الفتح. في الـ console: `Invalid src prop (https://images.unsplash.com/...) on next/image` لأن الـ hostname غير مسموح في إعداد الصور.
+- **الملف المعدّل**: `apps/web/next.config.ts`
+- **الحل**: إضافة `images.remotePatterns` (النمط الحديث، بدون `domains`) لـ `https` فقط على `images.unsplash.com` و `plus.unsplash.com` مع `pathname: '/**'`. تعليق TODO في أعلى الملف يذكّر بإزالة أنماط Unsplash عند الاعتماد على `/public/images/` لاحقاً (أو الإبقاء إذا المؤجرون يستخدمون روابط خارجية).
 
 **السياق**: محمد طلب البدء بتنفيذ Phase 1 وفق `docs/BUILD_PLAN.md` و `docs/UI_UX_VISION.md`. اتُّخذ قراران رئيسيان:
 - **النطاق**: 7 صفحات حرجة الأولى (الخيار B) — Homepage polish + Search + Property + Hotel + Become a Host + Login + Signup. الصفحات الثابتة تُؤجَّل لـ Phase 1.5.
@@ -395,6 +580,17 @@ npm run dev
 | `public/images/hero/`, `public/images/destinations/` (+ READMEs) | **إنشاء** (جلسات 5-6) | مجلدات الصور + توثيق cache |
 | `public/logo/suknaa-logo-{white,color}.png` | **إنشاء** (جلسة 7) | نسختين لـ Adaptive Logo |
 | `components/layout/Navbar.tsx` | **تحديث** (جلسة 7) | Adaptive logo swap عبر `Image fill` + `opacity transition` |
+| `data/help-faq.ts`, `data/hosts.ts` | **إنشاء** (جلسة 11) | Mock data للـ Help Center و Host Profiles |
+| `components/legal/LegalPageShell.tsx` | **إنشاء** (جلسة 11) | Wrapper مشترك للصفحات القانونية |
+| `app/(public)/{about,how-it-works,help,contact,terms,privacy,cookies}/page.tsx` | **إنشاء** (جلسة 11) | 7 صفحات Phase 1.5 |
+| `app/(public)/host/[username]/page.tsx` | **إنشاء** (جلسة 11) | Host Profile العامة + generateStaticParams |
+| `components/{about,how-it-works,help,contact,host-profile}/*.tsx` | **إنشاء** (جلسة 11) | 22 component جديد |
+| `lib/contact-schema.ts` | **إنشاء** (جلسة 11) | Zod schema لنموذج التواصل |
+| `components/layout/Footer.tsx` | **تحديث جذري** (جلسة 11) | روابط حقيقية + 5 أعمدة جديدة |
+| `components/home/FeaturedListings.tsx` | **Refactor** (جلسة 11) | يقرأ من `data/listings.ts` ويستخدم Result Cards |
+| `components/search/{Property,Hotel}ResultCard.tsx` | **تحديث** (جلسة 11) | إضافة Host link |
+| `components/property-detail/PropertyHostSnippet.tsx`, `components/hotel-detail/HotelCompanySnippet.tsx` | **تحديث** (جلسة 11) | الزر صار Link حقيقي لـ `/host/[slug]` |
+| `components/auth/host/HostApplyWizard.tsx` | **إصلاح** (جلسة 11) | استبدال `<a>` بـ `<Link>` لـ `/host/login` |
 | `ai_memory.md` | تحديث متكرر | تسجيل تقدم كل جلسة |
 
 ---
@@ -507,6 +703,16 @@ npm run dev
   2. Restart dev server
   3. حذف `apps/web/.next/cache/images/` يدوياً (أو من الجذر إن وُجد symlink)
   ملف `apps/web/public/images/hero/README.md` و `apps/web/public/images/destinations/README.md` يحوي الخطوات بالتفصيل.
+
+### 2026-05-04 — Phase 1.5 Static Pages + Public Host Profile (جلسة 11)
+- **القرار 1 (مصدر بيانات الـ home cards)**: refactor `FeaturedListings` ليقرأ من `data/listings.ts` (PROPERTIES + HOTELS) ويستخدم `PropertyResultCard` + `HotelResultCard`. حُذف الـ mock data المضمَّن. النتيجة: مصدر بيانات موحَّد + ربط Host name متاح تلقائياً.
+- **القرار 2 (avatar للـ host)**: "mixed" — initials في دائرة primary للأفراد (`individual` و `re_office`)، أيقونة Building2 في مربع gold للشركات (`hotel_company`). متَّسق مع snippets الموجودة في صفحات الـ detail.
+- **القرار 3 (المحتوى القانوني)**: placeholder عربي صريح مع disclaimer واضح "محتوى مبدئي سيُحدَّث قانونياً قبل الإطلاق". `LegalPageShell` يطبِّق الـ disclaimer تلقائياً على /terms و /privacy و /cookies.
+- **القرار 4 (Counters في /about)**: أرقام ثابتة بدون animation معقَّد (هدف السنة الأولى — مستوحاة من PROJECT.md §12). Animation متحرك مؤجَّل لاحقاً.
+- **القرار 5 (شريط بحث /help)**: `disabled` UI placeholder بـ "(قريباً)". مفضَّل على بحث وهمي مزيف (لا nudges/UI كاذب — قاعدة سُكنى).
+- **القرار 6 (تخطيط Footer)**: 5 أعمدة (سُكنى + اكتشف + الدعم + للمضيفين + القانوني). عمود "التطبيق" حُذف لأنه placeholder غير فعَّال؛ يُعاد عند توفر روابط Google Play/App Store الفعلية.
+- **القرار 7 (Host Profile data)**: 5 hosts فقط — تطابق `hostSlug` في `data/listings.ts`. شركة `hotel_company` لا تملك properties → tab "العقارات" disabled تلقائياً. Edge case معالج في `HostListingsTabs`.
+- **التأثير**: 33 صفحة (كانت 21)، lint نظيف، build نظيف، Footer كامل بكل الروابط حقيقية، ربط Host في 4 أماكن (2 result cards + 2 detail snippets).
 
 ### 2026-05-04 — Phase 1 Core Pages (جلسة 9)
 - **القرار 1 (النطاق)**: تنفيذ 7 صفحات حرجة فقط (الخيار B) قبل الصفحات الثابتة. السبب: الحصول على tour قابل للعرض على beta hosts/guests بأسرع وقت.

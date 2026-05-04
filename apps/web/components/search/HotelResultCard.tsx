@@ -55,6 +55,16 @@ export function HotelResultCard({ item }: { item: HotelListing }) {
           ))}
         </div>
 
+        <p className="text-xs text-muted">
+          بواسطة{" "}
+          <Link
+            href={`/host/${item.hostSlug}`}
+            className="font-semibold text-charcoal/80 transition-colors hover:text-primary hover:underline"
+          >
+            {item.hostDisplayName}
+          </Link>
+        </p>
+
         <div className="flex items-center justify-between border-t border-[#F5EFE6] pt-3">
           <span className="font-numeric rounded-full bg-[#FBF5E8] px-3 py-1.5 text-sm font-bold text-[#B0863F]">
             من ${item.fromPriceUsd} / ليلة

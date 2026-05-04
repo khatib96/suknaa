@@ -124,28 +124,29 @@ export function Navbar() {
           <DropdownMenuContent
             align="end"
             sideOffset={10}
-            className="w-52 rounded-2xl border border-[#E8E0D3] p-1.5 shadow-warm-md"
+            className="w-56 rounded-2xl border border-[#E8E0D3] p-1.5 shadow-warm-md"
           >
             <DropdownMenuItem
               render={
                 <Link
-                  href="/login?intent=guest"
+                  href="/login"
                   className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
                 />
               }
             >
-              دخول كزبون
+              دخول
             </DropdownMenuItem>
             <DropdownMenuItem
               render={
                 <Link
-                  href="/login?intent=host"
+                  href="/host/login"
                   className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
                 />
               }
             >
               دخول كمؤجِّر
             </DropdownMenuItem>
+            <div className="my-1 h-px bg-[#F1ECE2]" aria-hidden />
             <DropdownMenuItem
               render={
                 <Link
@@ -155,6 +156,16 @@ export function Navbar() {
               }
             >
               إنشاء حساب
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={
+                <Link
+                  href="/become-a-host"
+                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold text-gold hover:text-primary"
+                />
+              }
+            >
+              كن مضيفاً
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -20,7 +20,7 @@ export function HostFinalCTA() {
         </div>
 
         <Link
-          href="/signup?intent=host"
+          href="/become-a-host/apply"
           className="group inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-7 py-3.5 text-base font-bold text-primary shadow-warm-md transition-all duration-200 hover:shadow-warm-lg active:scale-95"
         >
           سجِّل كمضيف الآن

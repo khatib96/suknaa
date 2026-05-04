@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Tajawal } from "next/font/google";
-import { Suspense } from "react";
-import { Footer } from "@/components/layout/Footer";
-import { Navbar } from "@/components/layout/Navbar";
 import "./globals.css";
 
 const tajawal = Tajawal({
@@ -45,13 +42,7 @@ export default function RootLayout({
       dir="rtl"
       className={`${tajawal.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-charcoal">
-        <Suspense fallback={<div className="h-[72px]" />}>
-          <Navbar />
-        </Suspense>
-        <div className="relative">{children}</div>
-        <Footer />
-      </body>
+      <body className="min-h-full bg-background text-charcoal">{children}</body>
     </html>
   );
 }

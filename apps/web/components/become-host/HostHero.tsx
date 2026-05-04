@@ -38,7 +38,7 @@ export function HostHero() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/signup?intent=host"
+              href="/become-a-host/apply"
               className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white shadow-warm-md transition-all duration-200 hover:bg-[#a84a33] hover:shadow-warm-lg active:scale-95"
             >
               ابدأ الاستضافة الآن

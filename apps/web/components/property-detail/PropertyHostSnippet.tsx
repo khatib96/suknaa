@@ -1,11 +1,12 @@
-import { ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 
 type Props = {
   hostSlug: string;
   hostDisplayName: string;
 };
 
-export function PropertyHostSnippet({ hostDisplayName }: Props) {
+export function PropertyHostSnippet({ hostSlug, hostDisplayName }: Props) {
   const initial = hostDisplayName.slice(0, 1);
 
   return (
@@ -17,9 +18,14 @@ export function PropertyHostSnippet({ hostDisplayName }: Props) {
         <span className="font-numeric inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
           {initial}
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-charcoal">{hostDisplayName}</h3>
+            <Link
+              href={`/host/${hostSlug}`}
+              className="text-base font-bold text-charcoal transition-colors hover:text-primary hover:underline"
+            >
+              {hostDisplayName}
+            </Link>
             <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F3EE] px-2 py-0.5 text-[11px] font-bold text-[#2C6850]">
               <ShieldCheck className="h-3 w-3" />
               موثَّق
@@ -29,12 +35,13 @@ export function PropertyHostSnippet({ hostDisplayName }: Props) {
             مضيف نشط على سُكنى منذ سنوات. معدّل استجابة عالٍ خلال أقل من ساعة،
             ونسبة قبول حجوزات 95%.
           </p>
-          <button
-            type="button"
-            className="mt-3 text-sm font-semibold text-primary hover:underline"
+          <Link
+            href={`/host/${hostSlug}`}
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:underline"
           >
             عرض كل عقارات هذا المضيف
-          </button>
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </article>
     </section>

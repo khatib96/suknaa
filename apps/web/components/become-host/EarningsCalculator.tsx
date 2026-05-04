@@ -156,7 +156,7 @@ export function EarningsCalculator() {
               </p>
 
               <Link
-                href="/signup?intent=host"
+                href="/become-a-host/apply"
                 className="group mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition-all duration-200 hover:bg-[#a84a33] active:scale-95"
               >
                 ابدأ بهذا السعر

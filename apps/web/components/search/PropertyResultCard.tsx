@@ -50,6 +50,16 @@ export function PropertyResultCard({ item }: { item: PropertyListing }) {
           </span>
         </div>
 
+        <p className="text-xs text-muted">
+          بواسطة{" "}
+          <Link
+            href={`/host/${item.hostSlug}`}
+            className="font-semibold text-charcoal/80 transition-colors hover:text-primary hover:underline"
+          >
+            {item.hostDisplayName}
+          </Link>
+        </p>
+
         <ul className="font-numeric flex items-center gap-3 text-xs text-muted">
           <li className="inline-flex items-center gap-1">
             <Users className="h-3.5 w-3.5" />

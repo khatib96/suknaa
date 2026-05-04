@@ -2,17 +2,40 @@ import Link from "next/link";
 import { Camera, Globe, Play, Send } from "lucide-react";
 import type { ReactNode } from "react";
 
-const discoverLinks = ["الرئيسية", "البحث", "الوجهات"];
-const supportLinks = ["مركز المساعدة", "تواصل معنا", "الشروط"];
-const hostLinks = ["كن مضيفاً", "دليل المضيف"];
-const appLinks = ["Google Play", "App Store"];
+type FooterLink = { label: string; href: string };
+
+const discoverLinks: FooterLink[] = [
+  { label: "الرئيسية", href: "/" },
+  { label: "البحث", href: "/search" },
+  { label: "كيف يعمل الموقع", href: "/how-it-works" },
+];
+
+const supportLinks: FooterLink[] = [
+  { label: "مركز المساعدة", href: "/help" },
+  { label: "تواصل معنا", href: "/contact" },
+  { label: "عن سُكنى", href: "/about" },
+];
+
+const hostLinks: FooterLink[] = [
+  { label: "كن مضيفاً", href: "/become-a-host" },
+  { label: "تقديم طلب استضافة", href: "/become-a-host/apply" },
+  { label: "دخول كمؤجِّر", href: "/host/login" },
+];
+
+const legalLinks: FooterLink[] = [
+  { label: "الشروط والأحكام", href: "/terms" },
+  { label: "سياسة الخصوصية", href: "/privacy" },
+  { label: "سياسة الكوكيز", href: "/cookies" },
+];
 
 export function Footer() {
   return (
     <footer className="mt-auto">
       <div className="bg-[#3D3935]">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 text-white md:flex-row md:items-center md:justify-between md:px-6 lg:px-8">
-          <p className="text-base font-semibold">اشترك واكتشف وجهات سورية مذهلة شهرياً</p>
+          <p className="text-base font-semibold">
+            اشترك واكتشف وجهات سورية مذهلة شهرياً
+          </p>
           <form className="flex w-full max-w-md items-center gap-2">
             <input
               type="email"
@@ -34,20 +57,21 @@ export function Footer() {
           <div className="lg:col-span-1">
             <h3 className="text-2xl font-extrabold text-primary">سُكنى</h3>
             <p className="mt-3 text-sm leading-7">
-              منصتك الموثوقة لاكتشاف وحجز السكن في سوريا بتجربة عربية حديثة وآمنة.
+              منصتك الموثوقة لاكتشاف وحجز السكن في سوريا بتجربة عربية حديثة
+              وآمنة.
             </p>
             <div className="mt-4 flex items-center gap-3">
-              <SocialIcon icon={<Camera className="h-4 w-4" />} />
-              <SocialIcon icon={<Globe className="h-4 w-4" />} />
-              <SocialIcon icon={<Send className="h-4 w-4" />} />
-              <SocialIcon icon={<Play className="h-4 w-4" />} />
+              <SocialIcon icon={<Camera className="h-4 w-4" />} label="انستغرام" />
+              <SocialIcon icon={<Globe className="h-4 w-4" />} label="فيسبوك" />
+              <SocialIcon icon={<Send className="h-4 w-4" />} label="تيليغرام" />
+              <SocialIcon icon={<Play className="h-4 w-4" />} label="يوتيوب" />
             </div>
           </div>
 
           <FooterColumn title="اكتشف" links={discoverLinks} />
           <FooterColumn title="الدعم" links={supportLinks} />
           <FooterColumn title="للمضيفين" links={hostLinks} />
-          <FooterColumn title="التطبيق" links={appLinks} />
+          <FooterColumn title="القانوني" links={legalLinks} />
         </div>
       </div>
 
@@ -55,20 +79,40 @@ export function Footer() {
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-4 text-sm text-[#C9C1B5] md:flex-row md:items-center md:justify-between md:px-6 lg:px-8">
           <div className="order-3 md:order-1">© 2026 سُكنى</div>
           <div className="order-1 flex items-center justify-center gap-2 md:order-2">
-            <button type="button" className="rounded-full px-3 py-1 text-[#C9C1B5] transition-colors hover:text-white">
+            <button
+              type="button"
+              className="rounded-full px-3 py-1 text-[#C9C1B5] transition-colors hover:text-white"
+              aria-label="التبديل إلى العربية"
+            >
               AR
             </button>
-            <span>/</span>
-            <button type="button" className="rounded-full px-3 py-1 text-[#C9C1B5] transition-colors hover:text-white">
+            <span aria-hidden>/</span>
+            <button
+              type="button"
+              className="rounded-full px-3 py-1 text-[#C9C1B5] transition-colors hover:text-white"
+              aria-label="Switch to English"
+            >
               EN
             </button>
           </div>
           <div className="order-2 flex items-center gap-4 md:order-3">
-            <Link href="#" className="transition-colors hover:text-white">
-              Cookies
+            <Link
+              href="/cookies"
+              className="transition-colors hover:text-white"
+            >
+              الكوكيز
             </Link>
-            <Link href="#" className="transition-colors hover:text-white">
-              Sitemap
+            <Link
+              href="/privacy"
+              className="transition-colors hover:text-white"
+            >
+              الخصوصية
+            </Link>
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-white"
+            >
+              الشروط
             </Link>
           </div>
         </div>
@@ -77,15 +121,24 @@ export function Footer() {
   );
 }
 
-function FooterColumn({ title, links }: { title: string; links: string[] }) {
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: FooterLink[];
+}) {
   return (
     <div>
       <h4 className="mb-3 text-base font-bold text-white">{title}</h4>
       <ul className="space-y-2">
         {links.map((link) => (
-          <li key={link}>
-            <Link href="#" className="text-sm transition-colors hover:text-white">
-              {link}
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              className="text-sm transition-colors hover:text-white"
+            >
+              {link.label}
             </Link>
           </li>
         ))}
@@ -94,10 +147,17 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
   );
 }
 
-function SocialIcon({ icon }: { icon: ReactNode }) {
+function SocialIcon({
+  icon,
+  label,
+}: {
+  icon: ReactNode;
+  label: string;
+}) {
   return (
     <button
       type="button"
+      aria-label={label}
       className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 text-[#C9C1B5] transition-colors hover:border-white/40 hover:text-white"
     >
       {icon}
