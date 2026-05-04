@@ -4,7 +4,7 @@ import { FloatingMapPreview } from "@/components/home/MapExplorer";
 
 export function Hero() {
   return (
-    <section className="relative z-20 flex min-h-dvh items-center justify-center px-4 pb-44 pt-safe md:min-h-[88vh] md:px-6 md:pb-56 md:pt-28 lg:px-8">
+    <section className="relative z-20 flex min-h-dvh items-center justify-center px-4 pb-44 pt-32 md:min-h-[88vh] md:px-6 md:pb-56 md:pt-28 lg:px-8">
       <HeroPresentation footer={<HeroSearchBar />}>
         <h1 className="max-w-[20ch] text-3xl font-extrabold leading-tight text-white sm:max-w-none sm:text-4xl md:text-5xl lg:text-6xl">
           سكنك في كل مكان بسوريا

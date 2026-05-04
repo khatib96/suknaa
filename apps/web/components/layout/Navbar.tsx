@@ -57,13 +57,13 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 h-[72px] border-b transition-all duration-500 ease-out",
+        "fixed inset-x-0 top-0 z-50 border-b transition-all duration-500 ease-out md:h-[72px]",
         isScrolled
           ? "border-[#E8E0D3]/70 bg-white/85 shadow-warm-sm backdrop-blur-xl backdrop-saturate-150"
           : "border-white/10 bg-white/20 backdrop-blur-md backdrop-saturate-150",
       )}
     >
-      <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6 lg:px-8">
+      <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center justify-between px-4 md:px-6 lg:px-8">
         <Link href="/" aria-label="الذهاب للصفحة الرئيسية" className="relative flex h-11 w-[150px] shrink-0 items-center">
           <Image
             src="/logo/suknaa-logo-white.png"

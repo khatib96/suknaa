@@ -13,7 +13,7 @@ type Props = {
 
 export function SearchHeader({ activeTab, city, checkIn, checkOut, guests }: Props) {
   return (
-    <div className="sticky top-[72px] z-30 border-b border-[#E8E0D3] bg-white/85 backdrop-blur-xl">
+    <div className="sticky top-[120px] z-30 border-b border-[#E8E0D3] bg-white/85 backdrop-blur-xl md:top-[72px]">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:px-6 lg:flex-row lg:items-center lg:px-8">
         <div className="flex flex-1 items-center gap-2 overflow-x-auto rounded-full border border-[#E8E0D3] bg-white px-2 py-1.5 shadow-warm-sm">
           <Field icon={<MapPin className="h-4 w-4" />} value={city || "أي مدينة"} />

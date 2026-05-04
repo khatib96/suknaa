@@ -18,9 +18,9 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 1.5 منجز — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
-- **آخر مرحلة مكتملة**: Phase 1.5 — الصفحات الثابتة (About, How-it-Works, Help, Contact, Terms, Privacy, Cookies) + Host Profile العامة (`/host/[username]`) + Footer كامل + Host Links في الـ Cards و Detail Snippets
-- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة Codex) — مراجعة الخطة + Docker + Hero Floating Map
+- **المرحلة الحالية**: Phase 1 (UI skeleton) منجز فعلياً — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
+- **آخر مرحلة مكتملة**: Phase 1 + 1.5 — كل الصفحات العامة + Hero responsive (Drawer موبايل) + إصلاح overlap الـ Navbar الموبايل + sticky search header. البنود المؤجلة بوضوح: i18n / next-intl، service worker، Mapbox الحقيقي، deploy staging.
+- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة 14) — مراجعة Phase 1 + إصلاح Navbar/SearchHeader overlap على الموبايل + تحديث BUILD_PLAN.md
 - **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -191,10 +191,46 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-04 (جلسة 13 — Hero responsive: Drawer موبايل + شريط مدمج تابلت)
+**التاريخ**: 2026-05-04 (جلسة 14 — مراجعة Phase 1 شاملة + إصلاح Navbar/SearchHeader overlap على الموبايل)
 **الـ AI المستخدم**: Cursor (Claude Opus 4.7)
 
-**السياق**: تحسين الـ Mobile/Tablet لـ Hero: أقل من `md` — زر CTA **ابحث عن سكنك** يفتح `Drawer` من `@base-ui/react/drawer` (bottom sheet + حقول كاملة + `pb-safe`). بين `md` و`lg` — شريط بحث compact في صف واحد (حقول أصغر، أيقونات 3.5، زر بحث 44px). من `lg` فما فوق — نفس شريط الـ Desktop السابق دون تغيير سلوكي. **`Hero.tsx`**: `min-h-dvh` على الموبايل، `pt-safe`، عنوان أصغر مع `max-w-[20ch]`، وتدرج `lg:text-6xl` كالسابق. **`globals.css`**: `.pt-safe` / `.pb-safe` لـ env(safe-area-inset). **`HeroPresentation`**: مؤشرات شرائح `mt-6 md:mt-8` + `@container` للاستعداد لـ container queries.
+**السياق**: مراجعة استلام Phase 1 شاملة قبل الانتقال لـ Phase 2.
+
+**ما تم التحقق منه**:
+- `npx pnpm@9.15.4 --filter web lint` → 0 errors
+- `npx pnpm@9.15.4 --filter web build` → 33 routes تُبنى بنجاح
+- فحص يدوي للصفحات الـ 17 (`/`, `/search`, `/property/[id]`, `/hotel/[id]`, `/host/[username]`, `/about`, `/how-it-works`, `/help`, `/contact`, `/terms`, `/privacy`, `/cookies`, `/login`, `/signup`, `/host/login`, `/become-a-host`, `/become-a-host/apply`)
+
+**المشاكل المُكتشفة والمُصلحة**:
+1. **Navbar mobile overlap**: `<header>` كان يحمل `h-[72px]` ثابت لكن داخله شريط تابات الموبايل (`md:hidden`) يضيف ~48px → الشريط الموبايل كان يخرج خارج صندوق الـ header ويغطي بداية المحتوى.
+   - **الإصلاح**: نقل `h-[72px]` من الـ `<header>` إلى الـ flex container الداخلي، وإضافة `md:h-[72px]` على الـ `<header>` فقط. على الموبايل يأخذ ارتفاعه الذاتي (~120px).
+2. **Suspense fallback** في `app/(public)/layout.tsx`: كان `h-[72px]` ثابت → fallback أقصر من الـ navbar الفعلي على الموبايل.
+   - **الإصلاح**: `h-[120px] md:h-[72px]`.
+3. **SearchHeader sticky**: كان `top-[72px]` → يتداخل مع شريط التابات الموبايل في الـ navbar.
+   - **الإصلاح**: `top-[120px] md:top-[72px]`.
+4. **Hero pt على الموبايل**: كان `pt-safe` (~28px) فقط → الـ navbar الموبايل (~120px) يغطّي بداية الـ Hero (العنوان والشعار).
+   - **الإصلاح**: `pt-32 md:pt-28` على الـ Hero section.
+
+**الملفات المُعدَّلة (4 ملفات)**:
+- `apps/web/components/layout/Navbar.tsx`
+- `apps/web/app/(public)/layout.tsx`
+- `apps/web/components/search/SearchHeader.tsx`
+- `apps/web/components/home/Hero.tsx`
+
+**ما لم يُلمس** (مؤجَّل عمداً حسب AGENTS.md):
+- `next-intl` / English translations
+- Mapbox الحقيقي (الـ MapExplorer placeholder يعمل بصرياً)
+- Service Worker (الـ manifest وحده كافٍ لـ Phase 1)
+- Backend (Phase 2)
+- Deploy staging (لاحقاً)
+
+**تحديث `docs/BUILD_PLAN.md`**: علّمت في Phase 1 البنود المنتهية فعلاً فقط (Layout، Homepage، Search، Property/Hotel/Host detail، Static pages، Login UIs، PWA manifest، Responsive). بقيت غير مُعلَّمة: i18n، service worker، English text، deploy staging.
+
+---
+
+### جلسة 13 (أرشيف) — Hero responsive: Drawer موبايل + شريط مدمج تابلت
+
+**السياق**: تحسين الـ Mobile/Tablet لـ Hero: أقل من `md` — زر CTA **ابحث عن سكنك** يفتح `Drawer` من `@base-ui/react/drawer` (bottom sheet + حقول كاملة + `pb-safe`). بين `md` و`lg` — شريط بحث compact في صف واحد (حقول أصغر، أيقونات 3.5، زر بحث 44px). من `lg` فما فوق — نفس شريط الـ Desktop السابق دون تغيير سلوكي. **`Hero.tsx`**: `min-h-dvh` على الموبايل، `pt-safe` (تم تغييره لـ `pt-32` في الجلسة 14)، عنوان أصغر مع `max-w-[20ch]`، وتدرج `lg:text-6xl` كالسابق. **`globals.css`**: `.pt-safe` / `.pb-safe` لـ env(safe-area-inset). **`HeroPresentation`**: مؤشرات شرائح `mt-6 md:mt-8` + `@container` للاستعداد لـ container queries.
 
 ---
 

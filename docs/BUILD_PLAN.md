@@ -40,43 +40,45 @@ You can show a friend the visual mockups and they understand both the Real Estat
 **Estimated:** 3–4 weeks (longer than v1 because of dual systems)
 
 ### Deliverables
-- [x] Next.js 14 App Router + TypeScript + Tailwind + shadcn/ui
+- [x] Next.js App Router + TypeScript + Tailwind + shadcn/ui (using Next.js 16 + Tailwind v4 instead of Next 14 / Tailwind v3)
 - [ ] i18n with `next-intl`: full Arabic (RTL) + English (LTR)
 - [x] Design system implemented (colors, fonts, spacing — incl. map color palette)
 - [x] **Layout**:
-  - Header with logo + **persistent tabs `[الكل] [عقارات] [فنادق]`** + **two login buttons** + language switcher
+  - Header with logo + **persistent tabs `[الكل] [عقارات] [فنادق]`** + **two login buttons** (language switcher deferred with i18n)
   - Footer
-- [ ] **Homepage**:
-  - Hero with search bar
-  - Three featured sections: top real estate, top hotels, top farms/cabins
-  - Trust signals
-  - FAQ
-- [ ] **Search Results page** (works for all three tabs):
+- [x] **Homepage**:
+  - Hero with search bar (interactive: location + dates + guests → `/search` with query params, mobile uses bottom-sheet drawer)
+  - Featured sections (FeaturedListings, SeasonalPicks)
+  - Trust signals (WhySuknaaStrip)
+  - MapExplorer placeholder (real Mapbox integration deferred to Phase 3+)
+  - Note: a homepage-level FAQ block was not built; FAQs live on `/help` for now
+- [x] **Search Results page** (works for all three tabs):
   - Filters sidebar adapts to tab selection (RE filters vs Hotel filters)
   - Property cards (RE) and Hotel cards (separate visual style)
-  - Map view toggle with category color-coded markers
-- [ ] **Property Detail page (Real Estate)**:
+  - Map view toggle with category color-coded markers (placeholder map)
+- [x] **Property Detail page (Real Estate)**:
   - Hero gallery
   - Description
   - **Per-room sections** (bedrooms, bathrooms, kitchen — each with photos and amenities)
   - Property amenities
-  - Map with mock nearby attractions
+  - Map placeholder with mock nearby attractions
   - Reviews placeholder
-  - Host profile snippet
-- [ ] **Hotel Detail page (Hospitality)**:
+  - Host profile snippet linking to `/host/[username]`
+- [x] **Hotel Detail page (Hospitality)**:
   - Hero gallery
   - Star rating + score
   - Hotel description and amenities
   - **Room types list** (each as a card with: name, photos, beds, max occupancy, "X of Y available", price, [Book] button)
-  - Map + nearby attractions
+  - Map placeholder + nearby attractions
   - Reviews placeholder
   - Host (hotel company) profile snippet
-- [ ] **Host Profile page**: public page showing all listings of one host
-- [ ] **Static pages**: About, How It Works (Guests), How It Works (Hosts — for both RE and Hotels), Terms, Privacy, Contact
-- [ ] **Login UIs**: "Login as Guest" form, "Login as Host" form, Signup flow
-- [ ] **PWA manifest + service worker**
-- [ ] All text in both Arabic and English
-- [ ] Responsive: mobile / tablet / desktop
+- [x] **Host Profile page**: public page showing all listings of one host (5 mock hosts)
+- [x] **Static pages**: About, How It Works (`?audience=guest|host`), Help, Contact, Terms, Privacy, Cookies
+- [x] **Login UIs**: "Login as Guest" form, "Login as Host" form, Signup flow, host onboarding wizard
+- [x] **PWA manifest** at `/manifest.webmanifest` (service worker deferred)
+- [ ] Service worker for offline shell
+- [ ] All text in both Arabic and English (deferred — Arabic only for now)
+- [x] Responsive: mobile / tablet / desktop (Hero drawer on mobile, compact tablet bar, navbar height adapts to mobile tab strip)
 - [ ] Deployed to staging (`staging.suknaa.com`)
 
 ### Exit Criteria

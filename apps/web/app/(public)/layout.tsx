@@ -18,7 +18,7 @@ export default function PublicLayout({
 }>) {
   return (
     <>
-      <Suspense fallback={<div className="h-[72px]" />}>
+      <Suspense fallback={<div className="h-[120px] md:h-[72px]" />}>
         <Navbar />
       </Suspense>
       <div className="relative">{children}</div>
