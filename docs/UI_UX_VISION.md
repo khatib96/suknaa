@@ -84,7 +84,7 @@
 - **العنوان**: "استكشف على الخريطة" + subtitle فرعي
 - **الخريطة**:
   - الحجم: `width: 100%`، `height: 480px`
-  - الثيم: Mapbox Light Style أو OpenStreetMap بـ custom tiles فاتحة (beige/cream)
+  - الثيم: MapLibre light style أو OpenStreetMap بـ custom tiles فاتحة (beige/cream)
   - **Markers**: فقاعات سعر ملونة حسب الفئة:
     - 🟧 بيوت/شقق/فيلات → `#C85A3D` (برتقالي)
     - 🟢 مزارع/كبائن/شاليهات → `#3D8A6B` (أخضر)

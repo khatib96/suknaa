@@ -47,9 +47,9 @@ export function FloatingMapPreview({ className }: { className?: string }) {
         className,
       )}
     >
-      {/* TODO: integrate Mapbox here. The #map-container element below is the
-          mount target for the upcoming Mapbox GL JS instance. The placeholder
-          background and overlay pins are temporary until Mapbox renders markers. */}
+      {/* TODO: integrate MapLibre here. The #map-container element below is the
+          mount target for the upcoming MapLibre GL JS instance. The placeholder
+          background and overlay pins are temporary until MapLibre renders markers. */}
       <div
         id="map-container"
         data-map-ready="false"

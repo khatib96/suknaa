@@ -50,7 +50,7 @@ You can show a friend the visual mockups and they understand both the Real Estat
   - Hero with search bar (interactive: location + dates + guests → `/search` with query params, mobile uses bottom-sheet drawer)
   - Featured sections (FeaturedListings, SeasonalPicks)
   - Trust signals (WhySuknaaStrip)
-  - MapExplorer placeholder (real Mapbox integration deferred to Phase 3+)
+  - MapExplorer placeholder (real MapLibre integration deferred to Phase 3+)
   - Note: a homepage-level FAQ block was not built; FAQs live on `/help` for now
 - [x] **Search Results page** (works for all three tabs):
   - Filters sidebar adapts to tab selection (RE filters vs Hotel filters)

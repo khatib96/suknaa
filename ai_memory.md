@@ -19,7 +19,7 @@
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 1 (UI skeleton) منجز فعلياً — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
-- **آخر مرحلة مكتملة**: Phase 1 + 1.5 — كل الصفحات العامة + Hero responsive (Drawer موبايل) + إصلاح overlap الـ Navbar الموبايل + sticky search header. البنود المؤجلة بوضوح: i18n / next-intl، service worker، Mapbox الحقيقي، deploy staging.
+- **آخر مرحلة مكتملة**: Phase 1 + 1.5 — كل الصفحات العامة + Hero responsive (Drawer موبايل) + إصلاح overlap الـ Navbar الموبايل + sticky search header. البنود المؤجلة بوضوح: i18n / next-intl، service worker، MapLibre الحقيقي، deploy staging.
 - **آخر تحديث للذاكرة**: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish)
 - **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
@@ -124,7 +124,7 @@
 - [x] **Global Layout**: Navbar (glass + scroll-aware) + Footer (3-layer) + RTL + design tokens ✓ 2026-04-30
 - [x] **Homepage Hero** مع cinematic slider (4 صور + Ken Burns motion + glass search pill) ✓ 2026-04-30
 - [x] **Homepage Hero search bar** (تفاعلي: `destinations` + `input type=date` + ضيوف + `→ /search?location&checkin&checkout&guests` + validation) ✓ 2026-05-04
-- [x] **MapExplorer** (placeholder + pins ملوّنة + toolbar + container جاهز لـ Mapbox) ✓ 2026-04-30
+- [x] **MapExplorer** (placeholder + pins ملوّنة + toolbar + container جاهز لـ MapLibre) ✓ 2026-04-30
 - [x] **Destinations carousel** (data-driven, scroll أفقي) ✓ 2026-04-30
 - [x] **FeaturedListings** + PropertyCard + HotelCard (reusable) ✓ 2026-04-30
 - [x] **معمارية بيانات مرنة** (`data/hero-slides.ts` + `data/destinations.ts`) ✓ 2026-04-30
@@ -138,7 +138,7 @@
 - [x] **404 + 500** بطابع سُكنى الدافئ ✓ 2026-05-04
 - [x] **PWA manifest** (`app/manifest.ts` → `/manifest.webmanifest`) ✓ 2026-05-04
 - [ ] إضافة الصور الفعلية (محمد يضيفها لـ `apps/web/public/images/hero/` و `apps/web/public/images/destinations/`)
-- [ ] دمج Mapbox GL JS فعلياً على `#map-container`
+- [ ] دمج MapLibre GL JS فعلياً على `#map-container`
 - [ ] Service Worker الفعلي (الـ manifest جاهز، الـ SW يحتاج إعدادات إضافية)
 - [ ] next-intl (AR + EN) — مؤجَّل
 - [ ] Deploy إلى staging
@@ -262,7 +262,7 @@
 
 **ما لم يُلمس** (مؤجَّل عمداً حسب AGENTS.md):
 - `next-intl` / English translations
-- Mapbox الحقيقي (الـ MapExplorer placeholder يعمل بصرياً)
+- MapLibre الحقيقي (الـ MapExplorer placeholder يعمل بصرياً)
 - Service Worker (الـ manifest وحده كافٍ لـ Phase 1)
 - Backend (Phase 2)
 - Deploy staging (لاحقاً)
@@ -581,7 +581,7 @@ npm run dev
 **ما تم إنجازه في الجلسة (5) — Homepage Sections**:
 - بناء صفحة الهومبيج كاملة كـ sections قابلة لإعادة الاستخدام:
   - `components/home/Hero.tsx` — slider 4 صور + Ken Burns motion + glass search pill + slide indicators.
-  - `components/home/MapExplorer.tsx` — حاوية خريطة مع `id="map-container"` جاهزة لـ Mapbox + pins (primary للعقارات، gold للفنادق) + toolbar (filters + layers).
+  - `components/home/MapExplorer.tsx` — حاوية خريطة مع `id="map-container"` جاهزة لـ MapLibre + pins (primary للعقارات، gold للفنادق) + toolbar (filters + layers).
   - `components/home/Destinations.tsx` — كروت أفقية scrollable مع hover effects.
   - `components/home/FeaturedListings.tsx` — Grid + tab filter (الكل/عقارات/فنادق).
   - `components/home/cards/PropertyCard.tsx` — بطاقة عقار (orange badge + heart + price + rating).
@@ -814,7 +814,7 @@ npm run dev
 ### 2026-05-04 — Phase 1 Core Pages (جلسة 9)
 - **القرار 1 (النطاق)**: تنفيذ 7 صفحات حرجة فقط (الخيار B) قبل الصفحات الثابتة. السبب: الحصول على tour قابل للعرض على beta hosts/guests بأسرع وقت.
 - **القرار 2 (اللغة)**: AR فقط في Phase 1. `next-intl` + ترجمات EN يُضافان عند بدء الإنجليزية (Phase 2 أو لاحقاً).
-- **القرار 3 (الخريطة)**: placeholder سيستمر خلال Phase 1. Mapbox GL JS الفعلي يُدمج في Phase 3 عند توفر إحداثيات حقيقية للعقارات.
+- **القرار 3 (الخريطة)**: placeholder سيستمر خلال Phase 1. MapLibre GL JS الفعلي يُدمج في Phase 3 عند توفر إحداثيات حقيقية للعقارات.
 - **القرار 4 (الفصل المعماري)**: لا component مشترك بين Property و Hotel detail. مجلدات `property-detail/` و `hotel-detail/` مفصولة. الـ data layer مفصول (`PROPERTIES` array مستقل عن `HOTELS`). الـ search utils تفلتر/تفرز كلاًّ بدالة منفصلة. هذا يعكس قاعدة "أبداً لا تخلط properties و hotels في نفس الكود".
 - **القرار 5 (الـ pricing display)**: `lib/pricing-display.ts` يحوي `computeGuestBreakdown` يُرجع `{ propertySubtotal, serviceFee, total }` فقط. **لا حقل ولا متغير ولا تعليق يذكر "commission"** في أي مكان يصل الزبون. الـ commission engine الحقيقي سيكون في `packages/pricing/` server-side.
 - **القرار 6 (Auth schemas مشتركة)**: `lib/auth-schemas.ts` (Zod) يبقى في `apps/web/` مؤقتاً. عند بدء Phase 2 (Backend Auth) سيُنقل لـ `packages/types/` ويستخدمه الباك‌اند كـ DTOs (مع class-validator wrapper).
