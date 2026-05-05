@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { BedDouble, Coffee, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { computeGuestBreakdown } from "@/lib/pricing-display";
 import { findAmenity } from "@/data/amenities";
 import type { RoomType } from "@/data/room-types";
 import { AmenityIcon } from "@/components/shared/AmenityIcon";
@@ -18,13 +19,17 @@ export function RoomTypesList({
         الغرف المتاحة
       </h2>
       <p className="mt-1 text-sm text-muted">
-        اختر نوع الغرفة المناسب — السعر يشمل رسوم الخدمة وكل الضرائب.
+        اختر نوع الغرفة المناسب — رسوم الخدمة 2% تُحتسب منفصلة عن سعر الليلة.
       </p>
 
       <div className="mt-5 space-y-4">
         {roomTypes.map((rt) => {
           const isSoldOut = rt.availableUnits === 0;
           const isLow = rt.availableUnits > 0 && rt.availableUnits <= 2;
+          const nightlyBreakdown = computeGuestBreakdown({
+            displayedNightlyUsd: rt.nightlyPriceUsd,
+            nights: 1,
+          });
 
           return (
             <article
@@ -122,7 +127,12 @@ export function RoomTypesList({
                       ${rt.nightlyPriceUsd}
                       <span className="ms-1 text-xs font-medium text-muted">/ ليلة</span>
                     </p>
-                    <p className="text-xs text-muted">يشمل رسوم الخدمة 2%</p>
+                    <p className="font-numeric mt-1 text-xs text-muted">
+                      + ${nightlyBreakdown.serviceFeeUsd} رسوم خدمة (2%)
+                    </p>
+                    <p className="font-numeric text-xs font-bold text-charcoal/80">
+                      المجموع: ${nightlyBreakdown.guestTotalUsd} لليلة الواحدة
+                    </p>
                   </div>
 
                   <button

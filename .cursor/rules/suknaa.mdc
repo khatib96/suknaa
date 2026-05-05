@@ -60,9 +60,12 @@ These two systems share infrastructure but have **fundamentally different data m
 ## 3. Tech Stack (Non-Negotiable)
 
 ### Frontend (web + admin)
-- Next.js 14 App Router, React Server Components by default
+
+> Updated 2026-05-04: Project upgraded to Next.js 16 + Tailwind 4 + React 19 during Phase 1 build.
+
+- Next.js 16 App Router, React Server Components by default
 - TypeScript (strict mode)
-- Tailwind CSS 3 with project's design tokens
+- Tailwind CSS 4 with project's design tokens
 - shadcn/ui for component primitives
 - next-intl for i18n (AR + EN)
 - React Hook Form + Zod for forms

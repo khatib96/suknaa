@@ -60,11 +60,13 @@ The codebase is organized into **two parallel domain modules** plus shared infra
 
 ### 2.1. Frontend — Web (Public)
 
+> _Updated 2026-05-04: Project upgraded to Next.js 16 + Tailwind 4 + React 19 during Phase 1 build._
+
 | Technology | Version | Purpose |
 |---|---|---|
-| **Next.js** | 14.x (App Router) | Public website (suknaa.com), SSR, SEO, PWA |
+| **Next.js** | 16.x (App Router) | Public website (suknaa.com), SSR, SEO, PWA |
 | **TypeScript** | 5.x | Type safety end-to-end |
-| **Tailwind CSS** | 3.x | Utility-first styling |
+| **Tailwind CSS** | 4.x | Utility-first styling |
 | **shadcn/ui** | Latest | Accessible component library |
 | **next-intl** | Latest | i18n (Arabic + English with RTL) |
 | **React Hook Form** | Latest | Form management |

@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Bath, BedDouble, Heart, MapPin, Star, Users } from "lucide-react";
@@ -10,7 +12,7 @@ import {
 export function PropertyResultCard({ item }: { item: PropertyListing }) {
   const cityLabel = CITY_LABELS[item.cityId];
   return (
-    <article className="group overflow-hidden rounded-[20px] border border-[#E8E0D3] bg-white shadow-warm-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-warm-md">
+    <article className="group relative overflow-hidden rounded-[20px] border border-[#E8E0D3] bg-white shadow-warm-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-warm-md">
       <Link href={`/property/${item.id}`} className="block">
         <div className="relative h-52 overflow-hidden">
           <Image
@@ -23,15 +25,19 @@ export function PropertyResultCard({ item }: { item: PropertyListing }) {
           <span className="absolute end-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
             {PROPERTY_TYPE_LABELS[item.type]}
           </span>
-          <button
-            type="button"
-            aria-label="إضافة للمفضلة"
-            className="absolute start-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-charcoal transition-colors hover:text-primary"
-          >
-            <Heart className="h-4 w-4" />
-          </button>
         </div>
       </Link>
+
+      <button
+        type="button"
+        aria-label="إضافة للمفضلة"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="absolute start-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-charcoal transition-colors hover:text-primary"
+      >
+        <Heart className="h-4 w-4" />
+      </button>
 
       <div className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-3">

@@ -20,7 +20,7 @@
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 1 (UI skeleton) منجز فعلياً — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
 - **آخر مرحلة مكتملة**: Phase 1 + 1.5 — كل الصفحات العامة + Hero responsive (Drawer موبايل) + إصلاح overlap الـ Navbar الموبايل + sticky search header. البنود المؤجلة بوضوح: i18n / next-intl، service worker، Mapbox الحقيقي، deploy staging.
-- **آخر تحديث للذاكرة**: 2026-05-04 (جلسة Codex) — Data-driven governorates/search/destinations
+- **آخر تحديث للذاكرة**: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish)
 - **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -35,7 +35,7 @@
 - modules منفصلة في الباك‌اند: `apps/api/src/modules/real-estate/` و `apps/api/src/modules/hospitality/`
 - `bookings` polymorphic بـ discriminator (`booking_kind` enum) و CHECK constraint
 - Modular monolith، **ليس** microservices
-- **Stack**: Next.js 14 (App Router) + NestJS 10 + PostgreSQL 16 + PostGIS + Redis 7 + MinIO + Flutter (Phase 10)
+- **Stack**: Next.js 16 (App Router) + NestJS 10 + PostgreSQL 16 + PostGIS + Redis 7 + MinIO + Flutter (Phase 10)
 - **الهيكل الفعلي الآن**: apps/web/ (Next.js) + packages/ui + packages/types + infrastructure/
 - **Package Manager**: pnpm@9.15.4 (pnpm-workspace.yaml في الجذر)
 - **Turborepo**: مؤجَّل — pnpm workspaces كافٍ للمرحلة الحالية
@@ -190,6 +190,49 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish)
+**الـ AI المستخدم**: Cursor (Claude)
+
+**السياق**: تنفيذ Quick Wins من تقرير مراجعة Codex قبل أي عرض للمستخدمين.
+
+**المشاكل المُكتشفة**:
+1. تسجيل `password` ضمن `console.info` في نماذج Auth (mock) — تسريب محتمل في DevTools.
+2. توثيق الـ Stack في `docs/ARCHITECTURE.md` و `.cursor/rules/suknaa.mdc` ما زال Next 14 + Tailwind 3 رغم الترقية الفعلية.
+3. `postcss@8.4.31` عبر `next` (transitive) — ثغرة معروفة؛ الحل override إلى `^8.5.10`.
+4. زر القلب داخل `<Link>` في بطاقات نتائج البحث — HTML غير صالح + تعارض النقر.
+5. فلتر البحث يتجاهل `guests`؛ `checkIn`/`checkOut` غير موثّقة كـ Phase 1 mock.
+6. `RoomTypesList` ينص على «السعر يشمل رسوم الخدمة» — يخالف قاعدة «رسوم الخدمة منفصلة وظاهرة للزبون».
+
+**الإصلاحات المطبقة**:
+1. استبدال تسجيل الـ mock بحقول غير حساسة + `hasPassword` في: `LoginForm`, `SignupForm`, `HostLoginForm`, `HostApplyWizard`.
+2. تحديث `ARCHITECTURE.md` §2.1 و `suknaa.mdc` §3 إلى Next.js 16 + Tailwind 4 + ملاحظة تاريخ الترقية.
+3. `pnpm.overrides.postcss: ^8.5.10` في `package.json` الجذر + `pnpm install` (lockfile يثبت `postcss@8.5.13` لـ `next`).
+4. `PropertyResultCard` + `HotelResultCard`: `article` بـ `relative`، زر القلب خارج الـ Link الأول مع `z-20` و `stopPropagation` + `'use client'`.
+5. `search-utils.ts`: فلتر `guests` لـ `filterProperties`؛ تعليق JSDoc يوضح أن فلترة التوفر الحقيقية في Phase 5.
+6. `RoomTypesList`: نص علوي محدّث + breakdown ليلة واحدة عبر `computeGuestBreakdown` (مطابق `BookingWidget`).
+
+**التحقق**:
+- `pnpm --filter web build` → نجاح (33 route)
+- `pnpm audit` → لا ثغرات معروفة
+
+**ما لم يُلمس** (مؤجَّل):
+- صور `public/images/` (مهمة محمد)
+- Vitest / Playwright / تغطية اختبارات آلية
+- Security headers (CSP, HSTS, إلخ) — قبل Beta / Phase 9
+- فلترة توفر حقيقية بـ `checkIn`/`checkOut` — Phase 5 (DB + API)
+- قائمة مفضلة حقيقية — Phase 8
+
+**الملفات المُعدَّلة**:
+- `apps/web/components/auth/{LoginForm,SignupForm}.tsx`
+- `apps/web/components/auth/host/{HostLoginForm,HostApplyWizard}.tsx`
+- `docs/ARCHITECTURE.md`, `.cursor/rules/suknaa.mdc`
+- `package.json`, `pnpm-lock.yaml`
+- `apps/web/components/search/{PropertyResultCard,HotelResultCard}.tsx`
+- `apps/web/lib/search-utils.ts`
+- `apps/web/components/hotel-detail/RoomTypesList.tsx`
+
+---
 
 **التاريخ**: 2026-05-04 (جلسة 14 — مراجعة Phase 1 شاملة + إصلاح Navbar/SearchHeader overlap على الموبايل)
 **الـ AI المستخدم**: Cursor (Claude Opus 4.7)
@@ -640,6 +683,12 @@ npm run dev
 | `components/property-detail/PropertyHostSnippet.tsx`, `components/hotel-detail/HotelCompanySnippet.tsx` | **تحديث** (جلسة 11) | الزر صار Link حقيقي لـ `/host/[slug]` |
 | `components/auth/host/HostApplyWizard.tsx` | **إصلاح** (جلسة 11) | استبدال `<a>` بـ `<Link>` لـ `/host/login` |
 | `ai_memory.md` | تحديث متكرر | تسجيل تقدم كل جلسة |
+| `apps/web/components/auth/{LoginForm,SignupForm,host/HostLoginForm,host/HostApplyWizard}.tsx` | **تحديث** (جلسة 15) | إزالة تسجيل كلمة المرور من console mock |
+| `docs/ARCHITECTURE.md`, `.cursor/rules/suknaa.mdc` | **تحديث** (جلسة 15) | Next.js 16 + Tailwind 4 + ملاحظة ترقية |
+| `package.json` (جذر), `pnpm-lock.yaml` | **تحديث** (جلسة 15) | `pnpm.overrides.postcss` لإغلاق ثغرة transitive |
+| `apps/web/components/search/{PropertyResultCard,HotelResultCard}.tsx` | **تحديث** (جلسة 15) | زر القلب خارج Link + `'use client'` |
+| `apps/web/lib/search-utils.ts` | **تحديث** (جلسة 15) | فلتر ضيوف + توثيق توفر Phase 5 |
+| `apps/web/components/hotel-detail/RoomTypesList.tsx` | **تحديث** (جلسة 15) | breakdown رسوم خدمة منفصلة |
 
 ---
 
@@ -888,4 +937,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-04 (جلسة Codex) — Data-driven governorates/search/destinations.**
+**نهاية الملف. آخر تحديث: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish).**

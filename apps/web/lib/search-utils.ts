@@ -1,6 +1,11 @@
 /**
  * Server-side filter + sort helpers for /search.
  * Pure functions — no React, no DOM.
+ *
+ * Availability: `checkIn` / `checkOut` are parsed from the URL (hero → /search)
+ * but are **not** used to filter results in Phase 1 — mock listings have no
+ * `property_availability_blocks` / `room_unit_availability_blocks`. Real
+ * availability filtering ships in Phase 5 (Bookings & Payments).
  */
 
 import {
@@ -108,6 +113,7 @@ export function filterProperties(
 ): PropertyListing[] {
   return list.filter((p) => {
     if (params.city && params.city !== "all" && p.cityId !== params.city) return false;
+    if (params.guests !== undefined && p.guests < params.guests) return false;
     if (params.minPrice !== undefined && p.basePriceUsd < params.minPrice) return false;
     if (params.maxPrice !== undefined && p.basePriceUsd > params.maxPrice) return false;
     if (params.bedrooms !== undefined && p.bedrooms < params.bedrooms) return false;

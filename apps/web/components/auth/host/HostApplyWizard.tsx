@@ -106,7 +106,19 @@ export function HostApplyWizard() {
     setSubmitState("submitting");
     await new Promise<void>((resolve) =>
       setTimeout(() => {
-        console.info("[mock] host apply submitted", values);
+        console.info("[mock] host apply submitted", {
+          hostCategory: values.hostCategory,
+          hostSubtype: values.hostSubtype,
+          fullName: values.fullName,
+          phone: values.phone,
+          email: values.email,
+          cityId: values.cityId,
+          acceptTerms: values.acceptTerms,
+          portfolioSize: values.portfolioSize,
+          startTimeline: values.startTimeline,
+          biggestChallenge: values.biggestChallenge,
+          hasPassword: Boolean(values.password),
+        });
         resolve();
       }, 800),
     );

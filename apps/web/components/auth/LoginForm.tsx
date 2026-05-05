@@ -31,7 +31,10 @@ export function LoginForm() {
   const onSubmit = (values: GuestLoginValues) =>
     new Promise<void>((resolve) =>
       setTimeout(() => {
-        console.info("[mock] guest login submitted", values);
+        console.info("[mock] guest login submitted", {
+          email: values.email,
+          hasPassword: Boolean(values.password),
+        });
         setSubmitState("ok");
         resolve();
       }, 600),
