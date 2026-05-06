@@ -30,6 +30,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let code = "INTERNAL_SERVER_ERROR";
     let message = "Internal server error";
     let messageEn: string | undefined;
+    let details: Record<string, unknown> | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -45,6 +46,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           message = b.message[0] as string;
         }
         if (typeof b.message_en === "string") messageEn = b.message_en;
+        if (b.details && typeof b.details === "object" && !Array.isArray(b.details)) {
+          details = b.details as Record<string, unknown>;
+        }
       }
     } else if (exception instanceof Error) {
       this.logger.error(
@@ -62,6 +66,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code,
         message,
         ...(messageEn ? { message_en: messageEn } : {}),
+        ...(details ? { details } : {}),
       },
       meta: { request_id: requestId },
     });

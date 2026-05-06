@@ -7,6 +7,8 @@ import type { Env } from "./shared/config/env.schema";
 import { PrismaModule } from "./shared/prisma/prisma.module";
 import { RedisModule } from "./shared/redis/redis.module";
 import { StorageModule } from "./shared/storage/storage.module";
+import { MessagingModule } from "./shared/messaging/messaging.module";
+import { AuditModule } from "./shared/audit/audit.module";
 import { HealthModule } from "./modules/health/health.module";
 
 @Module({
@@ -57,6 +59,8 @@ import { HealthModule } from "./modules/health/health.module";
     PrismaModule,
     RedisModule,
     StorageModule,
+    MessagingModule,
+    AuditModule,
     HealthModule,
   ],
 })

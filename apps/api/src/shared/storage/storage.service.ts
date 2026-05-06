@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Client as MinioClient } from "minio";
+import { randomUUID } from "node:crypto";
 import type { Env } from "../config/env.schema";
 
 @Injectable()
@@ -28,5 +29,23 @@ export class StorageService {
   /** Readiness probe used by `/v1/health`. Listing buckets is cheap. */
   async ping(): Promise<void> {
     await this.client.listBuckets();
+  }
+
+  async ensureBucketExists(bucketName: string): Promise<void> {
+    const exists = await this.client.bucketExists(bucketName);
+    if (!exists) {
+      await this.client.makeBucket(bucketName);
+    }
+  }
+
+  buildKycObjectKey(params: {
+    userId: string;
+    kycSubmissionId: string;
+    fileExtension: string;
+  }): string {
+    const ext = params.fileExtension.startsWith(".")
+      ? params.fileExtension
+      : `.${params.fileExtension}`;
+    return `kyc/${params.userId}/${params.kycSubmissionId}/${randomUUID()}${ext}`;
   }
 }

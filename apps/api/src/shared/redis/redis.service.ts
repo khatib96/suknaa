@@ -7,9 +7,11 @@ import type { Env } from "../config/env.schema";
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   readonly client: Redis;
+  private readonly keyPrefix: string;
 
   constructor(config: ConfigService<Env, true>) {
     const url = config.get("REDIS_URL", { infer: true });
+    this.keyPrefix = config.get("REDIS_KEY_PREFIX", { infer: true });
     this.client = new Redis(url, {
       lazyConnect: true,
       maxRetriesPerRequest: 3,
@@ -37,5 +39,28 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (reply !== "PONG") {
       throw new Error(`Unexpected Redis ping reply: ${reply}`);
     }
+  }
+
+  buildKey(key: string): string {
+    return `${this.keyPrefix}:${key}`;
+  }
+
+  async setJson<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    const redisKey = this.buildKey(key);
+    const payload = JSON.stringify(value);
+    if (typeof ttlSeconds === "number" && ttlSeconds > 0) {
+      await this.client.set(redisKey, payload, "EX", ttlSeconds);
+      return;
+    }
+    await this.client.set(redisKey, payload);
+  }
+
+  async getJson<T>(key: string): Promise<T | null> {
+    const redisKey = this.buildKey(key);
+    const value = await this.client.get(redisKey);
+    if (value === null) {
+      return null;
+    }
+    return JSON.parse(value) as T;
   }
 }

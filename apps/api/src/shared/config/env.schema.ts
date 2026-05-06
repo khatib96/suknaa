@@ -19,6 +19,7 @@ export const envSchema = z.object({
 
   // ---- Redis ----
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
+  REDIS_KEY_PREFIX: z.string().min(1).default("suknaa"),
 
   // ---- MinIO ----
   MINIO_ENDPOINT: z.string().url(),
@@ -29,6 +30,10 @@ export const envSchema = z.object({
   MINIO_ACCESS_KEY: z.string().min(1),
   MINIO_SECRET_KEY: z.string().min(1),
   MINIO_KYC_BUCKET: z.string().min(1).default("suknaa-kyc"),
+
+  // ---- Messaging (Milestone 3 shared infra) ----
+  MESSAGE_PROVIDER: z.enum(["mock", "whatsapp"]).default("mock"),
+  DEV_OUTBOX_DIR: z.string().min(1).default(".dev-outbox"),
 
   // ---- JWT (Milestone 4) ----
   JWT_PRIVATE_KEY_PATH: z.string().optional(),

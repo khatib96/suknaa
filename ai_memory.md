@@ -19,8 +19,8 @@
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
-- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 2 + cleanup** — مخطط Prisma + ترحيلان لقاعدة البيانات (جداول المستخدمين/الجلسات/KYC/السجلات + إصلاح phone optional و audit_logs)؛ **لم تُنفّذ** بعد خدمات auth أو KYC أو BFF.
-- **آخر تحديث للذاكرة**: 2026-05-06 (جلسة 18 — Phase 2 M2 Cleanup)
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 3 (Shared Backend Infrastructure)** — messaging abstraction + mock outbox + AuditService + error helpers + تحسينات بسيطة storage/redis؛ **لم تُنفّذ** بعد خدمات auth أو KYC أو BFF.
+- **آخر تحديث للذاكرة**: 2026-05-06 (جلسة 19 — Phase 2 M3 Shared Infrastructure)
 - **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -162,6 +162,7 @@
 - [x] **Milestone 2 (DB فقط)**: إزالة `M1Placeholder` — جداول `users`, `host_profiles`, `kyc_submissions`, `auth_sessions`, `otp_codes`, `two_factor_secrets`, `audit_logs` + كل الـ enums المطلوبة لـ Phase 2؛ `@@map`/`@map` لـ snake_case؛ مفاتيح UUID؛ فهارس (بما فيها `LOWER(email)` و`phone` للمستخدمين غير المحذوفين) + تريجر append-only لـ `audit_logs` + `pgcrypto` + `postgis` في الترحيل `20250506120000_phase2_core_auth_tables` ✓ 2026-05-06
 - [x] **Milestone 2 Cleanup**: `users.phone` صار اختيارياً ليتوافق مع guest signup الحالي؛ فهرس الهاتف unique جزئي فقط عند وجود phone؛ `audit_logs` أضيف لها `actor_role`, `request_id`, `before`, `after` + تحويل `actor_ip` إلى `INET`; تحديث `apps/api/README.md` من M1 إلى M2؛ الترحيل `20250506133000_m2_schema_cleanup` ✓ 2026-05-06
 - [x] **أداة الترحيل**: `prisma:migrate` في `apps/api/package.json` أصبحت `prisma migrate deploy` (غير تفاعلي؛ مناسب لـ CI/السكربتات)
+- [x] **Milestone 3 (Shared Infra فقط)**: `shared/messaging` provider-agnostic مع `MockMessageProvider` يكتب إلى `.dev-outbox` + `WhatsAppProvider` stub مع `NotImplementedException`؛ `shared/audit` (`AuditModule` + `AuditService.write()` مطابق لـ M2 cleanup schema)؛ `shared/errors/api-error.helpers.ts` + تمرير `details` في GlobalExceptionFilter؛ تحسينات منخفضة المخاطر فقط في `StorageService` (`ensureBucketExists` + `buildKycObjectKey`) و`RedisService` (`buildKey`, `setJson`, `getJson`) + env vars الجديدة (`MESSAGE_PROVIDER`, `DEV_OUTBOX_DIR`, `REDIS_KEY_PREFIX`) ✓ 2026-05-06
 - [ ] خدمات ووحدات تحكم Auth + JWT + sessions فعلية
 - [ ] KYC flow + رفع الملفات + مسارات الإدمن
 - [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
@@ -197,6 +198,51 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-06 (جلسة 19 — Phase 2 Milestone 3: Shared Backend Infrastructure)
+**الـ AI المستخدم**: Codex
+
+**السياق**: تنفيذ M3 فقط حسب القيود: بدون أي تعديل على `apps/web`، بدون Auth/KYC endpoints، بدون BFF routes، وبدون SMS/WhatsApp فعلي.
+
+**ما تم تنفيذه**:
+1. **Messaging abstraction** تحت `apps/api/src/shared/messaging/`:
+   - `message-provider.interface.ts`: واجهة عامة قنواتها `email` و`phone` (بدون hard-code SMS naming).
+   - `mock-message.provider.ts`: يكتب الرسائل إلى `apps/api/.dev-outbox/*.json`.
+   - `whatsapp.provider.ts`: stub مع `NotImplementedException` (`WHATSAPP_PROVIDER_DISABLED`).
+   - `messaging.module.ts` + `messaging.service.ts` + token provider؛ الاختيار عبر `MESSAGE_PROVIDER` (افتراضي `mock`).
+2. **Audit module** تحت `apps/api/src/shared/audit/`:
+   - `AuditModule`, `AuditService`, `AuditWriteInput`.
+   - `AuditService.write()` يدعم الحقول المطلوبة كلها: `actorUserId`, `actorRole`, `actorIp`, `userAgent`, `requestId`, `action`, `entityType`, `entityId`, `before`, `after`, `metadata`.
+   - الربط مطابق لأسماء Prisma بعد M2 cleanup (`beforeJson`/`afterJson`).
+3. **Error helpers**:
+   - إضافة `apps/api/src/shared/errors/api-error.helpers.ts` (typed, lightweight).
+   - تحديث `GlobalExceptionFilter` لتمرير `details` عند وجودها مع نفس الشكل القياسي.
+4. **Storage/Redis (minimal only)**:
+   - `StorageService`: `ensureBucketExists()` + `buildKycObjectKey()`.
+   - `RedisService`: `buildKey()`, `setJson()`, `getJson()` مع prefix من env.
+5. **Wiring + Docs**:
+   - `app.module.ts`: إضافة `MessagingModule` و`AuditModule`.
+   - تحديث `.env.example` بالقيم الجديدة.
+   - تحديث `apps/api/README.md` إلى Milestone 3 + أوامر تحقق يدوية.
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter api prisma:generate` → نجاح.
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- تحقق mock provider فعلياً:
+  - تشغيل `MockMessageProvider.send(...)` عبر `ts-node` نجح.
+  - تم إنشاء ملف: `apps/api/.dev-outbox/2026-05-06T09-41-16.778Z-bde38c27-aac1-4894-9b78-dd07eadca39d.json`.
+- `npx pnpm@9.15.4 db:status` → فشل بيئي (`P1001`): PostgreSQL local غير متاح لأن Docker daemon غير شغال (`dockerDesktopLinuxEngine` pipe not found).
+- تحقق `AuditService.write()` على DB مؤجَّل لنفس السبب البيئي (عدم توفر PostgreSQL حالياً)، وأمر التحقق موثّق في README.
+
+**قيود مُلتزم بها**:
+- لم يتم تعديل `apps/web`.
+- لم يتم تنفيذ Auth/KYC endpoints أو BFF routes.
+- لا يوجد logging للـ OTP codes/secrets في أي كود جديد؛ mock outbox فقط يحفظ body محلياً في ملفات dev.
+
+**النتيجة**: M3 مكتمل على مستوى الكود والبناء/lint، مع blocker بيئي واحد محلي (Docker/Postgres) يمنع `db:status` والتحقق الفعلي لكتابة `audit_logs` حتى تشغيل Docker.
+
+---
 
 **التاريخ**: 2026-05-06 (جلسة 18 — Phase 2 Milestone 2 Cleanup)
 **الـ AI المستخدم**: Codex
