@@ -422,9 +422,9 @@ When generating UI code:
 
 ## 14. Phase Awareness
 
-Currently in: **Phase 0 → Phase 1** (foundation, public website skeleton).
+Currently in: **Phase 2** (Backend Foundation + Auth + KYC). Phase 1 + 1.5 are complete as public UI skeleton with mock data.
 
-When generating code, ensure it matches the current phase scope. Don't build Phase 5 features in Phase 1. If a request seems to require future-phase work, flag it and ask Mohammad whether to:
+When generating code, ensure it matches the current phase scope. Don't build Phase 5 features during Phase 2. If a request seems to require future-phase work, flag it and ask Mohammad whether to:
 - Build it now (re-prioritize)
 - Stub it for later (placeholder)
 - Reject (out of scope)

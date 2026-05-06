@@ -39,6 +39,8 @@ You can show a friend the visual mockups and they understand both the Real Estat
 ## 🟢 PHASE 1 — Public Website Skeleton (UI Only, Mock Data)
 **Estimated:** 3–4 weeks (longer than v1 because of dual systems)
 
+**Status 2026-05-05:** Complete for Phase 1 scope. Deferred items below are intentional non-blockers for Phase 2: i18n/English, service worker, real MapLibre integration, final imagery, and staging deploy.
+
 ### Deliverables
 - [x] Next.js App Router + TypeScript + Tailwind + shadcn/ui (using Next.js 16 + Tailwind v4 instead of Next 14 / Tailwind v3)
 - [ ] i18n with `next-intl`: full Arabic (RTL) + English (LTR)

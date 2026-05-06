@@ -18,10 +18,10 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 1 (UI skeleton) منجز فعلياً — جاهز للانتقال لـ Phase 2 (Backend Foundation + Auth + KYC)
-- **آخر مرحلة مكتملة**: Phase 1 + 1.5 — كل الصفحات العامة + Hero responsive (Drawer موبايل) + إصلاح overlap الـ Navbar الموبايل + sticky search header. البنود المؤجلة بوضوح: i18n / next-intl، service worker، MapLibre الحقيقي، deploy staging.
-- **آخر تحديث للذاكرة**: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish)
-- **آخر AI عمل على المشروع**: Cursor (Claude Opus 4.7)
+- **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 2 + cleanup** — مخطط Prisma + ترحيلان لقاعدة البيانات (جداول المستخدمين/الجلسات/KYC/السجلات + إصلاح phone optional و audit_logs)؛ **لم تُنفّذ** بعد خدمات auth أو KYC أو BFF.
+- **آخر تحديث للذاكرة**: 2026-05-06 (جلسة 18 — Phase 2 M2 Cleanup)
+- **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
@@ -158,7 +158,14 @@
 - [x] **Mock data جديد**: `data/help-faq.ts` (6 categories + 15 سؤال) و `data/hosts.ts` (5 hosts + findHost + format helpers) ✓ 2026-05-04
 
 ### Phase 2 — Backend Foundation + Auth + KYC
-- لم يبدأ بعد
+- [x] **Milestone 1 (apps/api)**: NestJS + Prisma + Zod env + Pino + Swagger + `GET /v1/health` (Probes: DB/Redis/MinIO) — نموذج `M1Placeholder` مؤقت ✓ (يُستبدل بـ M2)
+- [x] **Milestone 2 (DB فقط)**: إزالة `M1Placeholder` — جداول `users`, `host_profiles`, `kyc_submissions`, `auth_sessions`, `otp_codes`, `two_factor_secrets`, `audit_logs` + كل الـ enums المطلوبة لـ Phase 2؛ `@@map`/`@map` لـ snake_case؛ مفاتيح UUID؛ فهارس (بما فيها `LOWER(email)` و`phone` للمستخدمين غير المحذوفين) + تريجر append-only لـ `audit_logs` + `pgcrypto` + `postgis` في الترحيل `20250506120000_phase2_core_auth_tables` ✓ 2026-05-06
+- [x] **Milestone 2 Cleanup**: `users.phone` صار اختيارياً ليتوافق مع guest signup الحالي؛ فهرس الهاتف unique جزئي فقط عند وجود phone؛ `audit_logs` أضيف لها `actor_role`, `request_id`, `before`, `after` + تحويل `actor_ip` إلى `INET`; تحديث `apps/api/README.md` من M1 إلى M2؛ الترحيل `20250506133000_m2_schema_cleanup` ✓ 2026-05-06
+- [x] **أداة الترحيل**: `prisma:migrate` في `apps/api/package.json` أصبحت `prisma migrate deploy` (غير تفاعلي؛ مناسب لـ CI/السكربتات)
+- [ ] خدمات ووحدات تحكم Auth + JWT + sessions فعلية
+- [ ] KYC flow + رفع الملفات + مسارات الإدمن
+- [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
+- [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
 
 ### Phase 3 — Real Estate System (End-to-End)
 - لم يبدأ بعد
@@ -190,6 +197,70 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-06 (جلسة 18 — Phase 2 Milestone 2 Cleanup)
+**الـ AI المستخدم**: Codex
+
+**السياق**: مراجعة شغل Cursor بعد انتقاله إلى Composer 2 بسبب limit. Codex راجع M2 كـ code review، اكتشف 3 مشاكل، ثم أصلحها مباشرة.
+
+**الإصلاحات**:
+1. `users.phone` صار nullable لأن guest signup الحالي لا يجمع رقم هاتف. فهرس الهاتف صار partial unique فقط عندما `phone IS NOT NULL AND deleted_at IS NULL`.
+2. `audit_logs` تقوّت لتطابق SECURITY.md §9.3: أضيفت `actor_role`, `request_id`, `before`, `after`، وتحول `actor_ip` إلى `INET`.
+3. `apps/api/README.md` حُدّث من حالة M1 القديمة إلى حالة M2 الحالية.
+4. تعليقات super-admin bootstrap في `.env.example` و `env.schema.ts` صارت تشير إلى M4 بدلاً من M2.
+
+**الترحيل الجديد**:
+- `apps/api/prisma/migrations/20250506133000_m2_schema_cleanup/migration.sql`
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter api exec prisma validate` → نجاح
+- `npx pnpm@9.15.4 db:migrate` → نجاح، طُبّق ترحيل cleanup
+- `npx pnpm@9.15.4 db:status` → قاعدة البيانات up to date، ترحيلان مطبقان
+- `npx pnpm@9.15.4 --filter api build` → نجاح
+- `npx pnpm@9.15.4 --filter api lint` → نجاح
+- `prisma.user.count()` → نجاح، `count 0`
+- فحص PostgreSQL أكد: `users.phone` nullable، فهرس الهاتف partial، و`audit_logs` تحتوي أعمدة before/after/request_id/actor_role وتريجر append-only.
+
+**ملاحظة باقية**:
+- `npx pnpm@9.15.4 --filter api prisma:generate` ما زال يفشل محلياً بـ `EPERM` على `query_engine-windows.dll.node`. هذا قفل Windows/Prisma DLL، وليس خطأ schema: `prisma validate`, migrations, build, lint, و`user.count()` تعمل. جرّبه بعد إغلاق Cursor/إيقاف Next dev أو إعادة تشغيل الجهاز.
+
+**النتيجة**: مشاكل review الثلاثة مغلقة. يمكن الانتقال إلى M3 بعد حل قفل `prisma:generate` محلياً أو قبول أنه عطل بيئي مؤقت.
+
+---
+
+**التاريخ**: 2026-05-06 (جلسة 17 — Phase 2 Milestone 2: مخطط قاعدة البيانات + أول migration)
+**الـ AI المستخدم**: Cursor (Agent)
+
+**السياق**: تنفيذ نطاق **Milestone 2 فقط**: مخطط Prisma الكامل لجدول المستخدمين والمصادقة الأساسي و KYC وسجل التدقيق، مع أول ملف ترحيل؛ **بدون** Auth services/controllers أو KYC أو BFF أو واجهة إدمن. بذور super-admin مؤجّلة لـ Milestone 4.
+
+**ما تم**:
+1. `apps/api/prisma/schema.prisma`: نماذج PascalCase + enums (`user_status`, `user_experience`, `host_category`, `host_subtype`, `withdrawal_schedule`, `kyc_doc_type`, `kyc_status`, `otp_purpose`, `otp_channel`)؛ عمود `login_intent` في `auth_sessions` يستخدم `user_experience` (لم يُضف enum منفصل).
+2. `apps/api/prisma/migrations/20250506120000_phase2_core_auth_tables/migration.sql`: امتدادات `pgcrypto` و `postgis`؛ فهارس جزئية وفريدة للبريد/الهاتف؛ فهرس جلسات نشطة؛ فهارس OTP/KYC/Audit؛ تريجر منع UPDATE/DELETE على `audit_logs`؛ `REVOKE` تجريبي على `PUBLIC`.
+3. `apps/api/package.json`: `"prisma:migrate": "prisma migrate deploy"`.
+
+**التحقق**: يُفترض تشغيل `db:migrate`, `db:status`, `prisma:generate`, `build`, `lint`، و`prisma.user.count()` بعد إصلاح قفل PostgreSQL/Prisma محلياً إن وُجد.
+
+---
+
+**التاريخ**: 2026-05-05 (جلسة 16 — Phase 1 Closure / MapLibre Decision)
+**الـ AI المستخدم**: Codex
+
+**السياق**: محمد اعتمد MapLibre بدل Mapbox، وطلب التأكد أن Phase 1 انتهت فعلياً قبل الانتقال إلى Phase 2.
+
+**القرارات والتحديثات**:
+1. اعتماد MapLibre GL JS كخيار الخرائط الرسمي للمشروع، مع OSM-based tiles أو مزود tiles لاحقاً.
+2. توحيد كل مراجع Mapbox القديمة إلى MapLibre في: `ai_memory.md`, `docs/BUILD_PLAN.md`, `docs/UI_UX_VISION.md`, `apps/web/components/home/MapExplorer.tsx`.
+3. تحديث حالة المشروع إلى Phase 2 في `ai_memory.md` و `.cursor/rules/suknaa.mdc`.
+4. توثيق أن البنود المؤجلة من Phase 1 ليست blockers: i18n/English، service worker، MapLibre الحقيقي، الصور النهائية، staging deploy.
+
+**التحقق النهائي قبل Phase 2**:
+- `npx pnpm@9.15.4 --filter web lint` → نجاح
+- `npx pnpm@9.15.4 --filter web build` → نجاح (33 route)
+- `npx pnpm@9.15.4 audit` → لا ثغرات معروفة
+
+**النتيجة**: Phase 1 + 1.5 مغلقتان كـ UI skeleton ببيانات mock. المشروع جاهز لبدء Phase 2: Backend Foundation + Auth + KYC.
+
+---
 
 **التاريخ**: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish)
 **الـ AI المستخدم**: Cursor (Claude)
@@ -937,4 +1008,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-05 (جلسة 15 — Codex Audit Fixes / Phase 1 Polish).**
+**نهاية الملف. آخر تحديث: 2026-05-06 (جلسة 18 — Phase 2 M2 Cleanup).**

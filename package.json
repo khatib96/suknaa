@@ -11,6 +11,13 @@
     "dev": "npx pnpm@9.15.4 --filter web dev",
     "build": "npx pnpm@9.15.4 --filter web build",
     "lint": "npx pnpm@9.15.4 --filter web lint",
-    "start": "npx pnpm@9.15.4 --filter web start"
+    "start": "npx pnpm@9.15.4 --filter web start",
+    "dev:api": "npx pnpm@9.15.4 --filter api dev",
+    "build:api": "npx pnpm@9.15.4 --filter api build",
+    "lint:api": "npx pnpm@9.15.4 --filter api lint",
+    "start:api": "npx pnpm@9.15.4 --filter api start",
+    "db:generate": "npx pnpm@9.15.4 --filter api prisma:generate",
+    "db:migrate": "npx pnpm@9.15.4 --filter api prisma:migrate",
+    "db:status": "npx pnpm@9.15.4 --filter api prisma:status"
   }
 }

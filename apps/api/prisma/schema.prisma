@@ -1,0 +1,293 @@
+// Suknaa Phase 2 — core auth / users / KYC tables (see docs/DATABASE_SCHEMA.md §A1).
+//
+// DB naming: snake_case tables/columns via @@map / @map.
+// Additional partial & expression indexes live in the first migration SQL (Prisma cannot declare them in schema).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active                 @map("active")
+  suspended              @map("suspended")
+  pending_verification   @map("pending_verification")
+  banned                 @map("banned")
+
+  @@map("user_status")
+}
+
+enum UserExperience {
+  guest @map("guest")
+  host  @map("host")
+  admin @map("admin")
+
+  @@map("user_experience")
+}
+
+enum HostCategory {
+  real_estate   @map("real_estate")
+  hospitality @map("hospitality")
+
+  @@map("host_category")
+}
+
+enum HostSubtype {
+  individual         @map("individual")
+  real_estate_office @map("real_estate_office")
+  hotel_company      @map("hotel_company")
+
+  @@map("host_subtype")
+}
+
+enum WithdrawalSchedule {
+  weekly  @map("weekly")
+  monthly @map("monthly")
+  manual  @map("manual")
+
+  @@map("withdrawal_schedule")
+}
+
+enum KycDocType {
+  national_id    @map("national_id")
+  passport       @map("passport")
+  driver_license @map("driver_license")
+
+  @@map("kyc_doc_type")
+}
+
+enum KycStatus {
+  pending  @map("pending")
+  approved @map("approved")
+  rejected @map("rejected")
+  expired  @map("expired")
+
+  @@map("kyc_status")
+}
+
+enum OtpPurpose {
+  login                @map("login")
+  password_reset       @map("password_reset")
+  email_verification   @map("email_verification")
+  phone_verification @map("phone_verification")
+  two_factor           @map("two_factor")
+  change_email         @map("change_email")
+  change_phone         @map("change_phone")
+
+  @@map("otp_purpose")
+}
+
+enum OtpChannel {
+  phone @map("phone")
+  email @map("email")
+
+  @@map("otp_channel")
+}
+
+model User {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email  String @map("email") @db.VarChar(255)
+  emailVerified  Boolean @default(false) @map("email_verified")
+  phone  String? @map("phone") @db.VarChar(20)
+  phoneVerified  Boolean @default(false) @map("phone_verified")
+  passwordHash   String @map("password_hash") @db.VarChar(255)
+  fullName       String @map("full_name") @db.VarChar(150)
+  avatarUrl      String? @map("avatar_url") @db.VarChar(500)
+  preferredLanguage String @default("ar") @map("preferred_language") @db.VarChar(5)
+  timezone       String @default("Asia/Damascus") @map("timezone") @db.VarChar(50)
+
+  isGuest      Boolean @default(true) @map("is_guest")
+  isHost       Boolean @default(false) @map("is_host")
+  isAdmin      Boolean @default(false) @map("is_admin")
+  isSuperAdmin Boolean @default(false) @map("is_super_admin")
+
+  lastLoginAs UserExperience @default(guest) @map("last_login_as")
+  status      UserStatus      @default(active) @map("status")
+
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(3)
+  lastLoginIp String?   @map("last_login_ip") @db.Inet
+
+  marketingOptIn Boolean @default(false) @map("marketing_opt_in")
+
+  averageRatingAsGuest Decimal? @map("average_rating_as_guest") @db.Decimal(3, 2)
+  totalReviewsAsGuest  Int      @default(0) @map("total_reviews_as_guest")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  hostProfile       HostProfile?
+  kycSubmissions    KycSubmission[] @relation("KycSubmissionUser")
+  kycReviewed       KycSubmission[] @relation("KycReviewedBy")
+  authSessions      AuthSession[]
+  otpCodes          OtpCode[]
+  twoFactorSecret   TwoFactorSecret?
+  auditLogsAsActor  AuditLog[]      @relation("AuditLogActor")
+
+  @@map("users")
+}
+
+model HostProfile {
+  userId String @id @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  hostCategory HostCategory @map("host_category")
+  hostSubtype  HostSubtype  @map("host_subtype")
+
+  displayName          String  @map("display_name") @db.VarChar(200)
+  companyName          String? @map("company_name") @db.VarChar(200)
+  companyRegistration  String? @map("company_registration") @db.VarChar(100)
+  taxId                String? @map("tax_id") @db.VarChar(100)
+  bioAr                String? @map("bio_ar")
+  bioEn                String? @map("bio_en")
+
+  responseRate       Int? @map("response_rate") @db.SmallInt
+  responseTimeMinutes Int? @default(0) @map("response_time_minutes")
+  acceptanceRate     Int? @map("acceptance_rate") @db.SmallInt
+
+  reTotalListings Int @default(0) @map("re_total_listings")
+  hotelTotal      Int @default(0) @map("hotel_total")
+  totalBookings   Int @default(0) @map("total_bookings")
+
+  averageRating Decimal? @map("average_rating") @db.Decimal(3, 2)
+  totalReviews  Int      @default(0) @map("total_reviews")
+
+  isVerified Boolean   @default(false) @map("is_verified")
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz(3)
+
+  withdrawalSchedule WithdrawalSchedule @default(monthly) @map("withdrawal_schedule")
+  bankDetailsEncrypted String? @map("bank_details_encrypted")
+
+  suspiciousActivityScore Int       @default(0) @map("suspicious_activity_score") @db.SmallInt
+  lastFlaggedAt           DateTime? @map("last_flagged_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("host_profiles")
+}
+
+model KycSubmission {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation("KycSubmissionUser", fields: [userId], references: [id], onDelete: Restrict)
+
+  intendedHostCategory HostCategory? @map("intended_host_category")
+  intendedHostSubtype  HostSubtype?  @map("intended_host_subtype")
+
+  idDocumentType KycDocType @map("id_document_type")
+  idFrontUrl     String     @map("id_front_url") @db.VarChar(500)
+  idBackUrl      String?    @map("id_back_url") @db.VarChar(500)
+  selfieUrl      String     @map("selfie_url") @db.VarChar(500)
+
+  ownershipProofUrl        String? @map("ownership_proof_url") @db.VarChar(500)
+  companyRegistrationUrl   String? @map("company_registration_url") @db.VarChar(500)
+  taxCertificateUrl        String? @map("tax_certificate_url") @db.VarChar(500)
+  authorizationLetterUrl   String? @map("authorization_letter_url") @db.VarChar(500)
+  hotelLicenseUrl          String? @map("hotel_license_url") @db.VarChar(500)
+
+  status           KycStatus @default(pending) @map("status")
+  rejectionReason  String?   @map("rejection_reason")
+  reviewedByUserId String?   @map("reviewed_by") @db.Uuid
+  reviewedByUser   User?     @relation("KycReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz(3)
+  submittedAt      DateTime  @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(3)
+
+  @@index([status, submittedAt(sort: Desc)], map: "idx_kyc_submissions_admin_queue")
+  @@map("kyc_submissions")
+}
+
+model AuthSession {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshTokenHash String @map("refresh_token_hash") @db.VarChar(128)
+  loginIntent      UserExperience @map("login_intent")
+  rememberMe       Boolean        @default(false) @map("remember_me")
+
+  userAgent String? @map("user_agent")
+  ipAddress String? @map("ip_address") @db.Inet
+
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(3)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  /// Partial index idx_auth_sessions_active_by_user: see migration SQL (revoked_at IS NULL).
+  @@index([userId], map: "idx_auth_sessions_user_id")
+  @@map("auth_sessions")
+}
+
+model OtpCode {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  purpose OtpPurpose @map("purpose")
+  channel OtpChannel @map("channel")
+
+  /// Normalized destination for indexing (E.164 phone or lowercased email).
+  deliveryTarget String @map("delivery_target") @db.VarChar(255)
+  codeHash       String @map("code_hash") @db.VarChar(255)
+
+  attemptsCount Int       @default(0) @map("attempts_count") @db.SmallInt
+  lockedUntil   DateTime? @map("locked_until") @db.Timestamptz(3)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt    DateTime? @map("consumed_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_otp_codes_user_created")
+  @@index([deliveryTarget, channel, createdAt(sort: Desc)], map: "idx_otp_codes_rate_limit")
+  @@index([expiresAt], map: "idx_otp_codes_expires_at")
+  @@map("otp_codes")
+}
+
+model TwoFactorSecret {
+  userId String @id @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  totpSecretEncrypted String? @map("totp_secret_encrypted")
+  backupCodesHashes   Json    @default("[]") @map("backup_codes_hashes")
+
+  enabledAt  DateTime? @map("enabled_at") @db.Timestamptz(3)
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("two_factor_secrets")
+}
+
+model AuditLog {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  actorUser   User?   @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  actorRole String? @map("actor_role") @db.VarChar(50)
+  actorIp   String? @map("actor_ip") @db.Inet
+  userAgent String? @map("user_agent")
+  requestId String? @map("request_id") @db.VarChar(100)
+
+  action     String  @map("action") @db.VarChar(120)
+  entityType String  @map("entity_type") @db.VarChar(120)
+  entityId   String? @map("entity_id") @db.Uuid
+
+  beforeJson Json? @map("before") @db.JsonB
+  afterJson  Json? @map("after") @db.JsonB
+  metadata Json @map("metadata") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([actorUserId, createdAt(sort: Desc)], map: "idx_audit_logs_actor_created")
+  @@index([entityType, entityId], map: "idx_audit_logs_entity")
+  @@index([createdAt(sort: Desc)], map: "idx_audit_logs_created_at")
+  @@map("audit_logs")
+}
