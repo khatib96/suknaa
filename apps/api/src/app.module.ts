@@ -10,6 +10,7 @@ import { StorageModule } from "./shared/storage/storage.module";
 import { MessagingModule } from "./shared/messaging/messaging.module";
 import { AuditModule } from "./shared/audit/audit.module";
 import { HealthModule } from "./modules/health/health.module";
+import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { HealthModule } from "./modules/health/health.module";
     MessagingModule,
     AuditModule,
     HealthModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

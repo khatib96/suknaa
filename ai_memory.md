@@ -19,8 +19,8 @@
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
-- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 3 (Shared Backend Infrastructure)** — messaging abstraction + mock outbox + AuditService + error helpers + تحسينات بسيطة storage/redis؛ **لم تُنفّذ** بعد خدمات auth أو KYC أو BFF.
-- **آخر تحديث للذاكرة**: 2026-05-06 (جلسة 19 — Phase 2 M3 Shared Infrastructure)
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 4 (Auth Core)** — shared auth schemas + PasswordService/BreachChecker/TokensService + Auth endpoints + email verification via otp_codes + refresh rotation + sessions + `/v1/me` + audit auth events.
+- **آخر تحديث للذاكرة**: 2026-05-06 (جلسة 22 — Phase 2 M4 Cleanup)
 - **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -163,7 +163,7 @@
 - [x] **Milestone 2 Cleanup**: `users.phone` صار اختيارياً ليتوافق مع guest signup الحالي؛ فهرس الهاتف unique جزئي فقط عند وجود phone؛ `audit_logs` أضيف لها `actor_role`, `request_id`, `before`, `after` + تحويل `actor_ip` إلى `INET`; تحديث `apps/api/README.md` من M1 إلى M2؛ الترحيل `20250506133000_m2_schema_cleanup` ✓ 2026-05-06
 - [x] **أداة الترحيل**: `prisma:migrate` في `apps/api/package.json` أصبحت `prisma migrate deploy` (غير تفاعلي؛ مناسب لـ CI/السكربتات)
 - [x] **Milestone 3 (Shared Infra فقط)**: `shared/messaging` provider-agnostic مع `MockMessageProvider` يكتب إلى `.dev-outbox` + `WhatsAppProvider` stub مع `NotImplementedException`؛ `shared/audit` (`AuditModule` + `AuditService.write()` مطابق لـ M2 cleanup schema)؛ `shared/errors/api-error.helpers.ts` + تمرير `details` في GlobalExceptionFilter؛ تحسينات منخفضة المخاطر فقط في `StorageService` (`ensureBucketExists` + `buildKycObjectKey`) و`RedisService` (`buildKey`, `setJson`, `getJson`) + env vars الجديدة (`MESSAGE_PROVIDER`, `DEV_OUTBOX_DIR`, `REDIS_KEY_PREFIX`) ✓ 2026-05-06
-- [ ] خدمات ووحدات تحكم Auth + JWT + sessions فعلية
+- [x] **Milestone 4 (Auth Core)**: shared auth schemas في `packages/types`; `PasswordService` (argon2id: 64MB/3/4) + mock `PasswordBreachChecker`; strict RS256 keys required (`JWT_PRIVATE_KEY_PATH`, `JWT_PUBLIC_KEY_PATH`) + `TokensService` (access 15m + opaque refresh 256-bit hashed); `AuthModule/AuthController/AuthService` endpoints (`signup`, `verify-email`, `login`, `refresh`, `logout`, `logout-all`, `sessions`, `revoke session`, `/v1/me`); email verification عبر `otp_codes` (`purpose=email_verification`, `channel=email`, `delivery_target=email`, `code_hash` long opaque token); refresh rotation مع revoke session القديم؛ audit events (`auth.signup`, `auth.email_verified`, `auth.login`, `auth.refresh`, `auth.logout`, `auth.logout_all`, `auth.session_revoked`) ✓ 2026-05-06
 - [ ] KYC flow + رفع الملفات + مسارات الإدمن
 - [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
@@ -198,6 +198,113 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-06 (جلسة 22 — Phase 2 M4 Cleanup)
+**الـ AI المستخدم**: Codex
+
+**السياق**: تنفيذ Cleanup لـ M4 فقط (بدون بدء M5) لإغلاق 3 ملاحظات مراجعة: alias runtime، build/start output، وتوحيد auth schemas مع `@suknaa/types`.
+
+**ما تم تنفيذه**:
+1. **Fix alias runtime**:
+   - استبدال كل استيرادات `@/...` داخل `apps/api/src/modules/auth/**` إلى relative imports محافظة.
+   - النتيجة: سكربت `manual-m4-verify.ts` يعمل بدون `Cannot find module '@/...'`.
+2. **Fix build/start output**:
+   - تحديث `apps/api/package.json`:
+     - `prebuild` أصبح يحذف `dist` و `tsconfig.build.tsbuildinfo`.
+   - التحقق أكد وجود `apps/api/dist/main.js` بعد `build`.
+3. **Shared auth schemas source**:
+   - جعل `apps/api/src/modules/auth/auth.schemas.ts` re-export فقط من `@suknaa/types`.
+   - تحديث `packages/types/src/schemas/auth.ts` ليتطابق مع سلوك M4:
+     - `fullName` optional في signup.
+     - email normalization إلى lowercase.
+     - بدون phone في signup.
+   - جعل `@suknaa/types` قابلة للاستهلاك runtime عبر build outputs (`dist`) مع `tsconfig.json` وسكربت build.
+4. **Workspace wiring**:
+   - إضافة dependency `@suknaa/types` إلى `apps/api`.
+   - تعديل `apps/api` build script ليبني `@suknaa/types` قبل `nest build`.
+5. **Fix API route prefix**:
+   - تصحيح `AuthController` من `@Controller("v1")` إلى `@Controller()` لأن `main.ts` يضع `app.setGlobalPrefix("v1")`.
+   - النتيجة: `POST /v1/auth/signup` أصبح يصل إلى controller، و `POST /v1/v1/auth/signup` أصبح `404`.
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter api prisma:generate` → نجاح.
+- `npx pnpm@9.15.4 db:status` → clean.
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `Test-Path apps/api/dist/main.js` → `True`.
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- `npx pnpm@9.15.4 --filter api exec ts-node scripts/manual-m4-verify.ts` (مع env keys) → نجاح.
+- `npx pnpm@9.15.4 --filter api start` (مع env keys) → boot success confirmed ثم إيقاف العملية.
+- Route smoke test: `/v1/health` => 200, `/v1/auth/signup` => 400 validation, `/v1/v1/auth/signup` => 404.
+
+**قيود مُلتزم بها**:
+- لا تعديل على `apps/web`.
+- لا OTP/2FA/KYC/BFF.
+- لا migration.
+- لا بدء M5.
+
+---
+
+**التاريخ**: 2026-05-06 (جلسة 21 — Phase 2 Milestone 4: Auth Core)
+**الـ AI المستخدم**: Codex
+
+**السياق**: تنفيذ M4 فقط حسب خطة Mohammad: داخل `apps/api` و`packages/types` فقط، RS256 إجباري بدون fallback، email verification عبر `otp_codes` + mock outbox، وتسجيل audit للأحداث الحساسة.
+
+**ما تم تنفيذه**:
+1. **Shared schemas**:
+   - إنشاء `packages/types/src/schemas/auth.ts` + `packages/types/src/index.ts`.
+   - تحديث `packages/types/package.json` لإضافة `zod`.
+2. **Security services**:
+   - `PasswordService` (argon2id بالإعدادات المعتمدة).
+   - `PasswordBreachChecker` interface + `MockPasswordBreachCheckerService`.
+   - `TokensService` (RS256 access token claims minimal + opaque refresh token generation).
+   - تحديث `env.schema.ts` لفرض وجود مفاتيح RSA.
+   - تحديث `.env.example` مع تعليمات local key generation.
+3. **Auth module/endpoints**:
+   - إنشاء `modules/auth` (controller/service/module/guard/strategy/current-user decorator/schemas/types).
+   - endpoints: `POST /v1/auth/signup`, `POST /v1/auth/verify-email`, `POST /v1/auth/login`, `POST /v1/auth/refresh`, `POST /v1/auth/logout`, `POST /v1/auth/logout-all`, `GET /v1/auth/sessions`, `DELETE /v1/auth/sessions/:id`, `GET /v1/me`.
+   - إضافة `AuthModule` إلى `AppModule`.
+4. **Email verification + sessions + audit**:
+   - email token طويل opaque، لا يُخزّن raw (hashed في `otp_codes.code_hash`).
+   - mock message يُكتب إلى `.dev-outbox`.
+   - `auth_sessions.refresh_token_hash` يُخزّن hash فقط.
+   - refresh rotation تلغي session القديمة.
+   - session listing لا تُظهر refresh hash.
+   - audit actions تُكتب عبر `AuditService.write()`.
+5. **Manual verification script**:
+   - `apps/api/scripts/manual-m4-verify.ts` ينفّذ lifecycle كامل auth ويتحقق من hash/rotation/audit.
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter api prisma:generate` → نجاح.
+- `npx pnpm@9.15.4 db:status` → clean.
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- `npx pnpm@9.15.4 --filter api exec ts-node -r tsconfig-paths/register scripts/manual-m4-verify.ts` → نجاح:
+  - outbox verification message موجود.
+  - `refresh_token_hash` ليس raw token.
+  - old session revoked بعد refresh.
+  - auth audit events موجودة (count=5 في فحص السكربت).
+
+**القيود المُلتزم بها**:
+- لم يتم تعديل `apps/web`.
+- لا OTP/2FA/KYC endpoints.
+- لا WhatsApp/HIBP حقيقي.
+- لا migration جديدة.
+
+---
+
+**التاريخ**: 2026-05-06 (جلسة 20 — Phase 2 Tracker)
+**الـ AI المستخدم**: Codex
+
+**السياق**: محمد طلب ملفاً واضحاً يوضح مراحل Phase 2 حتى يعرف أين وصل المشروع قبل الانتقال إلى M4.
+
+**ما تم**:
+- إنشاء `docs/PHASE_2_TRACKER.md`.
+- الملف يوضح حالة Phase 2: M1, M2, M2 cleanup, M3 مكتملة؛ M4 هو التالي.
+- يضم جدول milestones من M1 إلى M10، أوامر التحقق القياسية، نطاق M4، وشروط إغلاق M4.
+
+**النتيجة**: صار لدى محمد مرجع واحد سريع لمتابعة Phase 2 قبل كل جلسة Cursor/Codex.
+
+---
 
 **التاريخ**: 2026-05-06 (جلسة 19 — Phase 2 Milestone 3: Shared Backend Infrastructure)
 **الـ AI المستخدم**: Codex
@@ -1054,4 +1161,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-06 (جلسة 18 — Phase 2 M2 Cleanup).**
+**نهاية الملف. آخر تحديث: 2026-05-06 (جلسة 22 — Phase 2 M4 Cleanup).**

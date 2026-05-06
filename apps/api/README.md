@@ -2,7 +2,7 @@
 
 NestJS backend for Suknaa. In production it will live behind `api.suknaa.com`; locally it runs on port `3001` and is reached by the public web app through the Next.js BFF (`apps/web/app/api/*`).
 
-## Phase 2 Status - Milestone 3 of 10
+## Phase 2 Status - Milestone 4 of 10
 
 Milestone 1 scaffolded the NestJS API, Zod env validation, Pino logger, Swagger, Prisma/Redis/MinIO shared services, and `GET /v1/health`.
 
@@ -16,7 +16,14 @@ Milestone 2 added the first Prisma schema and migrations for the Phase 2 core ta
 - `two_factor_secrets`
 - `audit_logs`
 
-No Auth/KYC services, controllers, BFF routes, or admin UI are implemented yet.
+Milestone 4 adds auth core in `src/modules/auth`:
+
+- Signup with optional phone and required email/password.
+- Email verification via `otp_codes` using a long opaque token hash.
+- Login, refresh rotation, logout, logout-all.
+- Session listing/revocation and `GET /v1/me`.
+- RS256 access tokens (15m) and opaque refresh sessions (hashed in DB).
+- Auth audit events via `AuditService.write()`.
 
 Milestone 3 adds shared backend infrastructure used by future Auth/KYC flows:
 
@@ -26,6 +33,8 @@ Milestone 3 adds shared backend infrastructure used by future Auth/KYC flows:
 - `AuditModule` + `AuditService.write()` backed by `audit_logs`
 - Typed API error helpers compatible with the global exception filter
 - Small low-risk helpers in `RedisService` and `StorageService`
+
+Milestone 5+ remains out of scope here (OTP/2FA/KYC/admin/BFF).
 
 See [docs/BUILD_PLAN.md](../../docs/BUILD_PLAN.md) Phase 2 for the milestone breakdown.
 
@@ -117,3 +126,21 @@ The repo currently has no real test harness for backend modules. Use the focused
    ```powershell
    npx pnpm@9.15.4 --filter api exec ts-node -e "import 'reflect-metadata'; import { NestFactory } from '@nestjs/core'; import { AppModule } from './src/app.module'; import { AuditService } from './src/shared/audit/audit.service'; (async () => { const app = await NestFactory.createApplicationContext(AppModule, { logger: false }); const audit = app.get(AuditService); const row = await audit.write({ actorRole: 'system', action: 'm3.manual_verify', entityType: 'audit_logs', metadata: { source: 'manual-check' } }); console.log('audit_log_id', row.id); await app.close(); })().catch((err) => { console.error(err); process.exit(1); });"
    ```
+
+## Milestone 4 Manual Verification
+
+Generate RSA keys once (from `apps/api`):
+
+```powershell
+mkdir keys
+openssl genrsa -out keys/jwt-private.pem 2048
+openssl rsa -in keys/jwt-private.pem -pubout -out keys/jwt-public.pem
+```
+
+Run full auth lifecycle verification (signup -> verify -> login -> refresh rotation -> logout -> me -> audit checks):
+
+```powershell
+$env:JWT_PRIVATE_KEY_PATH="./keys/jwt-private.pem"
+$env:JWT_PUBLIC_KEY_PATH="./keys/jwt-public.pem"
+npx pnpm@9.15.4 --filter api exec ts-node -r tsconfig-paths/register scripts/manual-m4-verify.ts
+```

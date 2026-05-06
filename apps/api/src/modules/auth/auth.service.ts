@@ -1,0 +1,583 @@
+import { randomUUID } from "node:crypto";
+import { Injectable } from "@nestjs/common";
+import { UserExperience, type AuthSession, type User } from "@prisma/client";
+import { ConfigService } from "@nestjs/config";
+import {
+  conflictError,
+  forbiddenError,
+  notFoundError,
+  unauthorizedError,
+} from "../../shared/errors/api-error.helpers";
+import { AuditService } from "../../shared/audit/audit.service";
+import { MessagingService } from "../../shared/messaging/messaging.service";
+import { PrismaService } from "../../shared/prisma/prisma.service";
+import { PasswordService } from "./services/password.service";
+import {
+  PASSWORD_BREACH_CHECKER,
+  type PasswordBreachChecker,
+} from "./services/password-breach-checker.interface";
+import { TokensService } from "./services/tokens.service";
+import type { AuthenticatedUser } from "./types/authenticated-user.type";
+import { Inject } from "@nestjs/common";
+import type { Env } from "../../shared/config/env.schema";
+
+interface RequestContext {
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  requestId?: string | null;
+}
+
+interface SignupInput {
+  fullName?: string;
+  email: string;
+  password: string;
+  preferredLanguage: "ar" | "en";
+  marketingOptIn: boolean;
+}
+
+interface LoginInput {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly passwordService: PasswordService,
+    @Inject(PASSWORD_BREACH_CHECKER)
+    private readonly passwordBreachChecker: PasswordBreachChecker,
+    private readonly tokensService: TokensService,
+    private readonly messagingService: MessagingService,
+    private readonly auditService: AuditService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
+
+  async signup(input: SignupInput, ctx: RequestContext): Promise<{ userId: string }> {
+    const email = input.email.toLowerCase();
+    const existing = await this.prisma.user.findFirst({
+      where: { email, deletedAt: null },
+      select: { id: true },
+    });
+    if (existing) {
+      throw conflictError({
+        code: "EMAIL_ALREADY_EXISTS",
+        message: "Email already exists",
+        message_en: "Email already exists",
+      });
+    }
+
+    await this.passwordBreachChecker.assertPasswordIsSafe(input.password);
+    const passwordHash = await this.passwordService.hashPassword(input.password);
+    const fullName = input.fullName?.trim() || this.deriveDefaultNameFromEmail(email);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        fullName,
+        preferredLanguage: input.preferredLanguage,
+        marketingOptIn: input.marketingOptIn,
+        isGuest: true,
+        isHost: false,
+        isAdmin: false,
+        isSuperAdmin: false,
+      },
+      select: { id: true, email: true },
+    });
+
+    await this.createEmailVerificationToken(user.id, user.email);
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.signup",
+      entityType: "users",
+      entityId: user.id,
+      metadata: { email },
+    });
+
+    return { userId: user.id };
+  }
+
+  async verifyEmail(
+    email: string,
+    token: string,
+    ctx: RequestContext,
+  ): Promise<{ verified: true }> {
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: { email: normalizedEmail, deletedAt: null },
+    });
+    if (!user) {
+      throw notFoundError({
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+        message_en: "User not found",
+      });
+    }
+
+    const candidates = await this.prisma.otpCode.findMany({
+      where: {
+        userId: user.id,
+        channel: "email",
+        purpose: "email_verification",
+        deliveryTarget: normalizedEmail,
+        consumedAt: null,
+        expiresAt: { gte: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+
+    let matchedCodeId: string | null = null;
+    for (const code of candidates) {
+      const matches = await this.passwordService.verifyOpaqueToken(code.codeHash, token);
+      if (matches) {
+        matchedCodeId = code.id;
+        break;
+      }
+    }
+
+    if (!matchedCodeId) {
+      throw unauthorizedError({
+        code: "TOKEN_EXPIRED",
+        message: "Invalid or expired verification token",
+        message_en: "Invalid or expired verification token",
+      });
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true },
+      }),
+      this.prisma.otpCode.update({
+        where: { id: matchedCodeId },
+        data: { consumedAt: new Date() },
+      }),
+    ]);
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.email_verified",
+      entityType: "users",
+      entityId: user.id,
+      metadata: { email: normalizedEmail },
+    });
+
+    return { verified: true };
+  }
+
+  async login(input: LoginInput, ctx: RequestContext) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: input.email.toLowerCase(), deletedAt: null },
+    });
+
+    if (!user) {
+      throw unauthorizedError({
+        code: "INVALID_CREDENTIALS",
+        message: "Invalid email or password",
+        message_en: "Invalid email or password",
+      });
+    }
+
+    const passwordValid = await this.passwordService.verifyPassword(
+      user.passwordHash,
+      input.password,
+    );
+    if (!passwordValid) {
+      throw unauthorizedError({
+        code: "INVALID_CREDENTIALS",
+        message: "Invalid email or password",
+        message_en: "Invalid email or password",
+      });
+    }
+
+    if (!user.emailVerified) {
+      throw forbiddenError({
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Email verification is required",
+        message_en: "Email verification is required",
+      });
+    }
+
+    const tokens = await this.issueAndPersistSession(user, input.rememberMe, ctx);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), lastLoginIp: ctx.ipAddress ?? null },
+    });
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.login",
+      entityType: "users",
+      entityId: user.id,
+      metadata: {},
+    });
+
+    return {
+      ...tokens,
+      user: this.toAuthUserPayload(user),
+    };
+  }
+
+  async refresh(refreshToken: string, ctx: RequestContext) {
+    const session = await this.resolveSessionFromRefreshToken(refreshToken);
+    if (!session) {
+      throw unauthorizedError({
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Invalid refresh token",
+        message_en: "Invalid refresh token",
+      });
+    }
+
+    if (session.revokedAt) {
+      throw unauthorizedError({
+        code: "SESSION_REVOKED",
+        message: "Session is revoked",
+        message_en: "Session is revoked",
+      });
+    }
+
+    if (session.expiresAt <= new Date()) {
+      throw unauthorizedError({
+        code: "TOKEN_EXPIRED",
+        message: "Refresh token expired",
+        message_en: "Refresh token expired",
+      });
+    }
+
+    const matches = await this.passwordService.verifyOpaqueToken(
+      session.refreshTokenHash,
+      refreshToken,
+    );
+    if (!matches) {
+      throw unauthorizedError({
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Invalid refresh token",
+        message_en: "Invalid refresh token",
+      });
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
+    if (!user || user.deletedAt) {
+      throw unauthorizedError({
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Invalid refresh token",
+        message_en: "Invalid refresh token",
+      });
+    }
+
+    const tokens = await this.issueAndPersistSession(user, session.rememberMe, ctx);
+
+    await this.prisma.authSession.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    });
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.refresh",
+      entityType: "auth_sessions",
+      entityId: session.id,
+      metadata: {},
+    });
+
+    return {
+      ...tokens,
+      user: this.toAuthUserPayload(user),
+    };
+  }
+
+  async logout(refreshToken: string, ctx: RequestContext): Promise<{ revoked: true }> {
+    const session = await this.resolveSessionFromRefreshToken(refreshToken);
+    if (!session) {
+      throw unauthorizedError({
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Invalid refresh token",
+        message_en: "Invalid refresh token",
+      });
+    }
+
+    if (session.revokedAt) {
+      throw unauthorizedError({
+        code: "SESSION_REVOKED",
+        message: "Session is revoked",
+        message_en: "Session is revoked",
+      });
+    }
+
+    const matches = await this.passwordService.verifyOpaqueToken(
+      session.refreshTokenHash,
+      refreshToken,
+    );
+    if (!matches) {
+      throw unauthorizedError({
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Invalid refresh token",
+        message_en: "Invalid refresh token",
+      });
+    }
+
+    await this.prisma.authSession.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    });
+
+    await this.auditService.write({
+      actorUserId: session.userId,
+      actorRole: null,
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.logout",
+      entityType: "auth_sessions",
+      entityId: session.id,
+      metadata: {},
+    });
+
+    return { revoked: true };
+  }
+
+  async logoutAll(user: AuthenticatedUser, ctx: RequestContext): Promise<{ revokedCount: number }> {
+    const result = await this.prisma.authSession.updateMany({
+      where: {
+        userId: user.sub,
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    await this.auditService.write({
+      actorUserId: user.sub,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.logout_all",
+      entityType: "auth_sessions",
+      entityId: null,
+      metadata: { revokedCount: result.count },
+    });
+
+    return { revokedCount: result.count };
+  }
+
+  async listSessions(user: AuthenticatedUser, limit: number) {
+    const sessions = await this.prisma.authSession.findMany({
+      where: { userId: user.sub },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        loginIntent: true,
+        rememberMe: true,
+        userAgent: true,
+        ipAddress: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        revokedAt: true,
+      },
+    });
+    return { sessions };
+  }
+
+  async revokeSession(
+    user: AuthenticatedUser,
+    sessionId: string,
+    ctx: RequestContext,
+  ): Promise<{ revoked: true }> {
+    const session = await this.prisma.authSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, userId: true, revokedAt: true },
+    });
+    if (!session || session.userId !== user.sub) {
+      throw notFoundError({
+        code: "SESSION_NOT_FOUND",
+        message: "Session not found",
+        message_en: "Session not found",
+      });
+    }
+    if (session.revokedAt) {
+      throw unauthorizedError({
+        code: "SESSION_REVOKED",
+        message: "Session is revoked",
+        message_en: "Session is revoked",
+      });
+    }
+
+    await this.prisma.authSession.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
+
+    await this.auditService.write({
+      actorUserId: user.sub,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.session_revoked",
+      entityType: "auth_sessions",
+      entityId: sessionId,
+      metadata: {},
+    });
+
+    return { revoked: true };
+  }
+
+  async getCurrentUser(user: AuthenticatedUser) {
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.sub },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+        phone: true,
+        phoneVerified: true,
+        fullName: true,
+        isGuest: true,
+        isHost: true,
+        isAdmin: true,
+        isSuperAdmin: true,
+        lastLoginAs: true,
+        preferredLanguage: true,
+      },
+    });
+    if (!dbUser) {
+      throw notFoundError({
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+        message_en: "User not found",
+      });
+    }
+    return dbUser;
+  }
+
+  private async createEmailVerificationToken(userId: string, email: string): Promise<void> {
+    const token = this.tokensService.generateRefreshToken();
+    const tokenHash = await this.passwordService.hashOpaqueToken(token);
+
+    await this.prisma.otpCode.create({
+      data: {
+        userId,
+        purpose: "email_verification",
+        channel: "email",
+        deliveryTarget: email.toLowerCase(),
+        codeHash: tokenHash,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    });
+
+    await this.messagingService.send({
+      recipient: { channel: "email", value: email.toLowerCase() },
+      subject: "Verify your Suknaa email",
+      body: `Use this verification token to verify your email: ${token}`,
+      metadata: { kind: "email_verification", userId },
+    });
+  }
+
+  private async issueAndPersistSession(
+    user: User,
+    rememberMe: boolean,
+    ctx: RequestContext,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const tokens = await this.tokensService.issueTokens({
+      sub: user.id,
+      isGuest: user.isGuest,
+      isHost: user.isHost,
+      isAdmin: user.isAdmin,
+      isSuperAdmin: user.isSuperAdmin,
+      lastLoginAs: user.lastLoginAs,
+    });
+
+    const sessionId = randomUUID();
+    const sessionScopedRefreshToken = `${sessionId}.${tokens.refreshToken}`;
+    const refreshTokenHash =
+      await this.passwordService.hashOpaqueToken(sessionScopedRefreshToken);
+
+    await this.prisma.authSession.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        refreshTokenHash,
+        loginIntent: user.lastLoginAs ?? UserExperience.guest,
+        rememberMe,
+        userAgent: ctx.userAgent ?? null,
+        ipAddress: ctx.ipAddress ?? null,
+        expiresAt: this.getRefreshExpiryDate(rememberMe),
+      },
+    });
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: sessionScopedRefreshToken,
+    };
+  }
+
+  private async resolveSessionFromRefreshToken(
+    refreshToken: string,
+  ): Promise<AuthSession | null> {
+    const [sessionId] = refreshToken.split(".");
+    if (!sessionId) {
+      return null;
+    }
+    return this.prisma.authSession.findUnique({ where: { id: sessionId } });
+  }
+
+  private getRefreshExpiryDate(rememberMe: boolean): Date {
+    if (rememberMe) {
+      return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }
+    const refreshTtl = this.config.get("JWT_REFRESH_TTL", { infer: true });
+    return new Date(Date.now() + this.parseDurationMs(refreshTtl));
+  }
+
+  private parseDurationMs(raw: string): number {
+    const normalized = raw.trim();
+    const match = normalized.match(/^(\d+)([mhd])$/);
+    if (!match) {
+      return 7 * 24 * 60 * 60 * 1000;
+    }
+    const value = Number(match[1]);
+    const unit = match[2];
+    if (unit === "m") return value * 60 * 1000;
+    if (unit === "h") return value * 60 * 60 * 1000;
+    return value * 24 * 60 * 60 * 1000;
+  }
+
+  private deriveDefaultNameFromEmail(email: string): string {
+    const localPart = email.split("@")[0] ?? "guest";
+    return localPart.slice(0, 1).toUpperCase() + localPart.slice(1);
+  }
+
+  private toAuthUserPayload(user: User) {
+    return {
+      id: user.id,
+      isGuest: user.isGuest,
+      isHost: user.isHost,
+      isAdmin: user.isAdmin,
+      isSuperAdmin: user.isSuperAdmin,
+      lastLoginAs: user.lastLoginAs,
+    };
+  }
+}

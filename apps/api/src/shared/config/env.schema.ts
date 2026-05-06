@@ -36,8 +36,8 @@ export const envSchema = z.object({
   DEV_OUTBOX_DIR: z.string().min(1).default(".dev-outbox"),
 
   // ---- JWT (Milestone 4) ----
-  JWT_PRIVATE_KEY_PATH: z.string().optional(),
-  JWT_PUBLIC_KEY_PATH: z.string().optional(),
+  JWT_PRIVATE_KEY_PATH: z.string().min(1, "JWT_PRIVATE_KEY_PATH is required"),
+  JWT_PUBLIC_KEY_PATH: z.string().min(1, "JWT_PUBLIC_KEY_PATH is required"),
   JWT_ACCESS_TTL: z.string().default("15m"),
   JWT_REFRESH_TTL: z.string().default("7d"),
 
