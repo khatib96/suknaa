@@ -2,7 +2,7 @@
 
 NestJS backend for Suknaa. In production it will live behind `api.suknaa.com`; locally it runs on port `3001` and is reached by the public web app through the Next.js BFF (`apps/web/app/api/*`).
 
-## Phase 2 Status - Milestone 4 of 10
+## Phase 2 Status — Milestone 5 of 10
 
 Milestone 1 scaffolded the NestJS API, Zod env validation, Pino logger, Swagger, Prisma/Redis/MinIO shared services, and `GET /v1/health`.
 
@@ -18,23 +18,30 @@ Milestone 2 added the first Prisma schema and migrations for the Phase 2 core ta
 
 Milestone 4 adds auth core in `src/modules/auth`:
 
-- Signup with optional phone and required email/password.
-- Email verification via `otp_codes` using a long opaque token hash.
+- Signup with optional `fullName` and required email/password (no phone on signup).
+- Email verification via `otp_codes` using a long opaque token hash (unchanged M4 flow).
 - Login, refresh rotation, logout, logout-all.
 - Session listing/revocation and `GET /v1/me`.
 - RS256 access tokens (15m) and opaque refresh sessions (hashed in DB).
 - Auth audit events via `AuditService.write()`.
 
-Milestone 3 adds shared backend infrastructure used by future Auth/KYC flows:
+Milestone 5 extends auth:
+
+- `POST /v1/auth/otp/request` + `POST /v1/auth/otp/verify` for **phone verification** (6-digit OTP, hashed at rest, rate limits via Redis + env).
+- Optional phone verification: updates `users.phone` + `phoneVerified` when OTP succeeds.
+- TOTP: `POST /v1/me/2fa/totp/setup`, `confirm`, `disable` — secrets encrypted with `TOTP_ENC_KEY` into `totp_secret_encrypted`; backup codes stored hashed only.
+- Login: if TOTP is enabled, `POST /v1/auth/login` returns `{ requires_2fa: true, mfa_token }` (no session/tokens until MFA completes).
+- `POST /v1/auth/login/2fa` completes MFA with an authenticator code or backup code, then issues normal tokens + session.
+- Messaging: default remains **mock** (`.dev-outbox`). WhatsApp Cloud Graph API sender is implemented but **off** unless `WHATSAPP_CLOUD_ENABLED=true` (with required Meta env vars).
+
+Milestone 3 adds shared backend infrastructure used by Auth/KYC flows:
 
 - Provider-agnostic messaging abstraction in `src/shared/messaging`
 - Mock message provider writing local files to `.dev-outbox/`
-- Disabled WhatsApp provider stub (throws `NotImplementedException`)
+- WhatsApp Cloud provider (disabled by default; optional real sends when enabled and configured)
 - `AuditModule` + `AuditService.write()` backed by `audit_logs`
 - Typed API error helpers compatible with the global exception filter
 - Small low-risk helpers in `RedisService` and `StorageService`
-
-Milestone 5+ remains out of scope here (OTP/2FA/KYC/admin/BFF).
 
 See [docs/BUILD_PLAN.md](../../docs/BUILD_PLAN.md) Phase 2 for the milestone breakdown.
 
@@ -107,7 +114,7 @@ apps/api/
 ## Conventions
 
 - Strict TypeScript (`tsconfig.json`).
-- Logging: Pino via `nestjs-pino`, with request IDs and PII redaction (`password`, `token`, `secret`, `password_hash`, `refresh_token`, `code`, `totp_secret`, `authorization` header, `cookie` header).
+- Logging: Pino via `nestjs-pino`, with request IDs and PII redaction (`password`, `token`, `secret`, `password_hash`, `refresh_token`, `code`, `totp_secret`, `mfa_token`, `authorization` header, `cookie` header).
 - Errors: every response shape matches `docs/API_SPEC.md` section 0 (`{ error: { code, message, message_en? }, meta: { request_id } }`).
 - Money: `BIGINT` cents in DB, `bigint` in TS. Never use `number` for money. This is not yet relevant in Phase 2 M2.
 
@@ -142,5 +149,21 @@ Run full auth lifecycle verification (signup -> verify -> login -> refresh rotat
 ```powershell
 $env:JWT_PRIVATE_KEY_PATH="./keys/jwt-private.pem"
 $env:JWT_PUBLIC_KEY_PATH="./keys/jwt-public.pem"
-npx pnpm@9.15.4 --filter api exec ts-node -r tsconfig-paths/register scripts/manual-m4-verify.ts
+npx pnpm@9.15.4 --filter api exec ts-node scripts/manual-m4-verify.ts
 ```
+
+## Milestone 5 Manual Verification
+
+Prerequisites:
+
+- Docker Postgres + Redis running (`infrastructure/docker-compose.yml`).
+- `apps/api/.env` copied from `.env.example`, JWT key paths set, and **`TOTP_ENC_KEY`** set (for example `openssl rand -hex 32` pasted into `.env`).
+- Do **not** commit `.env`, PEM keys, or `.dev-outbox/` outputs.
+
+From `apps/api`:
+
+```powershell
+npx pnpm@9.15.4 --filter api verify:m5
+```
+
+This exercises phone OTP (mock outbox), phone verification, TOTP setup/confirm/backup codes, MFA login (`requires_2fa` + `mfa_token`), backup-code login, a control user without 2FA (normal M4-style tokens), and expected `audit_logs` actions.

@@ -55,6 +55,50 @@ export const authSessionsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
 });
 
+/** E.164-style phone (+countrycode, 7–15 digits total after +). */
+export const phoneE164Schema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{6,14}$/, "Invalid phone format (use E.164, e.g. +447911123456)");
+
+export const otpPurposePhoneVerificationSchema = z.literal("phone_verification");
+
+export const requestOtpSchema = z.object({
+  purpose: otpPurposePhoneVerificationSchema,
+  channel: z.literal("phone"),
+  destination: phoneE164Schema,
+});
+
+export const verifyOtpSchema = z.object({
+  purpose: otpPurposePhoneVerificationSchema,
+  destination: phoneE164Schema,
+  code: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+});
+
+export const totpConfirmSchema = z.object({
+  code: z.string().trim().min(6).max(12),
+});
+
+export const totpDisableSchema = z
+  .object({
+    password: passwordLoginField.optional(),
+    totpCode: z.string().trim().min(6).max(12).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.password && !data.totpCode) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Either password or totpCode is required",
+        path: ["password"],
+      });
+    }
+  });
+
+export const authLogin2faSchema = z.object({
+  mfa_token: z.string().min(10),
+  code: z.string().trim().min(6).max(32),
+});
+
 export type AuthSignupInput = z.infer<typeof authSignupSchema>;
 export type AuthLoginInput = z.infer<typeof authLoginSchema>;
 export type AuthVerifyEmailInput = z.infer<typeof authVerifyEmailSchema>;
@@ -62,3 +106,8 @@ export type AuthRefreshInput = z.infer<typeof authRefreshSchema>;
 export type AuthLogoutInput = z.infer<typeof authLogoutSchema>;
 export type AuthRevokeSessionInput = z.infer<typeof authRevokeSessionSchema>;
 export type AuthSessionsQueryInput = z.infer<typeof authSessionsQuerySchema>;
+export type RequestOtpInput = z.infer<typeof requestOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type TotpConfirmInput = z.infer<typeof totpConfirmSchema>;
+export type TotpDisableInput = z.infer<typeof totpDisableSchema>;
+export type AuthLogin2faInput = z.infer<typeof authLogin2faSchema>;

@@ -39,6 +39,7 @@ import { AuthModule } from "./modules/auth/auth.module";
                 "*.totp_secret",
                 "*.code",
                 "*.otp",
+                "*.mfa_token",
               ],
               censor: "[redacted]",
             },

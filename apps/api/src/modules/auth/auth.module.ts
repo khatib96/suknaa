@@ -14,7 +14,10 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { MockPasswordBreachCheckerService } from "./services/mock-password-breach-checker.service";
 import { PasswordService } from "./services/password.service";
 import { PASSWORD_BREACH_CHECKER } from "./services/password-breach-checker.interface";
+import { OtpService } from "./services/otp.service";
 import { TokensService } from "./services/tokens.service";
+import { TotpSecretCryptoService } from "./services/totp-secret-crypto.service";
+import { TwoFactorService } from "./services/two-factor.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 
 @Module({
@@ -57,6 +60,9 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     AuthService,
     PasswordService,
     TokensService,
+    TotpSecretCryptoService,
+    OtpService,
+    TwoFactorService,
     JwtStrategy,
     JwtAuthGuard,
     MockPasswordBreachCheckerService,

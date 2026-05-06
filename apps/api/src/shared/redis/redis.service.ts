@@ -63,4 +63,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
     return JSON.parse(value) as T;
   }
+
+  /**
+   * INCR with TTL set on first increment (sliding window for the first key set only;
+   * for fixed hour window use EXPIRE on first increment — standard rate-limit pattern).
+   */
+  async incrementWithTtl(key: string, ttlSeconds: number): Promise<number> {
+    const redisKey = this.buildKey(key);
+    const count = await this.client.incr(redisKey);
+    if (count === 1) {
+      await this.client.expire(redisKey, ttlSeconds);
+    }
+    return count;
+  }
 }

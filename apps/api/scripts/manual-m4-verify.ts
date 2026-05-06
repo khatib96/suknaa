@@ -45,6 +45,9 @@ async function run(): Promise<void> {
 
   await auth.verifyEmail(email, tokenMatch[1], ctx);
   const login = await auth.login({ email, password: "Passw0rd1234", rememberMe: false }, ctx);
+  if (!("accessToken" in login)) {
+    throw new Error("M4 script expects login without 2FA challenge");
+  }
 
   const sessionId1 = login.refreshToken.split(".")[0];
   const session1 = await prisma.authSession.findUniqueOrThrow({ where: { id: sessionId1 } });

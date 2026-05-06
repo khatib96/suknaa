@@ -4,9 +4,9 @@
 
 ## Current Status
 
-**Current milestone:** M5 — OTP + Phone Verification + 2FA  
-**Completed:** M1, M2, M2 cleanup, M3  
-**Not started:** M5+
+**Current milestone:** M6 - Login Intent + Roles + Become Host  
+**Completed:** M1, M2, M2 cleanup, M3, M4, M5  
+**Not started:** M6+
 
 ## Phase 2 Rule
 
@@ -29,7 +29,7 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 | M2 Cleanup | Schema Review Fixes | Done | `users.phone` optional, phone partial unique index, stronger `audit_logs`, README update. |
 | M3 | Shared Backend Infrastructure | Done | Messaging abstraction, mock outbox, disabled WhatsApp stub, AuditService, error helpers, storage/redis helpers. |
 | M4 | Auth Core | Done | Shared auth schemas, password/hash services, strict RS256 auth endpoints, email verification via mock outbox, refresh rotation, sessions, `/v1/me`, auth audit events. |
-| M5 | OTP + Phone Verification + 2FA | Not started | Provider-agnostic OTP flow, mock message provider, TOTP setup/confirm, backup codes. |
+| M5 | OTP + Phone Verification + 2FA | Done | Phone OTP (mock provider), optional phone verification, TOTP + backup codes, MFA login challenge (`mfa_token`), WhatsApp Cloud prep behind env gate. |
 | M6 | Login Intent + Roles + Become Host | Not started | Guest/host intent, roles guard, become-host endpoint, host profile creation. |
 | M7 | KYC Submission + MinIO | Not started | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
 | M8 | Admin KYC Review + Audit Logs | Not started | Admin queue, approve/reject, KYC expiry, audit logs for decisions. |
@@ -78,6 +78,15 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 - `audit_logs` auth actions recorded: passed
 - `apps/web`: untouched
 
+### M5
+
+- `prisma:generate`: passed
+- `db:status`: clean after starting Docker services
+- API build: passed
+- API lint: passed
+- `verify:m5`: passed (`ok: true`, `phoneVerified: true`, `backupCodesReturned: 10`)
+- WhatsApp Cloud sender stays disabled unless `WHATSAPP_CLOUD_ENABLED=true` (validated env)
+
 ## Standard Verification Commands
 
 Run from repo root:
@@ -87,6 +96,7 @@ npx pnpm@9.15.4 --filter api prisma:generate
 npx pnpm@9.15.4 db:status
 npx pnpm@9.15.4 --filter api build
 npx pnpm@9.15.4 --filter api lint
+npx pnpm@9.15.4 --filter api verify:m5
 ```
 
 If Docker services are needed:

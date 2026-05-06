@@ -40,9 +40,28 @@ export const envSchema = z.object({
   JWT_PUBLIC_KEY_PATH: z.string().min(1, "JWT_PUBLIC_KEY_PATH is required"),
   JWT_ACCESS_TTL: z.string().default("15m"),
   JWT_REFRESH_TTL: z.string().default("7d"),
+  /** Short-lived RS256 JWT returned when password login requires a second factor. */
+  JWT_MFA_TTL: z.string().default("5m"),
 
-  // ---- TOTP encryption (Milestone 5) ----
-  TOTP_ENC_KEY: z.string().optional(),
+  // ---- OTP + 2FA (Milestone 5) ----
+  OTP_CODE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  OTP_PHONE_RATE_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(3),
+  TWO_FACTOR_ISSUER: z.string().min(1).default("Suknaa"),
+  TWO_FACTOR_TEMP_SECRET_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+  /** 64-char hex (32 bytes) or a long passphrase (scrypt-derived). Required before encrypting TOTP secrets at rest. */
+  TOTP_ENC_KEY: z.string().min(32).optional(),
+
+  // ---- WhatsApp Cloud API (optional; deferred activation — see WhatsAppCloudProvider) ----
+  WHATSAPP_CLOUD_ENABLED: z
+    .union([z.boolean(), z.string()])
+    .transform((v) => (typeof v === "boolean" ? v : v === "true"))
+    .default(false),
+  WHATSAPP_CLOUD_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_CLOUD_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_CLOUD_BUSINESS_ACCOUNT_ID: z.string().optional(),
+  WHATSAPP_CLOUD_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_CLOUD_API_VERSION: z.string().default("v21.0"),
 
   // ---- BFF integration (Milestone 9) ----
   INTERNAL_API_KEY: z.string().optional(),
@@ -50,6 +69,28 @@ export const envSchema = z.object({
   // ---- Super-admin bootstrap (Milestone 4 seed) ----
   SUPER_ADMIN_EMAIL: z.string().email().optional(),
   SUPER_ADMIN_PASSWORD: z.string().min(10).optional(),
-});
+})
+  .superRefine((data, ctx) => {
+    if (!data.WHATSAPP_CLOUD_ENABLED) {
+      return;
+    }
+    const req = (
+      key: keyof typeof data,
+      label: string,
+    ): void => {
+      const v = data[key];
+      if (typeof v !== "string" || v.trim().length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} is required when WHATSAPP_CLOUD_ENABLED=true`,
+          path: [key as string],
+        });
+      }
+    };
+    req("WHATSAPP_CLOUD_ACCESS_TOKEN", "WHATSAPP_CLOUD_ACCESS_TOKEN");
+    req("WHATSAPP_CLOUD_PHONE_NUMBER_ID", "WHATSAPP_CLOUD_PHONE_NUMBER_ID");
+    req("WHATSAPP_CLOUD_BUSINESS_ACCOUNT_ID", "WHATSAPP_CLOUD_BUSINESS_ACCOUNT_ID");
+    req("WHATSAPP_CLOUD_VERIFY_TOKEN", "WHATSAPP_CLOUD_VERIFY_TOKEN");
+  });
 
 export type Env = z.infer<typeof envSchema>;

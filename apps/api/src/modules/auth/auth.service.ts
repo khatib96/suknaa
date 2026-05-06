@@ -17,6 +17,7 @@ import {
   type PasswordBreachChecker,
 } from "./services/password-breach-checker.interface";
 import { TokensService } from "./services/tokens.service";
+import { TwoFactorService } from "./services/two-factor.service";
 import type { AuthenticatedUser } from "./types/authenticated-user.type";
 import { Inject } from "@nestjs/common";
 import type { Env } from "../../shared/config/env.schema";
@@ -49,6 +50,7 @@ export class AuthService {
     @Inject(PASSWORD_BREACH_CHECKER)
     private readonly passwordBreachChecker: PasswordBreachChecker,
     private readonly tokensService: TokensService,
+    private readonly twoFactorService: TwoFactorService,
     private readonly messagingService: MessagingService,
     private readonly auditService: AuditService,
     private readonly config: ConfigService<Env, true>,
@@ -210,7 +212,89 @@ export class AuthService {
       });
     }
 
+    if (await this.twoFactorService.isTotpEnabled(user.id)) {
+      const mfa_token = await this.tokensService.issueMfaChallengeToken(
+        user.id,
+        input.rememberMe,
+      );
+      await this.auditService.write({
+        actorUserId: user.id,
+        actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+        actorIp: ctx.ipAddress ?? null,
+        userAgent: ctx.userAgent ?? null,
+        requestId: ctx.requestId ?? null,
+        action: "auth.2fa_challenge",
+        entityType: "users",
+        entityId: user.id,
+        metadata: {},
+      });
+      return {
+        requires_2fa: true as const,
+        mfa_token,
+      };
+    }
+
     const tokens = await this.issueAndPersistSession(user, input.rememberMe, ctx);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), lastLoginIp: ctx.ipAddress ?? null },
+    });
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.login",
+      entityType: "users",
+      entityId: user.id,
+      metadata: {},
+    });
+
+    return {
+      ...tokens,
+      user: this.toAuthUserPayload(user),
+    };
+  }
+
+  async completeMfaLogin(mfaToken: string, code: string, ctx: RequestContext) {
+    const mfaClaims = await this.tokensService.verifyMfaChallengeToken(mfaToken);
+    if (!mfaClaims) {
+      throw unauthorizedError({
+        code: "INVALID_MFA_TOKEN",
+        message: "Invalid or expired MFA token",
+        message_en: "Invalid or expired MFA token",
+      });
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: mfaClaims.sub, deletedAt: null },
+    });
+    if (!user) {
+      throw unauthorizedError({
+        code: "INVALID_MFA_TOKEN",
+        message: "Invalid or expired MFA token",
+        message_en: "Invalid or expired MFA token",
+      });
+    }
+
+    await this.twoFactorService.verifySecondFactor(user.id, code);
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: user.isAdmin ? "admin" : user.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.2fa_success",
+      entityType: "users",
+      entityId: user.id,
+      metadata: {},
+    });
+
+    const tokens = await this.issueAndPersistSession(user, mfaClaims.rememberMe, ctx);
 
     await this.prisma.user.update({
       where: { id: user.id },

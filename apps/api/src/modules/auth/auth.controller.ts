@@ -15,18 +15,29 @@ import { CurrentUser } from "./decorators/current-user.decorator";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { AuthService } from "./auth.service";
 import {
+  login2faSchema,
   loginSchema,
   logoutSchema,
   refreshSchema,
+  requestOtpSchema,
   sessionsQuerySchema,
   signupSchema,
+  totpConfirmSchema,
+  totpDisableSchema,
   verifyEmailSchema,
+  verifyOtpSchema,
 } from "./auth.schemas";
+import { OtpService } from "./services/otp.service";
+import { TwoFactorService } from "./services/two-factor.service";
 import type { AuthenticatedUser } from "./types/authenticated-user.type";
 
 @Controller()
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly otpService: OtpService,
+    private readonly twoFactorService: TwoFactorService,
+  ) {}
 
   @Post("auth/signup")
   async signup(@Body() body: unknown, @Req() req: Request) {
@@ -44,6 +55,16 @@ export class AuthController {
   async login(@Body() body: unknown, @Req() req: Request) {
     const parsed = this.parse(loginSchema.safeParse(body));
     return this.authService.login(parsed, this.requestContext(req));
+  }
+
+  @Post("auth/login/2fa")
+  async login2fa(@Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(login2faSchema.safeParse(body));
+    return this.authService.completeMfaLogin(
+      parsed.mfa_token,
+      parsed.code,
+      this.requestContext(req),
+    );
   }
 
   @Post("auth/refresh")
@@ -88,6 +109,60 @@ export class AuthController {
   @Get("me")
   async me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getCurrentUser(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("auth/otp/request")
+  async requestOtp(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(requestOtpSchema.safeParse(body));
+    return this.otpService.requestPhoneVerificationOtp(
+      user.sub,
+      {
+        purpose: parsed.purpose,
+        channel: parsed.channel,
+        destination: parsed.destination,
+      },
+      this.requestContext(req),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("auth/otp/verify")
+  async verifyOtp(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(verifyOtpSchema.safeParse(body));
+    return this.otpService.verifyPhoneOtp(
+      user.sub,
+      {
+        purpose: parsed.purpose,
+        destination: parsed.destination,
+        code: parsed.code,
+      },
+      this.requestContext(req),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("me/2fa/totp/setup")
+  async totpSetup(@CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    return this.twoFactorService.setupTotp(user.sub, this.requestContext(req));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("me/2fa/totp/confirm")
+  async totpConfirm(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(totpConfirmSchema.safeParse(body));
+    return this.twoFactorService.confirmTotp(user.sub, parsed.code, this.requestContext(req));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("me/2fa/totp/disable")
+  async totpDisable(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(totpDisableSchema.safeParse(body));
+    return this.twoFactorService.disableTotp(
+      user.sub,
+      { password: parsed.password, totpCode: parsed.totpCode },
+      this.requestContext(req),
+    );
   }
 
   private requestContext(req: Request): {

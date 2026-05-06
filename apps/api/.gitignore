@@ -1,4 +1,5 @@
 dist
+.tmp-scripts/
 node_modules
 *.log
 .env
