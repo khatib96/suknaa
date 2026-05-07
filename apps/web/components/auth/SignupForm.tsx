@@ -6,7 +6,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Field, inputClass, MockSuccessBanner } from "./form-primitives";
+import { apiRequest, getErrorMessageAr } from "@/lib/web-api";
+import { Field, inputClass } from "./form-primitives";
 import {
   guestSignupSchema,
   type GuestSignupValues,
@@ -21,6 +22,7 @@ import {
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "ok">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const form = useForm<GuestSignupValues>({
     resolver: zodResolver(guestSignupSchema),
@@ -35,19 +37,21 @@ export function SignupForm() {
   const { register, handleSubmit, formState } = form;
   const { errors, isSubmitting } = formState;
 
-  const onSubmit = (values: GuestSignupValues) =>
-    new Promise<void>((resolve) =>
-      setTimeout(() => {
-        console.info("[mock] guest signup submitted", {
-          email: values.email,
-          fullName: values.fullName,
-          acceptTerms: values.acceptTerms,
-          hasPassword: Boolean(values.password),
-        });
-        setSubmitState("ok");
-        resolve();
-      }, 700),
-    );
+  const onSubmit = async (values: GuestSignupValues) => {
+    setErrorMessage(null);
+    await apiRequest({
+      path: "/api/auth/signup",
+      method: "POST",
+      body: {
+        fullName: values.fullName || undefined,
+        email: values.email,
+        password: values.password,
+        preferredLanguage: "ar",
+        marketingOptIn: false,
+      },
+    });
+    setSubmitState("ok");
+  };
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -59,9 +63,28 @@ export function SignupForm() {
           ثلاثون ثانية فقط، وتصير جاهزاً للحجز.
         </p>
 
-        <MockSuccessBanner show={submitState === "ok"} />
+        {submitState === "ok" ? (
+          <p className="mt-4 rounded-xl border border-[#D5E9DD] bg-[#EDF7F1] px-4 py-3 text-sm text-[#1F4C3A]">
+            تم إنشاء الحساب بنجاح. تحقق من بريدك الإلكتروني لإكمال التفعيل قبل تسجيل الدخول.
+          </p>
+        ) : null}
+        {errorMessage ? (
+          <p className="mt-4 rounded-xl border border-[#F8D7DA] bg-[#FFF1F2] px-4 py-3 text-sm text-[#9F1239]">
+            {errorMessage}
+          </p>
+        ) : null}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-7 space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit(async (values) => {
+            try {
+              await onSubmit(values);
+            } catch (error) {
+              setErrorMessage(getErrorMessageAr(error));
+            }
+          })}
+          className="mt-7 space-y-4"
+          noValidate
+        >
           <Field id="fullName" label="الاسم (اختياري)" error={errors.fullName?.message}>
             <input
               id="fullName"

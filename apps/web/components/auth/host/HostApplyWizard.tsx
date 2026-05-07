@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ApiError, apiRequest, getErrorMessageAr } from "@/lib/web-api";
 import {
   HOST_APPLY_STEP_FIELDS,
   HOST_APPLY_TOTAL_STEPS,
@@ -46,8 +47,15 @@ export function HostApplyWizard() {
   );
 
   const [submitState, setSubmitState] = useState<
-    "idle" | "submitting" | "ok"
+    "idle" | "submitting" | "ok" | "email_verification_required" | "phone_verification_required"
   >("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [pendingBecomeHostPayload, setPendingBecomeHostPayload] = useState<
+    Record<string, unknown> | null
+  >(null);
 
   const form = useForm<HostApplyValues>({
     resolver: zodResolver(hostApplySchema),
@@ -102,28 +110,152 @@ export function HostApplyWizard() {
     }
   };
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    setSubmitState("submitting");
-    await new Promise<void>((resolve) =>
-      setTimeout(() => {
-        console.info("[mock] host apply submitted", {
-          hostCategory: values.hostCategory,
-          hostSubtype: values.hostSubtype,
-          fullName: values.fullName,
-          phone: values.phone,
-          email: values.email,
-          cityId: values.cityId,
-          acceptTerms: values.acceptTerms,
-          portfolioSize: values.portfolioSize,
-          startTimeline: values.startTimeline,
-          biggestChallenge: values.biggestChallenge,
-          hasPassword: Boolean(values.password),
-        });
-        resolve();
-      }, 800),
-    );
-    setSubmitState("ok");
+  const normalizePhone = (phone: string): string => phone.replace(/[^\d+]/g, "");
+
+  const mapBecomeHostPayload = (values: HostApplyValues): Record<string, unknown> => ({
+    hostCategory: values.hostCategory,
+    hostSubtype: values.hostSubtype === "re_office" ? "real_estate_office" : values.hostSubtype,
+    displayName: values.fullName,
+    companyName: null,
+    companyRegistration: null,
+    taxId: null,
+    bioAr: null,
+    bioEn: null,
+    withdrawalSchedule: "monthly",
   });
+
+  const ensureAuthenticated = async (values: HostApplyValues): Promise<boolean> => {
+    try {
+      await apiRequest({ path: "/api/me", method: "GET" });
+      return true;
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) {
+        throw error;
+      }
+    }
+
+    try {
+      await apiRequest({
+        path: "/api/auth/signup",
+        method: "POST",
+        body: {
+          fullName: values.fullName,
+          email: values.email,
+          password: values.password,
+          preferredLanguage: "ar",
+          marketingOptIn: false,
+        },
+      });
+      setSubmitState("email_verification_required");
+      return false;
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "EMAIL_ALREADY_EXISTS") {
+        const loginResult = await apiRequest<{
+          requires_2fa?: boolean;
+        }>({
+          path: "/api/auth/login",
+          method: "POST",
+          body: {
+            email: values.email,
+            password: values.password,
+            rememberMe: false,
+          },
+        });
+        if (loginResult.requires_2fa) {
+          throw new Error("هذا الحساب مفعّل عليه التحقق بخطوتين. سجل الدخول من صفحة المضيف ثم أكمل الطلب.");
+        }
+        return true;
+      }
+
+      if (error instanceof ApiError && error.code === "EMAIL_NOT_VERIFIED") {
+        setSubmitState("email_verification_required");
+        return false;
+      }
+
+      throw error;
+    }
+  };
+
+  const tryBecomeHost = async (payload: Record<string, unknown>): Promise<void> => {
+    await apiRequest({
+      path: "/api/me/become-host",
+      method: "POST",
+      body: payload,
+    });
+  };
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    setErrorMessage(null);
+    setSubmitState("submitting");
+    const becomeHostPayload = mapBecomeHostPayload(values);
+    setPendingBecomeHostPayload(becomeHostPayload);
+
+    try {
+      const isAuthed = await ensureAuthenticated(values);
+      if (!isAuthed) {
+        return;
+      }
+
+      await tryBecomeHost(becomeHostPayload);
+      setSubmitState("ok");
+      router.push("/become-a-host/kyc");
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "PHONE_VERIFICATION_REQUIRED") {
+        setSubmitState("phone_verification_required");
+        return;
+      }
+      setSubmitState("idle");
+      setErrorMessage(getErrorMessageAr(error));
+    }
+  });
+
+  const requestOtp = async () => {
+    const phone = form.getValues("phone");
+    setErrorMessage(null);
+    setIsSendingOtp(true);
+    try {
+      await apiRequest({
+        path: "/api/auth/otp/request",
+        method: "POST",
+        body: {
+          purpose: "phone_verification",
+          channel: "phone",
+          destination: normalizePhone(phone),
+        },
+      });
+    } catch (error) {
+      setErrorMessage(getErrorMessageAr(error));
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const verifyOtpAndRetry = async () => {
+    const phone = form.getValues("phone");
+    if (!otpCode.trim() || !pendingBecomeHostPayload) {
+      return;
+    }
+    setErrorMessage(null);
+    setIsVerifyingOtp(true);
+    try {
+      await apiRequest({
+        path: "/api/auth/otp/verify",
+        method: "POST",
+        body: {
+          purpose: "phone_verification",
+          destination: normalizePhone(phone),
+          code: otpCode.trim(),
+        },
+      });
+      await tryBecomeHost(pendingBecomeHostPayload);
+      setSubmitState("ok");
+      router.push("/become-a-host/kyc");
+    } catch (error) {
+      setErrorMessage(getErrorMessageAr(error));
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const isLastStep = step === HOST_APPLY_TOTAL_STEPS;
   const submitted = submitState === "ok";
@@ -141,6 +273,50 @@ export function HostApplyWizard() {
       >
         <FormProvider {...form}>
           <form onSubmit={onSubmit} noValidate>
+            {errorMessage ? (
+              <p className="mb-5 rounded-xl border border-[#F8D7DA] bg-[#FFF1F2] px-4 py-3 text-sm text-[#9F1239]">
+                {errorMessage}
+              </p>
+            ) : null}
+            {submitState === "email_verification_required" ? (
+              <p className="mb-5 rounded-xl border border-[#D5E9DD] bg-[#EDF7F1] px-4 py-3 text-sm text-[#1F4C3A]">
+                أنشأنا حسابك بنجاح. تحقق من بريدك الإلكتروني أولاً، ثم سجّل الدخول كمضيف لإكمال الطلب.
+              </p>
+            ) : null}
+            {submitState === "phone_verification_required" ? (
+              <div className="mb-5 space-y-3 rounded-2xl border border-[#F1E5C9] bg-[#FFF8E6] p-4 text-sm text-[#8A6A1F]">
+                <p className="font-semibold">يلزم توثيق رقم الهاتف قبل تفعيل حساب المضيف.</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void requestOtp();
+                    }}
+                    disabled={isSendingOtp}
+                    className="inline-flex items-center justify-center rounded-full bg-gold px-5 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSendingOtp ? "جارٍ إرسال الرمز..." : "إرسال رمز التحقق"}
+                  </button>
+                  <input
+                    value={otpCode}
+                    onChange={(event) => setOtpCode(event.target.value)}
+                    dir="ltr"
+                    placeholder="123456"
+                    className="rounded-xl border border-[#E8E0D3] bg-white px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void verifyOtpAndRetry();
+                    }}
+                    disabled={isVerifyingOtp}
+                    className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isVerifyingOtp ? "جارٍ التحقق..." : "تأكيد الرمز وإكمال الطلب"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {step === 1 ? <Step1Category /> : null}
             {step === 2 ? <Step2Subtype /> : null}
             {step === 3 ? <Step3BasicInfo /> : null}

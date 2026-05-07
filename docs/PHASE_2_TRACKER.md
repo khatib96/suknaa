@@ -4,9 +4,10 @@
 
 ## Current Status
 
-**Current milestone:** M9 - Frontend BFF Integration  
-**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8  
-**Not started:** M9+
+**Current milestone:** M10 - Tests + Docs Closure (next)  
+**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9  
+**In progress:** None  
+**Not started:** M10
 
 ## Phase 2 Rule
 
@@ -33,7 +34,7 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 | M6 | Login Intent + Roles + Become Host | Done | Guest/host intent, roles guard, become-host endpoint, host profile creation. |
 | M7 | KYC Submission + MinIO | Done | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
 | M8 | Admin KYC Review + Audit Logs | Done | Admin queue (cursor-paginated), approve (sets host isVerified + expiresAt), reject (reason required), admin.kyc.approved/rejected audit logs. |
-| M9 | Frontend BFF Integration | Not started | Next.js route handlers, connect existing auth/host forms to real API. |
+| M9 | Frontend BFF Integration | Done | Next.js BFF route handlers + auth/host forms wired to real API + CSRF double-submit + minimal KYC page + browser smoke test. |
 | M10 | Tests + Docs Closure | Not started | Focused auth/KYC tests, Swagger review, docs and memory final update. |
 
 ## Completed Verification
@@ -116,6 +117,27 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 - API lint: passed
 - `verify:m7`: passed (`ok: true`, `status: pending`, `hostVerified: false`)
 - KYC uploads stay private in MinIO and safe read endpoints do not return raw storage keys.
+
+### M9
+
+- `web lint`: passed
+- `web build`: passed
+- `api lint`: passed
+- `api build`: passed
+- `api verify:m8`: passed (`ok: true`) while Docker services were running and healthy.
+- Manual browser smoke test: passed on 2026-05-07.
+  - Signup through BFF: passed.
+  - Email verification through BFF + CSRF: passed.
+  - Login + login intent: passed.
+  - Host apply + phone OTP + become-host: passed.
+  - KYC page upload/submit via BFF: passed.
+- Implemented scope in web:
+  - BFF routes under `apps/web/app/api/*` for auth/me/otp/2fa/kyc.
+  - httpOnly auth cookies (access + refresh), refresh retry-on-401 for protected BFF routes, and cookie clear on session expiry.
+  - CSRF double-submit (`GET /api/csrf` + `X-CSRF-Token` checks for state-changing routes).
+  - Auth/host forms moved from mock submit to real BFF calls with Arabic error states + 2FA challenge handling.
+  - Minimal KYC UI page at `/become-a-host/kyc` with upload/submit/history via BFF only.
+- M9 is closed. Future UX/product naming notes are tracked in `docs/UX_BACKLOG.md` and are not blockers for Phase 2 M9.
 
 ## Standard Verification Commands
 

@@ -5,7 +5,7 @@
   "description": "Suknaa NestJS backend API (Phase 2: Auth + KYC).",
   "scripts": {
     "prebuild": "rimraf dist tsconfig.build.tsbuildinfo",
-    "dev": "nest start --watch",
+    "dev": "rimraf dist tsconfig.build.tsbuildinfo && nest start --watch",
     "build": "npx pnpm@9.15.4 --filter @suknaa/types build && nest build",
     "start": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",

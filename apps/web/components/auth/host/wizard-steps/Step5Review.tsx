@@ -179,8 +179,7 @@ function SuccessPanel({ email }: { email?: string }) {
           </div>
         </div>
         <p className="mt-4 text-sm leading-relaxed text-[#2C6850]">
-          تم استلام طلبك. (بدون باك‌اند فعلي بعد — Phase 2). الخطوات التالية
-          ستفعّل تدريجياً بحسب نوع حسابك.
+          تم تفعيل حساب المضيف. أكمل رفع وثائق KYC ثم تابع إضافة عقارك الأول.
         </p>
       </div>
 
@@ -205,10 +204,10 @@ function SuccessPanel({ email }: { email?: string }) {
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
-          href="/host/login"
+          href="/become-a-host/kyc"
           className="inline-flex flex-1 items-center justify-center rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-warm-md transition-all duration-200 hover:bg-[#a84a33] active:scale-95"
         >
-          ادخل لوحة المضيفين
+          ابدأ رفع وثائق KYC
         </Link>
         <Link
           href="/"

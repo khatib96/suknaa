@@ -98,33 +98,44 @@ You can show a friend the visual mockups and they understand both the Real Estat
 **Estimated:** 2–3 weeks
 
 ### Deliverables
-- [ ] NestJS app initialized
-- [ ] PostgreSQL 16 + PostGIS via Docker Compose
-- [ ] Prisma schema for: `users`, `host_profiles`, `kyc_submissions`, `auth_sessions`, `otp_codes`, `two_factor_secrets`, `audit_logs`
-- [ ] First migration created and applied
+- [x] NestJS app initialized
+- [x] PostgreSQL 16 + PostGIS via Docker Compose
+- [x] Prisma schema for: `users`, `host_profiles`, `kyc_submissions`, `auth_sessions`, `otp_codes`, `two_factor_secrets`, `audit_logs`
+- [x] First migration created and applied
 - [ ] **Auth module**:
-  - Email + password registration
-  - Phone OTP (international)
-  - JWT (access 15min) + refresh (7d httpOnly cookie)
-  - Password reset
-  - Email verification
-- [ ] **Login intent endpoint** (NEW v2): records guest vs host intent post-login
-- [ ] **2FA module**: TOTP + SMS, mandatory for hosts/admins
-- [ ] **Roles**: `is_guest`, `is_host`, `is_admin`, `is_super_admin` (a user can be multiple)
-- [ ] **KYC submission**:
-  - Different document requirements per `intended_host_category` (real_estate vs hospitality) and `intended_host_subtype`
-  - Upload to MinIO (encrypted)
-- [ ] **Become Host flow**:
-  - User chooses category (RE or Hospitality) and subtype (individual / RE office / hotel company)
-  - KYC requirements differ
-- [ ] Admin endpoints: review and approve/reject KYC
-- [ ] Frontend: working login (with intent), signup, profile, KYC upload pages
+  - [x] Email + password registration
+  - [x] Phone OTP (international)
+  - [x] JWT access token + refresh token rotation
+  - [ ] Password reset
+  - [x] Email verification
+- [x] **Login intent endpoint** (NEW v2): records guest vs host intent post-login
+- [ ] **2FA module**:
+  - [x] TOTP + backup codes
+  - [x] MFA login challenge
+  - [ ] SMS 2FA
+  - [ ] Mandatory enforcement for hosts/admins
+- [x] **Roles**: `is_guest`, `is_host`, `is_admin`, `is_super_admin` (a user can be multiple)
+- [x] **KYC submission**:
+  - [x] Different document requirements per `intended_host_category` (real_estate vs hospitality) and `intended_host_subtype`
+  - [x] Upload to MinIO private storage
+- [x] **Become Host flow**:
+  - [x] User chooses category (RE or Hospitality) and subtype (individual / RE office / hotel company)
+  - [x] KYC requirements differ
+- [x] Admin endpoints: review and approve/reject KYC
+- [ ] Frontend:
+  - [x] Working login with intent
+  - [x] Signup
+  - [x] Host apply
+  - [x] KYC upload/submit page
+  - [ ] Profile/dashboard page
 - [ ] Frontend: language preference persists in user profile
-- [ ] Swagger docs auto-generated at `api.suknaa.com/api/docs`
-- [ ] Audit log writes for all admin actions
+- [x] Swagger docs auto-generated locally at `/api/docs`
+- [x] Audit log writes for all Phase 2 admin KYC actions
 
 ### Exit Criteria
 A guest can sign up + verify phone + login. A user can choose to become a real-estate host OR a hotel-company host with the right KYC documents. An admin can approve their KYC.
+
+**Status 2026-05-07:** Phase 2 M1-M9 are complete, including browser smoke test for signup, email verification, login intent, become-host, phone OTP, and KYC submit. M10 remains for focused tests/docs closure. Password reset, SMS 2FA, mandatory 2FA enforcement, and profile/dashboard UI are not closed yet.
 
 ---
 

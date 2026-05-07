@@ -19,10 +19,10 @@
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
-- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 8 (Admin KYC Review)** — admin queue + approve/reject + audit logs.
-- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M8)
-- **آخر AI عمل على المشروع**: Claude
-- **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M9 مكتملة، و**M10 (Tests + Docs Closure) هي التالية**.
+- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M9)
+- **آخر AI عمل على المشروع**: Codex
+- **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
 ---
@@ -168,7 +168,7 @@
 - [x] **Milestone 6 (Login Intent + Roles + Become Host)**: login intent + RolesGuard + become-host endpoint + host profile creation; verified with Docker-backed `verify:m6` (`ok: true`, `isHost: true`). verified 2026-05-07
 - [x] **Milestone 7 (KYC Submission + MinIO)**: KYC shared schemas, API multipart upload, magic-byte MIME validation, private MinIO object keys, subtype-required document validation, pending `kyc_submissions`, safe latest/history responses, and `kyc.submitted` audit log; verified with Docker-backed `verify:m7` (`ok: true`, `status: pending`, `hostVerified: false`). verified 2026-05-07
 - [x] **Milestone 8 (Admin KYC Review)**: `GET /v1/admin/kyc/queue` (cursor-paginated, document-presence booleans, no raw keys) + `POST /v1/admin/kyc/:id/approve` (sets approved + expiresAt +2y + host isVerified=true in transaction) + `POST /v1/admin/kyc/:id/reject` (reason required, host unchanged); audit events `admin.kyc.approved` / `admin.kyc.rejected`; double-review blocked with `KYC_ALREADY_REVIEWED`. ✓ 2026-05-07
-- [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
+- [x] **Milestone 9 (Frontend BFF Integration)**: BFF للويب + auth cookies/CSRF + ربط login/signup/host apply/KYC بالـ API الفعلي + smoke test يدوي من المتصفح (signup, email verify, login intent, phone OTP, become-host, KYC submit) ✓ 2026-05-07
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
 
 ### Phase 3 — Real Estate System (End-to-End)
@@ -201,6 +201,44 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-07 (Phase 2 Milestone 9 — Frontend BFF Integration)
+**الـ AI المستخدم**: Codex
+
+**ما تم تنفيذه**:
+1. إنشاء طبقة BFF كاملة في `apps/web/app/api/*` لمسارات auth/me/otp/2fa/kyc المطلوبة في M9.
+2. إضافة server-only helpers تحت `apps/web/lib/server/`:
+   - `api-client.ts`: forwarding آمن + retry-on-401 (refresh مرة واحدة) للمسارات المحمية.
+   - `auth-cookies.ts`: إدارة access/refresh في cookies `httpOnly + sameSite=strict + secure(production)`.
+   - `csrf.ts`: Double-submit CSRF (`X-CSRF-Token` مقابل cookie).
+   - `bff-response.ts` و`api-errors.ts`: توحيد إخراج success/error من BFF.
+3. إضافة `GET /api/csrf` + helper عميل `apps/web/lib/csrf-client.ts` مع `ensureCsrfToken()` قبل أي mutation.
+4. ربط النماذج الفعلية بدل mock:
+   - `LoginForm` و`HostLoginForm`: login حقيقي + 2FA challenge + `login/intent` + redirect.
+   - `SignupForm`: signup حقيقي مع رسالة تحقق البريد.
+   - `HostApplyWizard`: flow فعلي (session check/signup fallback/become-host) + mapping `re_office -> real_estate_office` + state واضحة لـ `PHONE_VERIFICATION_REQUIRED` + OTP request/verify ثم retry.
+5. إضافة واجهة KYC minimal ضمن نطاق M9:
+   - صفحة `app/(host-auth)/become-a-host/kyc/page.tsx`
+   - مكوّن `KycSubmissionForm` (upload + submit + history) عبر BFF فقط وبدون عرض raw storage keys.
+6. تحديث `docs/PHASE_2_TRACKER.md` لإغلاق M9 بعد نجاح smoke test من المتصفح.
+7. تحديث `docs/BUILD_PLAN.md` بوضع `[x]` على خطوات Phase 2 التي أُنجزت فعلياً، مع إبقاء العناصر غير المكتملة مثل password reset وprofile/dashboard بدون إغلاق.
+8. إنشاء `docs/UX_BACKLOG.md` كمكان دائم لملاحظات UX/product المؤجلة (KYC حسب نوع المضيف، مسميات شخصي/تجاري، فصل الفنادق عن بيوت العطلات، وتغيير "عقارات" إلى "بيوت عطلات").
+9. إصلاح تشغيل `api dev` محلياً بتنظيف `dist` و`tsconfig.build.tsbuildinfo` قبل watch لتجنب خطأ `Cannot find module apps/api/dist/main`.
+10. إنشاء `apps/web/.env.local` محلياً بقيمة `SUKNAA_API_BASE_URL=http://localhost:3001/v1` لتشغيل BFF أثناء التطوير (الملف ignored ولا يُرفع).
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter web lint` → نجاح.
+- `npx pnpm@9.15.4 --filter web build` → نجاح.
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `npx pnpm@9.15.4 --filter api verify:m8` → نجاح: `ok: true` مع Docker services شغالة وصحية.
+- Smoke test يدوي من المتصفح → نجاح: signup، email verification عبر BFF/CSRF، login + login intent، host apply، phone OTP، become-host، وKYC submit.
+
+**الثغرات/الملاحظات المتبقية**:
+- M9 مغلق الآن. الملاحظات غير الأمنية الخاصة بتجربة المستخدم والمسميات محفوظة في `docs/UX_BACKLOG.md` وليست blocker على M9.
+- تم الالتزام بعدم تخزين التوكنز في `localStorage/sessionStorage` وعدم طباعة passwords/tokens/otp/mfa_token/storage keys.
+
+---
 
 **التاريخ**: 2026-05-07 (Phase 2 Milestone 8 — Admin KYC Review)
 **الـ AI المستخدم**: Claude
@@ -1243,4 +1281,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M7).**
+**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M9).**

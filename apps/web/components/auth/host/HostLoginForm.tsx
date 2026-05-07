@@ -2,14 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiRequest, getErrorMessageAr } from "@/lib/web-api";
 import {
   Field,
   inputClass,
-  MockSuccessBanner,
 } from "@/components/auth/form-primitives";
 import {
   hostLoginSchema,
@@ -22,8 +23,12 @@ import {
  * landed here by mistake.
  */
 export function HostLoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [submitState, setSubmitState] = useState<"idle" | "ok">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [isSubmitting2fa, setIsSubmitting2fa] = useState(false);
 
   const form = useForm<HostLoginValues>({
     resolver: zodResolver(hostLoginSchema),
@@ -33,17 +38,63 @@ export function HostLoginForm() {
   const { register, handleSubmit, formState } = form;
   const { errors, isSubmitting } = formState;
 
-  const onSubmit = (values: HostLoginValues) =>
-    new Promise<void>((resolve) =>
-      setTimeout(() => {
-        console.info("[mock] host login submitted", {
-          email: values.email,
-          hasPassword: Boolean(values.password),
-        });
-        setSubmitState("ok");
-        resolve();
-      }, 600),
-    );
+  const completeIntentAndRedirect = async () => {
+    const intentResult = await apiRequest<{
+      becomeHostRequired?: boolean;
+      redirectTo?: string;
+    }>({
+      path: "/api/auth/login/intent",
+      method: "POST",
+      body: { intent: "host" },
+    });
+    if (intentResult.becomeHostRequired) {
+      router.push("/become-a-host/apply");
+      return;
+    }
+    router.push(intentResult.redirectTo ?? "/host/dashboard");
+  };
+
+  const onSubmit = async (values: HostLoginValues) => {
+    setErrorMessage(null);
+    setMfaToken(null);
+    try {
+      const loginResult = await apiRequest<{
+        requires_2fa?: boolean;
+        mfa_token?: string;
+      }>({
+        path: "/api/auth/login",
+        method: "POST",
+        body: { ...values, rememberMe: false },
+      });
+      if (loginResult.requires_2fa && loginResult.mfa_token) {
+        setMfaToken(loginResult.mfa_token);
+        return;
+      }
+      await completeIntentAndRedirect();
+    } catch (error) {
+      setErrorMessage(getErrorMessageAr(error));
+    }
+  };
+
+  const submit2fa = async () => {
+    if (!mfaToken || !totpCode.trim()) {
+      return;
+    }
+    setErrorMessage(null);
+    setIsSubmitting2fa(true);
+    try {
+      await apiRequest({
+        path: "/api/auth/login/2fa",
+        method: "POST",
+        body: { mfa_token: mfaToken, code: totpCode.trim() },
+      });
+      await completeIntentAndRedirect();
+    } catch (error) {
+      setErrorMessage(getErrorMessageAr(error));
+    } finally {
+      setIsSubmitting2fa(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -67,7 +118,11 @@ export function HostLoginForm() {
         </div>
 
         <div className="px-7 pb-7 md:px-9 md:pb-9">
-          <MockSuccessBanner show={submitState === "ok"} />
+          {errorMessage ? (
+            <p className="mt-4 rounded-xl border border-[#F8D7DA] bg-[#FFF1F2] px-4 py-3 text-sm text-[#9F1239]">
+              {errorMessage}
+            </p>
+          ) : null}
 
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -142,6 +197,32 @@ export function HostLoginForm() {
                 ? "جارٍ تسجيل الدخول..."
                 : "ادخل لوحة المضيفين"}
             </button>
+
+            {mfaToken ? (
+              <div className="space-y-3 rounded-2xl border border-[#E8E0D3] bg-cream/60 p-4">
+                <p className="text-sm font-semibold text-charcoal">
+                  أدخل رمز التحقق بخطوتين لإكمال الدخول
+                </p>
+                <input
+                  value={totpCode}
+                  onChange={(event) => setTotpCode(event.target.value)}
+                  dir="ltr"
+                  placeholder="123456"
+                  className={inputClass(false)}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void submit2fa();
+                  }}
+                  disabled={isSubmitting2fa}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold py-3 text-sm font-bold text-white shadow-warm-md transition-all duration-200 hover:bg-[#b88a36] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting2fa ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {isSubmitting2fa ? "جارٍ التحقق..." : "تأكيد التحقق"}
+                </button>
+              </div>
+            ) : null}
           </form>
         </div>
       </div>

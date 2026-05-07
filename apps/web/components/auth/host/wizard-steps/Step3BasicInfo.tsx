@@ -58,7 +58,7 @@ export function Step3BasicInfo() {
             type="tel"
             autoComplete="tel"
             dir="ltr"
-            placeholder="+963 9X XXX XXXX"
+            placeholder="+963991234567"
             {...register("phone")}
             className={inputClass(Boolean(errors.phone))}
           />
