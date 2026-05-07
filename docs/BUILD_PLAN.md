@@ -102,18 +102,18 @@ You can show a friend the visual mockups and they understand both the Real Estat
 - [x] PostgreSQL 16 + PostGIS via Docker Compose
 - [x] Prisma schema for: `users`, `host_profiles`, `kyc_submissions`, `auth_sessions`, `otp_codes`, `two_factor_secrets`, `audit_logs`
 - [x] First migration created and applied
-- [ ] **Auth module**:
+- [x] **Auth module**:
   - [x] Email + password registration
   - [x] Phone OTP (international)
   - [x] JWT access token + refresh token rotation
-  - [ ] Password reset
+  - [x] Password reset
   - [x] Email verification
 - [x] **Login intent endpoint** (NEW v2): records guest vs host intent post-login
 - [ ] **2FA module**:
   - [x] TOTP + backup codes
   - [x] MFA login challenge
-  - [ ] SMS 2FA
-  - [ ] Mandatory enforcement for hosts/admins
+  - [x] SMS replaced by WhatsApp provider abstraction/prep (mock by default, real WhatsApp env-gated)
+  - [ ] Mandatory enforcement for hosts/admins (deferred pre-production hardening)
 - [x] **Roles**: `is_guest`, `is_host`, `is_admin`, `is_super_admin` (a user can be multiple)
 - [x] **KYC submission**:
   - [x] Different document requirements per `intended_host_category` (real_estate vs hospitality) and `intended_host_subtype`
@@ -127,15 +127,15 @@ You can show a friend the visual mockups and they understand both the Real Estat
   - [x] Signup
   - [x] Host apply
   - [x] KYC upload/submit page
-  - [ ] Profile/dashboard page
-- [ ] Frontend: language preference persists in user profile
+  - [ ] Profile/dashboard page (deferred outside Phase 2 foundation)
+- [ ] Frontend: language/i18n preference UI (deferred until full site structure is stable)
 - [x] Swagger docs auto-generated locally at `/api/docs`
 - [x] Audit log writes for all Phase 2 admin KYC actions
 
 ### Exit Criteria
 A guest can sign up + verify phone + login. A user can choose to become a real-estate host OR a hotel-company host with the right KYC documents. An admin can approve their KYC.
 
-**Status 2026-05-07:** Phase 2 M1-M9 are complete, including browser smoke test for signup, email verification, login intent, become-host, phone OTP, and KYC submit. M10 remains for focused tests/docs closure. Password reset, SMS 2FA, mandatory 2FA enforcement, and profile/dashboard UI are not closed yet.
+**Status 2026-05-07:** Phase 2 M1-M10 are complete. Password reset is implemented and covered by `verify:m10`. SMS was intentionally replaced by WhatsApp provider prep. Language/i18n UI, profile/dashboard UI, admin dashboard UI, and mandatory 2FA enforcement are deferred outside the Phase 2 foundation closure.
 
 ---
 

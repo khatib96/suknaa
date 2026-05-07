@@ -3,6 +3,8 @@ export {
   becomeHostSchema,
   authLoginSchema as loginSchema,
   authLogoutSchema as logoutSchema,
+  authPasswordResetConfirmSchema as passwordResetConfirmSchema,
+  authPasswordResetRequestSchema as passwordResetRequestSchema,
   authRefreshSchema as refreshSchema,
   authSessionsQuerySchema as sessionsQuerySchema,
   authSignupSchema as signupSchema,

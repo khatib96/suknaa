@@ -198,6 +198,158 @@ export class AuthService {
     return { verified: true };
   }
 
+  async requestPasswordReset(
+    email: string,
+    ctx: RequestContext,
+  ): Promise<{ requested: true }> {
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: { email: normalizedEmail, deletedAt: null, emailVerified: true },
+      select: {
+        id: true,
+        email: true,
+        isGuest: true,
+        isHost: true,
+        isAdmin: true,
+        isSuperAdmin: true,
+      },
+    });
+
+    if (!user) {
+      return { requested: true };
+    }
+
+    const recentCount = await this.prisma.otpCode.count({
+      where: {
+        deliveryTarget: normalizedEmail,
+        channel: "email",
+        purpose: "password_reset",
+        createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      },
+    });
+    if (recentCount >= 5) {
+      await this.auditService.write({
+        actorUserId: user.id,
+        actorRole: this.roleForUser(user),
+        actorIp: ctx.ipAddress ?? null,
+        userAgent: ctx.userAgent ?? null,
+        requestId: ctx.requestId ?? null,
+        action: "auth.password_reset_rate_limited",
+        entityType: "users",
+        entityId: user.id,
+        metadata: {},
+      });
+      return { requested: true };
+    }
+
+    await this.createPasswordResetToken(user.id, normalizedEmail);
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: this.roleForUser(user),
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.password_reset_requested",
+      entityType: "users",
+      entityId: user.id,
+      metadata: {},
+    });
+
+    return { requested: true };
+  }
+
+  async confirmPasswordReset(
+    email: string,
+    token: string,
+    password: string,
+    ctx: RequestContext,
+  ): Promise<{ reset: true; revokedSessions: number }> {
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: { email: normalizedEmail, deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+        isGuest: true,
+        isHost: true,
+        isAdmin: true,
+        isSuperAdmin: true,
+      },
+    });
+    if (!user) {
+      throw unauthorizedError({
+        code: "INVALID_PASSWORD_RESET_TOKEN",
+        message: "Invalid or expired password reset token",
+        message_en: "Invalid or expired password reset token",
+      });
+    }
+
+    const candidates = await this.prisma.otpCode.findMany({
+      where: {
+        userId: user.id,
+        channel: "email",
+        purpose: "password_reset",
+        deliveryTarget: normalizedEmail,
+        consumedAt: null,
+        expiresAt: { gte: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+
+    let matchedCodeId: string | null = null;
+    for (const code of candidates) {
+      const matches = await this.passwordService.verifyOpaqueToken(code.codeHash, token);
+      if (matches) {
+        matchedCodeId = code.id;
+        break;
+      }
+    }
+
+    if (!matchedCodeId) {
+      throw unauthorizedError({
+        code: "INVALID_PASSWORD_RESET_TOKEN",
+        message: "Invalid or expired password reset token",
+        message_en: "Invalid or expired password reset token",
+      });
+    }
+
+    await this.passwordBreachChecker.assertPasswordIsSafe(password);
+    const passwordHash = await this.passwordService.hashPassword(password);
+    const now = new Date();
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      });
+      await tx.otpCode.update({
+        where: { id: matchedCodeId },
+        data: { consumedAt: now },
+      });
+      const revoked = await tx.authSession.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      return revoked;
+    });
+
+    await this.auditService.write({
+      actorUserId: user.id,
+      actorRole: this.roleForUser(user),
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.password_reset_completed",
+      entityType: "users",
+      entityId: user.id,
+      metadata: { revokedSessions: result.count },
+    });
+
+    return { reset: true, revokedSessions: result.count };
+  }
+
   async login(input: LoginInput, ctx: RequestContext) {
     const user = await this.prisma.user.findFirst({
       where: { email: input.email.toLowerCase(), deletedAt: null },
@@ -730,6 +882,40 @@ export class AuthService {
     });
   }
 
+  private async createPasswordResetToken(userId: string, email: string): Promise<void> {
+    await this.prisma.otpCode.updateMany({
+      where: {
+        userId,
+        purpose: "password_reset",
+        channel: "email",
+        deliveryTarget: email.toLowerCase(),
+        consumedAt: null,
+      },
+      data: { consumedAt: new Date() },
+    });
+
+    const token = this.tokensService.generateRefreshToken();
+    const tokenHash = await this.passwordService.hashOpaqueToken(token);
+
+    await this.prisma.otpCode.create({
+      data: {
+        userId,
+        purpose: "password_reset",
+        channel: "email",
+        deliveryTarget: email.toLowerCase(),
+        codeHash: tokenHash,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      },
+    });
+
+    await this.messagingService.send({
+      recipient: { channel: "email", value: email.toLowerCase() },
+      subject: "Reset your Suknaa password",
+      body: `Use this password reset token to set a new password: ${token}`,
+      metadata: { kind: "password_reset", userId },
+    });
+  }
+
   private async issueAndPersistSession(
     user: User,
     rememberMe: boolean,
@@ -831,5 +1017,15 @@ export class AuthService {
       isSuperAdmin: user.isSuperAdmin,
       lastLoginAs: user.lastLoginAs,
     };
+  }
+
+  private roleForUser(user: {
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
+    isHost: boolean;
+  }): "guest" | "host" | "admin" {
+    if (user.isAdmin || user.isSuperAdmin) return "admin";
+    if (user.isHost) return "host";
+    return "guest";
   }
 }

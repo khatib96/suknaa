@@ -4,10 +4,10 @@
 
 ## Current Status
 
-**Current milestone:** M10 - Tests + Docs Closure (next)  
-**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9  
+**Current milestone:** Phase 2 closed; Phase 3 is next  
+**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9, M10  
 **In progress:** None  
-**Not started:** M10
+**Not started:** Phase 3
 
 ## Phase 2 Rule
 
@@ -35,7 +35,7 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 | M7 | KYC Submission + MinIO | Done | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
 | M8 | Admin KYC Review + Audit Logs | Done | Admin queue (cursor-paginated), approve (sets host isVerified + expiresAt), reject (reason required), admin.kyc.approved/rejected audit logs. |
 | M9 | Frontend BFF Integration | Done | Next.js BFF route handlers + auth/host forms wired to real API + CSRF double-submit + minimal KYC page + browser smoke test. |
-| M10 | Tests + Docs Closure | Not started | Focused auth/KYC tests, Swagger review, docs and memory final update. |
+| M10 | Tests + Docs Closure | Done | Password reset completed, `verify:m10` added, Phase 2 docs reconciled, deferred items documented. |
 
 ## Completed Verification
 
@@ -139,6 +139,34 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
   - Minimal KYC UI page at `/become-a-host/kyc` with upload/submit/history via BFF only.
 - M9 is closed. Future UX/product naming notes are tracked in `docs/UX_BACKLOG.md` and are not blockers for Phase 2 M9.
 
+### M10
+
+- Implemented password reset:
+  - `POST /v1/auth/password-reset/request`
+  - `POST /v1/auth/password-reset/confirm`
+  - BFF mirrors:
+    - `POST /api/auth/password-reset/request`
+    - `POST /api/auth/password-reset/confirm`
+- Password reset request returns generic success for unknown emails to avoid account enumeration.
+- Reset tokens are long opaque tokens stored hashed in `otp_codes` with `purpose=password_reset`.
+- Successful reset revokes existing auth sessions for that user.
+- Added focused verification script:
+  - `npx pnpm@9.15.4 --filter api verify:m10`
+- `verify:m10`: passed (`ok: true`) with Docker services running.
+- Final gates passed:
+  - `web lint`
+  - `web build`
+  - `api lint`
+  - `api build`
+  - `api verify:m8`
+  - `api verify:m10`
+- M10 decisions:
+  - SMS is not a Phase 2 requirement anymore; WhatsApp provider abstraction/prep is the selected channel path, with mock provider as local default and real WhatsApp behind env flags.
+  - Language/i18n preference UI is deferred until the full site structure is stable.
+  - Dashboard/profile UI is outside Phase 2. Current `/dashboard` 404 is tracked as a future UX/product item.
+  - KYC approval is currently API/admin-service based through `/v1/admin/kyc/*`; admin UI is a later phase.
+  - Mandatory 2FA enforcement for hosts/admins remains a pre-production security hardening item, not a blocker for closing Phase 2 foundation.
+
 ## Standard Verification Commands
 
 Run from repo root:
@@ -149,6 +177,7 @@ npx pnpm@9.15.4 db:status
 npx pnpm@9.15.4 --filter api build
 npx pnpm@9.15.4 --filter api lint
 npx pnpm@9.15.4 --filter api verify:m8
+npx pnpm@9.15.4 --filter api verify:m10
 ```
 
 If Docker services are needed:

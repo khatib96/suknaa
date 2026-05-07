@@ -43,6 +43,16 @@ export const authVerifyEmailSchema = z.object({
   token: z.string().min(32, "Invalid verification token"),
 });
 
+export const authPasswordResetRequestSchema = z.object({
+  email: emailField,
+});
+
+export const authPasswordResetConfirmSchema = z.object({
+  email: emailField,
+  token: z.string().min(32, "Invalid password reset token"),
+  password: passwordSignupField,
+});
+
 export const authRefreshSchema = z.object({
   refreshToken: z.string().min(32, "Invalid refresh token"),
 });
@@ -136,6 +146,8 @@ export type AuthSignupInput = z.infer<typeof authSignupSchema>;
 export type AuthLoginInput = z.infer<typeof authLoginSchema>;
 export type LoginIntentInput = z.infer<typeof loginIntentSchema>;
 export type AuthVerifyEmailInput = z.infer<typeof authVerifyEmailSchema>;
+export type AuthPasswordResetRequestInput = z.infer<typeof authPasswordResetRequestSchema>;
+export type AuthPasswordResetConfirmInput = z.infer<typeof authPasswordResetConfirmSchema>;
 export type AuthRefreshInput = z.infer<typeof authRefreshSchema>;
 export type AuthLogoutInput = z.infer<typeof authLogoutSchema>;
 export type AuthRevokeSessionInput = z.infer<typeof authRevokeSessionSchema>;

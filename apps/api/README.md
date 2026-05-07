@@ -2,7 +2,7 @@
 
 NestJS backend for Suknaa. In production it will live behind `api.suknaa.com`; locally it runs on port `3001` and is reached by the public web app through the Next.js BFF (`apps/web/app/api/*`).
 
-## Phase 2 Status — Milestone 8 of 10
+## Phase 2 Status — Complete through Milestone 10
 
 Milestone 1 scaffolded the NestJS API, Zod env validation, Pino logger, Swagger, Prisma/Redis/MinIO shared services, and `GET /v1/health`.
 
@@ -20,6 +20,7 @@ Milestone 4 adds auth core in `src/modules/auth`:
 
 - Signup with optional `fullName` and required email/password (no phone on signup).
 - Email verification via `otp_codes` using a long opaque token hash (unchanged M4 flow).
+- Password reset request/confirm via `otp_codes` using long opaque hashed reset tokens. Successful reset revokes existing sessions.
 - Login, refresh rotation, logout, logout-all.
 - Session listing/revocation and `GET /v1/me`.
 - RS256 access tokens (15m) and opaque refresh sessions (hashed in DB).
@@ -33,6 +34,7 @@ Milestone 5 extends auth:
 - Login: if TOTP is enabled, `POST /v1/auth/login` returns `{ requires_2fa: true, mfa_token }` (no session/tokens until MFA completes).
 - `POST /v1/auth/login/2fa` completes MFA with an authenticator code or backup code, then issues normal tokens + session.
 - Messaging: default remains **mock** (`.dev-outbox`). WhatsApp Cloud Graph API sender is implemented but **off** unless `WHATSAPP_CLOUD_ENABLED=true` (with required Meta env vars).
+- SMS was intentionally replaced by the provider-gated WhatsApp path. Local/dev keeps using the mock provider.
 
 Milestone 6 extends account role flows:
 
@@ -48,6 +50,13 @@ Milestone 8 adds admin KYC review:
 - `POST /v1/admin/kyc/:id/reject` requires `rejectionReason` (1–1000 chars), transitions status to `rejected`, sets `reviewedBy`/`reviewedAt`. Writes `admin.kyc.rejected` audit log. Host profile is not touched on rejection.
 - Re-reviewing an already-reviewed submission returns `409 KYC_ALREADY_REVIEWED`.
 - All three endpoints require `is_admin=true` or `is_super_admin=true` (enforced by `JwtAuthGuard` + `RolesGuard`).
+- Admin review is API/service-level in Phase 2. Admin UI is deferred to a later dashboard/admin phase.
+
+Milestone 10 closes Phase 2:
+
+- `POST /v1/auth/password-reset/request` and `POST /v1/auth/password-reset/confirm` are implemented.
+- `verify:m10` covers signup, email verification, login, password reset, session revocation, phone OTP, become-host, KYC required docs, safe KYC history/latest responses, admin approval, and audit logs.
+- Language/i18n UI and profile/dashboard UI are deferred outside Phase 2 foundation closure.
 
 Milestone 7 adds KYC submission and private MinIO document storage:
 
@@ -207,6 +216,22 @@ npx pnpm@9.15.4 --filter api verify:m8
 ```
 
 This creates an admin user directly in the DB, creates two verified host candidates with pending KYC submissions, approves the first, rejects the second (with reason), asserts DB state for both submissions and host profiles, verifies `admin.kyc.approved` and `admin.kyc.rejected` audit logs, and confirms double-review is blocked with `KYC_ALREADY_REVIEWED`.
+
+## Milestone 10 Manual Verification
+
+Prerequisites:
+
+- Docker Postgres + Redis + MinIO running (`infrastructure/docker-compose.yml`).
+- `apps/api/.env` copied from `.env.example`, JWT key paths set, and `TOTP_ENC_KEY` set.
+- Do **not** commit `.env`, PEM keys, `.dev-outbox/`, `.tmp-scripts/`, or uploaded test objects.
+
+From repo root:
+
+```powershell
+npx pnpm@9.15.4 --filter api verify:m10
+```
+
+This exercises password reset, reset-token invalidation, session revocation, phone OTP, become-host, KYC submission and safe read responses, admin approval, and audit logs.
 
 ## Milestone 7 Manual Verification
 

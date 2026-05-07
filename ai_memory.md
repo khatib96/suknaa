@@ -18,9 +18,9 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
-- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M9 مكتملة، و**M10 (Tests + Docs Closure) هي التالية**.
-- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M9)
+- **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) مغلقة؛ Phase 3 هي التالية.
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
+- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M10)
 - **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -169,6 +169,7 @@
 - [x] **Milestone 7 (KYC Submission + MinIO)**: KYC shared schemas, API multipart upload, magic-byte MIME validation, private MinIO object keys, subtype-required document validation, pending `kyc_submissions`, safe latest/history responses, and `kyc.submitted` audit log; verified with Docker-backed `verify:m7` (`ok: true`, `status: pending`, `hostVerified: false`). verified 2026-05-07
 - [x] **Milestone 8 (Admin KYC Review)**: `GET /v1/admin/kyc/queue` (cursor-paginated, document-presence booleans, no raw keys) + `POST /v1/admin/kyc/:id/approve` (sets approved + expiresAt +2y + host isVerified=true in transaction) + `POST /v1/admin/kyc/:id/reject` (reason required, host unchanged); audit events `admin.kyc.approved` / `admin.kyc.rejected`; double-review blocked with `KYC_ALREADY_REVIEWED`. ✓ 2026-05-07
 - [x] **Milestone 9 (Frontend BFF Integration)**: BFF للويب + auth cookies/CSRF + ربط login/signup/host apply/KYC بالـ API الفعلي + smoke test يدوي من المتصفح (signup, email verify, login intent, phone OTP, become-host, KYC submit) ✓ 2026-05-07
+- [x] **Milestone 10 (Tests + Docs Closure)**: password reset API+BFF، سكربت `verify:m10` عميق، توثيق قرارات SMS→WhatsApp وتأجيل language/dashboard/admin UI، وإغلاق Phase 2. ✓ 2026-05-07
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
 
 ### Phase 3 — Real Estate System (End-to-End)
@@ -201,6 +202,44 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-07 (Phase 2 Milestone 10 — Tests + Docs Closure)
+**الـ AI المستخدم**: Codex
+
+**ما تم تنفيذه**:
+1. إضافة password reset في API:
+   - `POST /v1/auth/password-reset/request`
+   - `POST /v1/auth/password-reset/confirm`
+   - الطلب يرجع success عام للبريد غير الموجود لتجنب account enumeration.
+   - reset token طويل opaque ومحفوظ hash في `otp_codes` مع `purpose=password_reset`.
+   - نجاح reset يلغي جلسات refresh المفتوحة للمستخدم.
+2. إضافة BFF mirrors:
+   - `POST /api/auth/password-reset/request`
+   - `POST /api/auth/password-reset/confirm`
+3. إضافة سكربت تحقق عميق:
+   - `npx pnpm@9.15.4 --filter api verify:m10`
+   - يغطي signup، email verify، login، password reset، إلغاء session، phone OTP، become-host، KYC missing-doc guard، KYC submit، safe latest/history بدون raw storage keys، admin approve، audit logs.
+4. توثيق قرارات M10:
+   - SMS استُبدل بواتساب/provider abstraction، والـ mock يبقى الافتراضي محلياً.
+   - language/i18n UI مؤجلة حتى تستقر بنية الموقع كاملة.
+   - dashboard/profile UI وadmin UI خارج Phase 2 foundation.
+   - موافقة KYC حالياً API/service-level عبر `/v1/admin/kyc/*`.
+   - mandatory 2FA enforcement للمضيفين/admins مؤجل كـ pre-production hardening.
+5. تحديث `docs/PHASE_2_TRACKER.md`, `docs/BUILD_PLAN.md`, `docs/UX_BACKLOG.md`, و`apps/api/README.md`.
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- `npx pnpm@9.15.4 --filter web lint` → نجاح.
+- `npx pnpm@9.15.4 --filter web build` → نجاح.
+- `npx pnpm@9.15.4 --filter api verify:m8` → نجاح: `ok: true`.
+- `npx pnpm@9.15.4 --filter api verify:m10` → نجاح: `ok: true`.
+
+**الحالة**:
+- Phase 2 مغلقة الآن حتى M10.
+- Phase 3 هي التالية، ولا تبدأ قبل رفع/حفظ تغييرات Phase 2.
+
+---
 
 **التاريخ**: 2026-05-07 (Phase 2 Milestone 9 — Frontend BFF Integration)
 **الـ AI المستخدم**: Codex
@@ -1281,4 +1320,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M9).**
+**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M10).**

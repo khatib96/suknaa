@@ -32,6 +32,8 @@ export const KNOWN_ERROR_MESSAGES_AR: Record<string, string> = {
   OTP_INVALID: "رمز التحقق غير صحيح.",
   OTP_EXPIRED: "رمز التحقق انتهت صلاحيته.",
   KYC_INVALID_DOCS: "ملفات التحقق غير مكتملة أو غير مطابقة.",
+  INVALID_PASSWORD_RESET_TOKEN: "رابط أو رمز إعادة تعيين كلمة المرور غير صالح أو انتهت صلاحيته.",
+  PASSWORD_BREACHED: "كلمة المرور ضعيفة أو مستخدمة في تسريبات معروفة. اختر كلمة أقوى.",
 };
 
 function toApiError(status: number, body: unknown): ApiError {

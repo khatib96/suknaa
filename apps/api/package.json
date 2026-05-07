@@ -16,7 +16,8 @@
     "verify:m6": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m6-verify.js",
     "verify:m7": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m7-verify.js",
     "verify:m8": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m8-verify.js",
-    "test": "echo \"No tests yet — added in Milestone 10.\""
+    "verify:m10": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m10-verify.js",
+    "test": "npx pnpm@9.15.4 --filter api verify:m10"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

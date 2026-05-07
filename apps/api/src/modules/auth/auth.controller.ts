@@ -22,6 +22,8 @@ import {
   loginIntentSchema,
   loginSchema,
   logoutSchema,
+  passwordResetConfirmSchema,
+  passwordResetRequestSchema,
   refreshSchema,
   requestOtpSchema,
   sessionsQuerySchema,
@@ -53,6 +55,23 @@ export class AuthController {
   async verifyEmail(@Body() body: unknown, @Req() req: Request) {
     const parsed = this.parse(verifyEmailSchema.safeParse(body));
     return this.authService.verifyEmail(parsed.email, parsed.token, this.requestContext(req));
+  }
+
+  @Post("auth/password-reset/request")
+  async requestPasswordReset(@Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(passwordResetRequestSchema.safeParse(body));
+    return this.authService.requestPasswordReset(parsed.email, this.requestContext(req));
+  }
+
+  @Post("auth/password-reset/confirm")
+  async confirmPasswordReset(@Body() body: unknown, @Req() req: Request) {
+    const parsed = this.parse(passwordResetConfirmSchema.safeParse(body));
+    return this.authService.confirmPasswordReset(
+      parsed.email,
+      parsed.token,
+      parsed.password,
+      this.requestContext(req),
+    );
   }
 
   @Post("auth/login")
