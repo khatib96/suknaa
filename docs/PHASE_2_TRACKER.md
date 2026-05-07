@@ -4,9 +4,9 @@
 
 ## Current Status
 
-**Current milestone:** M7 - KYC Submission + MinIO  
-**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6  
-**Not started:** M7+
+**Current milestone:** M8 - Admin KYC Review + Audit Logs  
+**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7  
+**Not started:** M8+
 
 ## Phase 2 Rule
 
@@ -31,7 +31,7 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 | M4 | Auth Core | Done | Shared auth schemas, password/hash services, strict RS256 auth endpoints, email verification via mock outbox, refresh rotation, sessions, `/v1/me`, auth audit events. |
 | M5 | OTP + Phone Verification + 2FA | Done | Phone OTP (mock provider), optional phone verification, TOTP + backup codes, MFA login challenge (`mfa_token`), WhatsApp Cloud prep behind env gate. |
 | M6 | Login Intent + Roles + Become Host | Done | Guest/host intent, roles guard, become-host endpoint, host profile creation. |
-| M7 | KYC Submission + MinIO | Not started | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
+| M7 | KYC Submission + MinIO | Done | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
 | M8 | Admin KYC Review + Audit Logs | Not started | Admin queue, approve/reject, KYC expiry, audit logs for decisions. |
 | M9 | Frontend BFF Integration | Not started | Next.js route handlers, connect existing auth/host forms to real API. |
 | M10 | Tests + Docs Closure | Not started | Focused auth/KYC tests, Swagger review, docs and memory final update. |
@@ -95,6 +95,15 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 - API lint: passed
 - `verify:m6`: passed (`ok: true`, `isHost: true`, `hostCategory: real_estate`, `hostSubtype: individual`)
 
+### M7
+
+- `prisma:generate`: passed
+- `db:status`: clean
+- API build: passed
+- API lint: passed
+- `verify:m7`: passed (`ok: true`, `status: pending`, `hostVerified: false`)
+- KYC uploads stay private in MinIO and safe read endpoints do not return raw storage keys.
+
 ## Standard Verification Commands
 
 Run from repo root:
@@ -104,7 +113,7 @@ npx pnpm@9.15.4 --filter api prisma:generate
 npx pnpm@9.15.4 db:status
 npx pnpm@9.15.4 --filter api build
 npx pnpm@9.15.4 --filter api lint
-npx pnpm@9.15.4 --filter api verify:m6
+npx pnpm@9.15.4 --filter api verify:m7
 ```
 
 If Docker services are needed:

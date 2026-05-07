@@ -14,6 +14,7 @@
     "prisma:status": "prisma migrate status",
     "verify:m5": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m5-verify.js",
     "verify:m6": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m6-verify.js",
+    "verify:m7": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m7-verify.js",
     "test": "echo \"No tests yet — added in Milestone 10.\""
   },
   "dependencies": {

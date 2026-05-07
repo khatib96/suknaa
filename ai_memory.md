@@ -19,8 +19,8 @@
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
-- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 5 (OTP + Phone Verification + 2FA)** — OTP phone verification + TOTP 2FA + backup codes + MFA login challenge + WhatsApp Cloud disabled prep.
-- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M5)
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 7 (KYC Submission + MinIO)** — KYC upload + private MinIO storage + pending submission flow.
+- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M7)
 - **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -166,7 +166,8 @@
 - [x] **Milestone 4 (Auth Core)**: shared auth schemas في `packages/types`; `PasswordService` (argon2id: 64MB/3/4) + mock `PasswordBreachChecker`; strict RS256 keys required (`JWT_PRIVATE_KEY_PATH`, `JWT_PUBLIC_KEY_PATH`) + `TokensService` (access 15m + opaque refresh 256-bit hashed); `AuthModule/AuthController/AuthService` endpoints (`signup`, `verify-email`, `login`, `refresh`, `logout`, `logout-all`, `sessions`, `revoke session`, `/v1/me`); email verification عبر `otp_codes` (`purpose=email_verification`, `channel=email`, `delivery_target=email`, `code_hash` long opaque token); refresh rotation مع revoke session القديم؛ audit events (`auth.signup`, `auth.email_verified`, `auth.login`, `auth.refresh`, `auth.logout`, `auth.logout_all`, `auth.session_revoked`) ✓ 2026-05-06
 - [x] **Milestone 5 (OTP + Phone + 2FA)**: OTP phone verification + TOTP 2FA + backup codes + MFA login challenge + WhatsApp Cloud disabled prep; verified with Docker-backed `db:status` and `verify:m5` (`ok: true`). verified 2026-05-07
 - [x] **Milestone 6 (Login Intent + Roles + Become Host)**: login intent + RolesGuard + become-host endpoint + host profile creation; verified with Docker-backed `verify:m6` (`ok: true`, `isHost: true`). verified 2026-05-07
-- [ ] KYC flow + رفع الملفات + مسارات الإدمن
+- [x] **Milestone 7 (KYC Submission + MinIO)**: KYC shared schemas, API multipart upload, magic-byte MIME validation, private MinIO object keys, subtype-required document validation, pending `kyc_submissions`, safe latest/history responses, and `kyc.submitted` audit log; verified with Docker-backed `verify:m7` (`ok: true`, `status: pending`, `hostVerified: false`). verified 2026-05-07
+- [ ] Admin KYC review + approve/reject
 - [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
 
@@ -200,6 +201,25 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-07 (Phase 2 Milestone 7 — KYC Submission + MinIO)
+**الـ AI المستخدم**: Codex
+
+**ما تم تنفيذه**:
+1. إضافة shared KYC schemas في `packages/types/src/schemas/kyc.ts` وتصديرها من `@suknaa/types`.
+2. إضافة `KycModule/KycController/KycService` مع مسارات `POST /v1/me/kyc/upload`, `POST /v1/me/kyc`, `GET /v1/me/kyc`, `GET /v1/me/kyc/history`.
+3. رفع KYC عبر API multipart فقط، تخزين خاص في MinIO تحت `kyc/<user_id>/<file_kind>-<uuid>.<ext>`، مع فحص الحجم وMIME وmagic bytes.
+4. submit يتحقق من وجود host profile، متطلبات المستندات حسب `hostSubtype`، ملكية المفاتيح للمستخدم الحالي، تطابق نوع المفتاح مع الحقل، ووجود objects في MinIO قبل إنشاء submission.
+5. safe read endpoints لا ترجع raw storage keys، بل `documentPresence` فقط. ClamAV وEXIF/image processing مؤجلان كمتطلبات pre-beta.
+
+**التحقق**:
+- `prisma:generate` → نجاح.
+- `db:status` → clean.
+- `build` → نجاح.
+- `lint` → نجاح.
+- `verify:m7` → نجاح: `ok: true`, `status: pending`, `hostVerified: false`.
+
+---
 
 **التاريخ**: 2026-05-07 (Phase 2 Milestone 6 — Login Intent + Roles + Become Host)
 **الـ AI المستخدم**: Codex
@@ -1203,4 +1223,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M5).**
+**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M7).**

@@ -11,6 +11,7 @@ import { MessagingModule } from "./shared/messaging/messaging.module";
 import { AuditModule } from "./shared/audit/audit.module";
 import { HealthModule } from "./modules/health/health.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { KycModule } from "./modules/kyc/kyc.module";
 
 @Module({
   imports: [
@@ -40,6 +41,18 @@ import { AuthModule } from "./modules/auth/auth.module";
                 "*.code",
                 "*.otp",
                 "*.mfa_token",
+                "*.storageKey",
+                "*.idFrontKey",
+                "*.idBackKey",
+                "*.selfieKey",
+                "*.ownershipProofKey",
+                "*.companyRegistrationKey",
+                "*.taxCertificateKey",
+                "*.authorizationLetterKey",
+                "*.hotelLicenseKey",
+                "*.id_front_url",
+                "*.id_back_url",
+                "*.selfie_url",
               ],
               censor: "[redacted]",
             },
@@ -65,6 +78,7 @@ import { AuthModule } from "./modules/auth/auth.module";
     AuditModule,
     HealthModule,
     AuthModule,
+    KycModule,
   ],
 })
 export class AppModule {}

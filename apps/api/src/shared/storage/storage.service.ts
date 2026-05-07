@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { Client as MinioClient } from "minio";
 import { randomUUID } from "node:crypto";
 import type { Env } from "../config/env.schema";
+import type { KycFileKind } from "@suknaa/types";
 
 @Injectable()
 export class StorageService {
@@ -38,14 +39,36 @@ export class StorageService {
     }
   }
 
+  async ensureKycBucketExists(): Promise<void> {
+    await this.ensureBucketExists(this.kycBucket);
+  }
+
+  async putObject(
+    bucketName: string,
+    objectKey: string,
+    buffer: Buffer,
+    metadata?: Record<string, string>,
+  ): Promise<void> {
+    await this.client.putObject(bucketName, objectKey, buffer, buffer.byteLength, metadata);
+  }
+
+  async objectExists(bucketName: string, objectKey: string): Promise<boolean> {
+    try {
+      await this.client.statObject(bucketName, objectKey);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   buildKycObjectKey(params: {
     userId: string;
-    kycSubmissionId: string;
+    fileKind: KycFileKind;
     fileExtension: string;
   }): string {
     const ext = params.fileExtension.startsWith(".")
       ? params.fileExtension
       : `.${params.fileExtension}`;
-    return `kyc/${params.userId}/${params.kycSubmissionId}/${randomUUID()}${ext}`;
+    return `kyc/${params.userId}/${params.fileKind}-${randomUUID()}${ext}`;
   }
 }

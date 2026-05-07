@@ -2,7 +2,7 @@
 
 NestJS backend for Suknaa. In production it will live behind `api.suknaa.com`; locally it runs on port `3001` and is reached by the public web app through the Next.js BFF (`apps/web/app/api/*`).
 
-## Phase 2 Status — Milestone 6 of 10
+## Phase 2 Status — Milestone 7 of 10
 
 Milestone 1 scaffolded the NestJS API, Zod env validation, Pino logger, Swagger, Prisma/Redis/MinIO shared services, and `GET /v1/health`.
 
@@ -40,6 +40,15 @@ Milestone 6 extends account role flows:
 - `POST /v1/me/become-host` creates a `host_profiles` row, sets `users.is_host=true`, and keeps the host unverified until KYC.
 - Become-host requires `phoneVerified=true`.
 - `RolesGuard` + `@Roles()` are available for upcoming host/admin endpoints.
+
+Milestone 7 adds KYC submission and private MinIO document storage:
+
+- `POST /v1/me/kyc/upload` accepts multipart uploads through the API only.
+- File security checks: max 10MB, allowed MIME/magic bytes only (`JPEG`, `PNG`, `WebP`, `PDF`), UUID object keys, and no original filename storage.
+- Uploaded objects are stored privately under `kyc/<user_id>/<file_kind>-<uuid>.<ext>` in `MINIO_KYC_BUCKET`.
+- `POST /v1/me/kyc` validates required documents from the current host profile subtype, verifies key ownership and object existence, then creates a pending `kyc_submissions` row.
+- `GET /v1/me/kyc` and `GET /v1/me/kyc/history` return safe document-presence booleans only, never raw storage keys or signed URLs.
+- ClamAV scanning, EXIF stripping, and image re-encoding are pre-beta hardening requirements, not implemented in M7.
 
 Milestone 3 adds shared backend infrastructure used by Auth/KYC flows:
 
@@ -174,3 +183,19 @@ npx pnpm@9.15.4 --filter api verify:m5
 ```
 
 This exercises phone OTP (mock outbox), phone verification, TOTP setup/confirm/backup codes, MFA login (`requires_2fa` + `mfa_token`), backup-code login, a control user without 2FA (normal M4-style tokens), and expected `audit_logs` actions.
+
+## Milestone 7 Manual Verification
+
+Prerequisites:
+
+- Docker Postgres + Redis + MinIO running (`infrastructure/docker-compose.yml`).
+- `apps/api/.env` copied from `.env.example`, JWT key paths set, and `TOTP_ENC_KEY` set.
+- Do **not** commit `.env`, PEM keys, `.dev-outbox/`, `.tmp-scripts/`, or uploaded test objects.
+
+From repo root:
+
+```powershell
+npx pnpm@9.15.4 --filter api verify:m7
+```
+
+This creates a verified host candidate, uploads valid in-memory KYC buffers to private MinIO storage, submits individual-host KYC, verifies the row remains `pending`, confirms the host is not auto-verified, checks `kyc.submitted` audit logging, and checks safe latest/history responses.
