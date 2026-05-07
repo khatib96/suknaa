@@ -226,14 +226,17 @@ A real hotel host can list a hotel with multiple room types. A guest can browse 
 **Estimated:** 4–5 weeks
 
 ### Deliverables
-- [ ] Prisma schema: `bookings` (polymorphic — RE or hospitality), `booking_room_units`, `payments`, `wallets`, `wallet_transactions`, `withdrawal_requests`, `commission_rates`, `service_fee_rates`, `currency_rates`
+- [ ] Prisma schema: `bookings` (polymorphic — RE or hospitality), `booking_room_units`, `payments`, `wallets`, `wallet_transactions`, `withdrawal_requests`, `commission_rates`, `service_fee_rates`, `tax_rules`, `discount_codes`, `booking_fee_snapshots`, `currency_rates`
 - [ ] **Booking creation flow**:
   - Polymorphic: handles both `kind=real_estate` and `kind=hospitality`
   - Date conflict detection (uses appropriate availability table)
   - **Pricing tier resolver** (4 tiers + weekend uplift + seasonal)
+  - **Financial rules resolver** for commission + service fee + taxes + discounts/promos + manual overrides
   - **Commission engine** with passthrough math (gross-up formula)
   - **Service fee engine**
+  - **Tax rules engine**: hotel/host-entered tax data with Suknaa approval/override
   - Booking total calculator producing the exact invoice the guest sees
+  - Booking-time snapshots for every resolved financial rule and amount
   - Status: `pending_payment` → `confirmed` → `checked_in` → `completed`
 - [ ] **Payment Method 1: Sham Cash** (sandbox + production)
 - [ ] **Payment Method 2: MTN Cash**
@@ -244,17 +247,19 @@ A real hotel host can list a hotel with multiple room types. A guest can browse 
 - [ ] **Payment Method 4: International gateway** (provider TBD)
 - [ ] **Escrow logic for RE**: money held until 24h post check-in
 - [ ] **Direct flow for Hospitality**: money credited immediately
-- [ ] **Variable commission**: per-property-type, overridable per host/property/hotel
-- [ ] **Service fee**: separately configurable from admin
+- [ ] **Variable commission**: no fixed rates in code; configurable per global/type/host organization/host/property/hotel/room-type/guest/promo/booking override
+- [ ] **Service fee**: separately configurable from admin, guest-specific/coupon-capable, always shown when charged
+- [ ] **Taxes/local fees**: host or hotel can submit applicable taxes, Suknaa can approve/edit/override, and checkout snapshots the final tax lines
+- [ ] **Discounts/coupons/waivers**: coupon codes, first-N-bookings promos, 0% commission campaigns, and audited manual exceptions
 - [ ] **Currency conversion**: USD storage, USD+SYP display
 - [ ] **Host wallet UI**: balance breakdown, transaction history
 - [ ] **Withdrawal system**: auto weekly/monthly + manual; $10 min; admin processing
 - [ ] **Cancellation handling**: 3 policies + service fee logic
-- [ ] **Email + SMS receipts**
+- [ ] **Email + WhatsApp receipts** (SMS provider replaced by WhatsApp/provider abstraction)
 - [ ] All financial actions → audit log
 
 ### Exit Criteria
-End-to-end booking + payment + withdrawal works for both real-estate AND hospitality, in both commission modes (absorb + passthrough).
+End-to-end booking + payment + withdrawal works for both real-estate AND hospitality, in both commission modes (absorb + passthrough), with financial-rule snapshots covering commission, service fee, taxes, discounts, and overrides.
 
 ---
 
@@ -308,11 +313,14 @@ A host can run their entire business from the dashboard. Guests and hosts chat p
 - [ ] **Withdrawals management**
 - [ ] **Disputes management**
 - [ ] **KYC review queue**
-- [ ] **Commission rates configuration** (per type/host/property/hotel)
+- [ ] **Financial rules manager**: commission, service fee, taxes, discounts, coupon codes, waivers, and manual override policies
+- [ ] **Commission rates configuration** (per type/host organization/host/property/hotel/room-type/promo)
 - [ ] **Service fee rates configuration** (NEW v2)
+- [ ] **Tax approval/override queue** for host/hotel-entered tax rules
+- [ ] **Discount and coupon management**
 - [ ] **Currency rates** (view + manual override)
 - [ ] **Content management** (FAQ, terms, static pages)
-- [ ] **Admin user management** (SuperAdmin only)
+- [ ] **Admin user management** with granular permissions/capabilities, not hard-coded role-only access
 - [ ] **Audit log viewer**
 - [ ] **Reports** (bookings, revenue, top hosts, top properties — CSV export)
 
@@ -332,6 +340,7 @@ This phase adds the Suknaa "magic" — features that differentiate it from gener
   - `pricing_suggestions` generator (per property/room_type)
   - Host dashboard banner showing suggestions ("raise price 15%")
   - Suggestion accept/dismiss tracking
+  - Suggestions do not mutate prices automatically unless host/admin accepts them
 - [ ] **Anti-Circumvention**:
   - Force reason on availability reductions
   - `availability_reduction_events` recording

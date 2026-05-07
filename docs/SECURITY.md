@@ -17,7 +17,7 @@
 | 6 | Booking spam / scraper abuse | Medium | Rate limiting, CAPTCHA on signup, behavior analysis |
 | 7 | Database breach | Critical | Encryption at rest, principle of least privilege, no PII in logs |
 | 8 | DDoS / availability attacks | Medium | Cloudflare WAF, rate limits |
-| 9 | Insider threat (compromised admin) | Critical | RBAC, mandatory 2FA, full audit log, IP allowlist for admin panel |
+| 9 | Insider threat (compromised admin) | Critical | Granular permissions, mandatory 2FA, full audit log, IP allowlist for admin panel |
 | 10 | Cross-site attacks (XSS, CSRF) | High | CSP, sanitization, CSRF tokens, SameSite cookies |
 | 11 | **NEW v2**: Hotel inventory manipulation (artificial scarcity for price gouging) | Medium | Audit log of all `room_units` changes, statistical anomaly detection |
 | 12 | **NEW v2**: Pricing intelligence gaming (host follows AI suggestions to overcharge) | Low | Suggestions are bounded (no >40% increase); long-term reputation hits low-rating hosts |
@@ -61,7 +61,7 @@ After successful auth, the user's chosen "Login as Guest" or "Login as Host" int
 - Records `users.last_login_as` for next-session default
 - If "Host" but `is_host=false` → triggers "Become a Host" onboarding (KYC + category selection)
 
-This is UX-level; security still depends on `is_guest` / `is_host` / `is_admin` flags for actual permission checks.
+This is UX-level; Phase 2 security still depends on `is_guest` / `is_host` / `is_admin` flags for actual permission checks. Long term, operational access must move to granular permissions/capabilities because hotels, companies, and Suknaa staff need per-user customization.
 
 ### 2.6. Account Lockout
 - 5 failed password attempts in 15 minutes → temporarily locked
@@ -70,11 +70,20 @@ This is UX-level; security still depends on `is_guest` / `is_host` / `is_admin` 
 
 ---
 
-## 3. Authorization (RBAC) — Updated for Dual System
+## 3. Authorization — Roles For Bootstrapping, Permissions For Operations
 
-### 3.1. Roles
+### 3.1. Bootstrap Roles
 A user has one or more of: `is_guest`, `is_host`, `is_admin`, `is_super_admin`.
 A `host_profile` records `host_category` (real_estate or hospitality) and `host_subtype`.
+
+These flags are acceptable for Phase 2 foundation. They are not enough for the full product. Starting with dashboard/admin/financial tooling, Suknaa should use:
+- Permission templates for common jobs, such as owner, front desk, accounting, support, KYC reviewer, finance approver
+- Per-user permission overrides
+- Organization/company membership for hotels, real-estate offices, and Suknaa internal teams
+- Invitation flow for hotel/company owners to add staff
+- Full audit logs for permission changes and sensitive actions
+
+High-risk financial capabilities must be separate permissions, not implied by a broad role. Examples: `pricing.rules.manage`, `commission.override`, `service_fee.override`, `tax_rules.approve`, `tax_rules.override`, `discount_codes.manage`, `refunds.process`, `wallet.adjust`.
 
 ### 3.2. Permission Matrix (sample, updated for v2)
 
@@ -90,8 +99,10 @@ A `host_profile` records `host_category` (real_estate or hospitality) and `host_
 | Approve listing | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Approve KYC | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Process refund | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Override commission rate | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Override service fee | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Override commission rate | ❌ | ❌ | ❌ | Permissioned | Permissioned |
+| Override service fee | ❌ | ❌ | ❌ | Permissioned | Permissioned |
+| Approve/override tax rules | ❌ | ❌ | ❌ | Permissioned | Permissioned |
+| Manage discount/coupon rules | ❌ | ❌ | ❌ | Permissioned | Permissioned |
 | Create admin account | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Manual wallet adjustment | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Anti-circumvention review | ❌ | ❌ | ❌ | ✅ | ✅ |
@@ -103,6 +114,8 @@ A `host_profile` records `host_category` (real_estate or hospitality) and `host_
 - A user with both categories registered (rare but allowed) can do both
 - Hosts only see/edit their own properties + hotels
 - Guests only see their own bookings; hosts only see bookings for their listings
+- Hotel/company staff only see objects owned by their organization unless explicitly granted broader access
+- Suknaa staff only get the capabilities needed for their job; broad admin access is not the default
 
 Enforced in service layer (not just controller).
 

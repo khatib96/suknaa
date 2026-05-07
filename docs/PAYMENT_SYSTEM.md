@@ -2,6 +2,7 @@
 
 > Every dinar that touches Suknaa flows through this document.
 > **v2 changes**: Commission can be absorbed by host OR passed through to guest. Service fee separated and always shown to guest. Invoice never shows commission.
+> **2026-05-08 decision**: commission, service fees, taxes, discounts, and promotional waivers are never hard-coded business constants. They are resolved through configurable financial rules, permissioned overrides, and booking-time snapshots.
 
 ---
 
@@ -13,8 +14,24 @@ Suknaa's pricing model is the heart of the financial system. Get this wrong and 
 
 | Component | Who Pays | Configurable By | Visible to Guest? |
 |---|---|---|---|
-| **Commission** | Always the host (financially) — but pricing display can shift the apparent burden | Admin (per type/host/property), default ~12% | **NEVER** (always invisible) |
-| **Service Fee** | Always the guest (financially) | Admin (per scope), default 2% | **ALWAYS** (transparent line item) |
+| **Commission** | Always the host (financially) — but pricing display can shift the apparent burden | Financial rules engine + permissioned admin/contract overrides | **NEVER** (always invisible) |
+| **Service Fee** | Usually the guest (financially), unless waived/discounted by rules | Financial rules engine + guest/promo overrides | **ALWAYS** when charged (transparent line item) |
+| **Taxes / Local Fees** | Depends on law/contract and listing type | Host/hotel can propose; Suknaa admin can approve/override | **ALWAYS** when charged as legal line items |
+
+### 1.1.1. No Fixed Financial Rates In Code
+
+Suknaa may seed suggested defaults such as 12% commission or 2% service fee, but these are **starting configuration only**. They must never be compiled into booking logic as permanent constants.
+
+All financial amounts are resolved by a rules engine before quote/booking creation:
+1. Manual booking-level override, if a privileged user applies one
+2. Discount/promotion/trial rules, including cases like "0% commission for first N bookings"
+3. Guest-specific service-fee or coupon rules
+4. Host/property/hotel/room-type overrides
+5. Host organization or hotel-company contract rules
+6. Listing category/type default rules
+7. Global fallback rules
+
+Every booking stores a snapshot of the resolved rule IDs/sources, basis points, fixed amounts, passthrough mode, taxes, discounts, and final totals. Later edits to rules must not alter historical bookings.
 
 ### 1.2. The Host's Choice: Commission Passthrough
 
@@ -37,7 +54,8 @@ The guest's invoice **always** shows exactly two line items (plus subtotals):
 
 ```
 نوع الإقامة (3 ليالي × $50)              $150.00
-رسوم خدمة سُكنى (2%)                       $3.00
+رسوم خدمة سُكنى                            $3.00
+ضرائب/رسوم محلية، إن وجدت                 $0.00
 ─────────────────────────────────────────────────
 الإجمالي                                   $153.00
 ```
@@ -64,8 +82,8 @@ Property A appears cheaper. The market self-regulates: hosts who pass through mu
 
 ```
 Let P    = price the host wrote
-Let c    = commission basis points / 10000 (e.g., 0.12)
-Let s    = service fee basis points / 10000 (e.g., 0.02)
+Let c    = resolved commission basis points / 10000
+Let s    = resolved service fee basis points / 10000
 Let pt   = passthrough flag (0 or 1)
 
 If pt == 0 (absorb):
@@ -80,12 +98,14 @@ If pt == 1 (passthrough):
 
 In both cases:
     service_fee = property_price_shown_to_guest × s
-    guest_total = property_price_shown_to_guest + service_fee
+    taxes       = resolved tax rules over the configured taxable basis
+    discounts   = resolved discounts/promos
+    guest_total = property_price_shown_to_guest + service_fee + taxes − discounts
 ```
 
 ### 1.7. Worked Example
 
-**Setup:** Host writes $100. Commission 12%. Service fee 2%.
+**Setup:** Host writes $100. Example resolved rules: commission 12%, service fee 2%, no tax, no discount.
 
 | | Absorb (default) | Passthrough |
 |---|---|---|
@@ -96,7 +116,7 @@ In both cases:
 | Commission (Suknaa keeps) | $12.00 | $13.64 |
 | **Host receives** | **$88.00** | **$100.00** |
 
-> Notice: in both cases, Suknaa earns its 12% commission + 2% service fee. The choice only affects who *appears* to pay it.
+> Notice: in both cases, Suknaa earns the resolved commission + resolved service fee. The choice only affects who *appears* to pay the commission.
 
 ---
 
@@ -157,13 +177,15 @@ In both flows: the **service fee** stays with Suknaa always. The **commission** 
 
 ---
 
-## 5. Commission & Service Fee Configuration
+## 5. Financial Rules Configuration
 
-Both are configurable via the admin panel.
+Commission, service fees, taxes, discounts, and special contracts are configurable via the admin panel. Host/hotel-entered tax data can be accepted as input, but Suknaa must be able to approve, edit, override, or disable it before it affects guest checkout.
 
-### 5.1. Commission Default Rates
+### 5.1. Seed Defaults, Not Fixed Rates
 
-| Category / Type | Default | Money Flow |
+These rates are examples for initial seeding and market testing only. They can change per partner, per listing, per campaign, or after real-market feedback.
+
+| Category / Type | Seed Default | Money Flow |
 |---|---|---|
 | Houses, Apartments, Villas | 12% | Escrow |
 | Farms, Cabins, Chalets, Studios | 10% | Escrow |
@@ -171,19 +193,59 @@ Both are configurable via the admin panel.
 | Hotel-Apartments | 10% | Direct |
 | Hostels | 8% | Direct |
 
-### 5.2. Commission Override Hierarchy
-First match wins:
-1. **Per-property** rate (rare; special partnership)
-2. **Per-host** rate (e.g., "0% promo for first 6 months")
-3. **Per-property-type** rate (default)
+### 5.2. Commission Rule Examples
 
-### 5.3. Service Fee
-- **Default**: 2% (global)
+Supported patterns:
+- Global fallback commission for a category
+- Host/company contract commission
+- Property/hotel/room-type special rate
+- Time-limited promo such as 0% commission for the first 5 bookings
+- Risk/manual adjustment from authorized operations staff
+- One-off booking-level override for exceptions
+
+### 5.3. Commission Override Hierarchy
+First match wins:
+1. **Manual booking override** with audited reason
+2. **Promotion/discount rule** with usage limits
+3. **Per-room-type / per-property / per-hotel** rule
+4. **Per-host / per-organization contract** rule
+5. **Per-property-type / per-hotel-type** seed rule
+6. **Global fallback**
+
+### 5.4. Service Fee
+- **Seed default**: 2% global, configurable
 - **Can be set per booking_kind** (e.g., 1% for hospitality, 2.5% for real estate)
 - **Can be set per guest** (e.g., promo: 0% service fee for new users)
+- **Can be waived by coupon or manual override**
 - **Always shown to guest** as a clear line item
 
-### 5.4. Why Separate?
+### 5.5. Taxes & Local Fees
+
+Taxes are not assumed to be one global number. Hotels, companies, or hosts may enter applicable tax/local-fee requirements for their listings, but Suknaa must retain final control through approval and override tools.
+
+Each tax rule should capture:
+- Tax/fee name shown to guest
+- Calculation type: percentage or fixed amount
+- Taxable basis: property subtotal, service fee, per-night, per-guest, or custom
+- Source: host-entered, hotel-entered, admin-entered, system/default
+- Approval status and effective period
+- Jurisdiction/notes when applicable
+
+Each booking must snapshot the tax rule source, rate/amount, basis, displayed label, and final tax amount. This keeps receipts and audits stable even if a hotel changes tax settings later.
+
+### 5.6. Discounts, Coupons, And Waivers
+
+Discount logic must be first-class, not patched into checkout:
+- Guest coupon codes
+- Host acquisition campaigns
+- First-N-bookings commission waiver
+- Service-fee waiver for specific users
+- Manual goodwill discounts
+- Partner contract discounts
+
+Discounts must have limits, audit logs, and booking snapshots.
+
+### 5.7. Why Separate?
 Treating commission and service fee as separate lets us:
 - Run "0% commission" promotions for hosts without sacrificing all revenue (service fee still charged)
 - Charge guests a small fee that funds support/infrastructure even when commission is waived
@@ -277,8 +339,8 @@ When a host reduces availability (e.g., "I rented 2 of my 5 rooms offline for Ma
 | Tier | Score | Consequence |
 |---|---|---|
 | Low | 0–25 | Normal operations |
-| Medium | 26–50 | Higher commission percentage on next renewal cycle |
-| High | 51–75 | Mandatory admin chat before next listing approval |
+| Medium | 26–50 | Financial-rule review on next renewal cycle; possible commission change by authorized staff |
+| High | 51–75 | Mandatory admin chat before next listing approval; financial-rule changes require senior approval |
 | Critical | 76–100 | Account review; suspension possible |
 
 ### 8.3. Honest Use Is Fine
@@ -325,14 +387,17 @@ Rules:
 ---
 
 ## 11. Security & Auditing
-*(Same as v1. The only change: `bookings` table now records `commission_passthrough`, `service_fee_basis_points`, `commission_basis_points` as snapshots so any future audit can recompute exactly what the guest was shown.)*
+*(Same as v1. The financial change: `bookings` must record `commission_passthrough`, commission/service/tax/discount snapshots, rule IDs/sources, and final totals so any future audit can recompute exactly what the guest was shown.)*
 
 ---
 
 ## 12. Phase 4 Implementation Checklist
 
+- [ ] **Financial rules engine** covering commission, service fee, taxes, discounts, promos, and manual overrides
 - [ ] **Commission engine** with passthrough math (gross-up formula tested)
 - [ ] **Service fee engine** (separately configurable)
+- [ ] **Tax rules engine**: host/hotel-entered taxes with Suknaa approval/override
+- [ ] **Discount/coupon engine** with usage limits and audited waivers
 - [ ] **Pricing tier resolver** (4 tiers + weekend uplift + seasonal overrides)
 - [ ] **Booking total calculator** that produces the exact invoice the guest will see
 - [ ] **Sham Cash + MTN Cash + Manual + International** payment integrations
@@ -342,6 +407,6 @@ Rules:
 - [ ] **Idempotency middleware** on all payment endpoints
 - [ ] **DB advisory locks** on booking creation
 - [ ] **Audit log writes** on every financial mutation
-- [ ] **Admin UI**: payment review, withdrawal queue, refund queue, commission rate manager, service fee manager, passthrough toggle (per host/property)
+- [ ] **Admin UI**: payment review, withdrawal queue, refund queue, financial rules manager, tax approval/override, discount/coupon manager, passthrough toggle (per host/property)
 - [ ] **Tests**: full booking + payment + cancellation lifecycle for both `absorb` and `passthrough` modes
 - [ ] **Edge cases**: refund > available wallet balance, simultaneous booking attempts (race), webhook duplication

@@ -695,7 +695,7 @@ CREATE TABLE bookings (
     nights_subtotal_cents   BIGINT NOT NULL,                    -- nightly_rate * nights * rooms_count
     cleaning_fee_cents      BIGINT NOT NULL DEFAULT 0,
     seasonal_adjustment_cents BIGINT NOT NULL DEFAULT 0,        -- delta from base if season override applied
-    discount_cents          BIGINT NOT NULL DEFAULT 0,          -- weekly/monthly discount
+    discount_cents          BIGINT NOT NULL DEFAULT 0,          -- pricing/promo/manual discount snapshot
     -- COMMISSION & SERVICE FEE BREAKDOWN
     -- ALWAYS recorded for audit; what's SHOWN to guest on invoice depends on commission_passthrough
     property_subtotal_cents BIGINT NOT NULL,                    -- what guest sees as "property price"
@@ -704,8 +704,10 @@ CREATE TABLE bookings (
     commission_passthrough  BOOLEAN NOT NULL,                    -- snapshot from property/hotel at booking time
     service_fee_basis_points INTEGER NOT NULL,                  -- e.g., 200 = 2.00%
     service_fee_cents       BIGINT NOT NULL,                    -- always shown to guest
+    tax_cents               BIGINT NOT NULL DEFAULT 0,          -- sum of resolved tax/local-fee rules
+    fee_rule_snapshot       JSONB NOT NULL DEFAULT '{}'::jsonb, -- commission/service/tax/discount rule IDs, sources, labels, overrides
     -- COMPUTED TOTALS
-    guest_total_cents       BIGINT NOT NULL,                    -- what guest pays = property_subtotal + service_fee
+    guest_total_cents       BIGINT NOT NULL,                    -- what guest pays = property_subtotal + service_fee + tax - discounts
     host_payout_cents       BIGINT NOT NULL,                    -- what host receives
     currency            CHAR(3) NOT NULL DEFAULT 'USD',
     -- Snapshot of policies at booking time
@@ -774,16 +776,21 @@ CREATE TABLE booking_room_units (
 ### E1. `payments`, `wallets`, `wallet_transactions`, `withdrawal_requests`
 *(Same as v1 — see prior version. The only change: `payments.amount_cents` always equals `bookings.guest_total_cents`)*
 
+> **Financial rules decision (2026-05-08)**: commission, service fee, tax, and discount values are configurable rules, not fixed constants. The table names below are the planned concrete schema, but Phase 5 may consolidate them into a generic `financial_rules` model if that reduces duplication. Either way, bookings must snapshot the resolved rules and final amounts.
+
 ### E2. `commission_rates` — Configurable commission per dimension
 ```sql
 CREATE TABLE commission_rates (
     id                      UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
-    -- Scope (exactly one of: type-level, host-level, property-level, hotel-level)
+    -- Scope (exactly one of: type-level, host/org-level, property-level, hotel-level, room-type-level, promo-level)
     re_property_type        re_property_type,
     hotel_type              hotel_type,
     property_id             UUID REFERENCES properties(id),
     hotel_id                UUID REFERENCES hotels(id),
+    room_type_id            UUID REFERENCES room_types(id),
     host_id                 UUID REFERENCES users(id),
+    host_organization_id    UUID,
+    discount_code_id        UUID,
     -- Rate
     basis_points            INTEGER NOT NULL,           -- 1200 = 12.00%
     -- Effective period
@@ -792,7 +799,7 @@ CREATE TABLE commission_rates (
     note                    TEXT,                        -- "promo: first 6 months free"
     created_by              UUID NOT NULL REFERENCES users(id),
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (num_nonnulls(re_property_type, hotel_type, property_id, hotel_id, host_id) = 1)
+    CHECK (num_nonnulls(re_property_type, hotel_type, property_id, hotel_id, room_type_id, host_id, host_organization_id, discount_code_id) = 1)
 );
 ```
 
@@ -817,7 +824,64 @@ CREATE TABLE service_fee_rates (
 CREATE TYPE service_fee_scope AS ENUM ('global', 'by_kind', 'by_guest');
 ```
 
-### E4. `currency_rates`
+### E4. `tax_rules` — Host/hotel-entered taxes with Suknaa override
+```sql
+CREATE TABLE tax_rules (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    -- Scope can be global, host/org, property, hotel, or room type.
+    booking_kind            booking_kind,
+    property_id             UUID REFERENCES properties(id),
+    hotel_id                UUID REFERENCES hotels(id),
+    room_type_id            UUID REFERENCES room_types(id),
+    host_id                 UUID REFERENCES users(id),
+    host_organization_id    UUID,
+    label_ar                VARCHAR(120) NOT NULL,
+    label_en                VARCHAR(120),
+    calculation_type        tax_calculation_type NOT NULL, -- percentage or fixed amount
+    basis                   tax_basis NOT NULL,             -- property subtotal, per night, per guest, etc.
+    basis_points            INTEGER,
+    fixed_amount_cents      BIGINT,
+    currency                CHAR(3) NOT NULL DEFAULT 'USD',
+    source                  tax_rule_source NOT NULL,       -- host, hotel, admin, system
+    approval_status         tax_rule_status NOT NULL DEFAULT 'pending',
+    effective_from          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    effective_until         TIMESTAMPTZ,
+    note                    TEXT,
+    created_by              UUID NOT NULL REFERENCES users(id),
+    approved_by             UUID REFERENCES users(id),
+    approved_at             TIMESTAMPTZ,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CHECK (basis_points IS NOT NULL OR fixed_amount_cents IS NOT NULL)
+);
+
+CREATE TYPE tax_calculation_type AS ENUM ('percentage', 'fixed');
+CREATE TYPE tax_basis AS ENUM ('property_subtotal', 'service_fee', 'per_night', 'per_guest', 'custom');
+CREATE TYPE tax_rule_source AS ENUM ('host_entered', 'hotel_entered', 'admin_entered', 'system_default');
+CREATE TYPE tax_rule_status AS ENUM ('pending', 'approved', 'rejected', 'disabled');
+```
+
+### E5. `discount_codes` — Coupons, waivers, and promos
+```sql
+CREATE TABLE discount_codes (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    code                    VARCHAR(64) UNIQUE NOT NULL,
+    discount_type           discount_type NOT NULL,         -- percentage, fixed, commission_waiver, service_fee_waiver
+    basis_points            INTEGER,
+    fixed_amount_cents      BIGINT,
+    max_uses                INTEGER,
+    max_uses_per_user       INTEGER,
+    applies_to              discount_target NOT NULL,
+    starts_at               TIMESTAMPTZ,
+    ends_at                 TIMESTAMPTZ,
+    created_by              UUID NOT NULL REFERENCES users(id),
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TYPE discount_type AS ENUM ('percentage', 'fixed', 'commission_waiver', 'service_fee_waiver');
+CREATE TYPE discount_target AS ENUM ('guest_total', 'service_fee', 'commission', 'host_contract');
+```
+
+### E6. `currency_rates`
 *(Same as v1)*
 
 ---

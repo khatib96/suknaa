@@ -797,13 +797,24 @@ Aggregate insights about the host's market areas.
 ### Manual Payments / Withdrawals / Disputes
 *(Same as v1)*
 
-### Commission & Service Fee
+### Financial Rules
+Financial values are rules, not fixed constants. Commission/service/tax/discount endpoints can be implemented as separate resources or a unified financial-rules API, but must support audit logs, effective dates, scopes, permission checks, and booking snapshots.
+
 - `GET /admin/commission-rates`
 - `POST /admin/commission-rates`
 - `PATCH /admin/commission-rates/:id`
 - `GET /admin/service-fee-rates` — NEW v2
 - `POST /admin/service-fee-rates` — NEW v2
 - `PATCH /admin/service-fee-rates/:id` — NEW v2
+- `GET /admin/tax-rules` — host/hotel-entered and admin-entered rules
+- `POST /admin/tax-rules`
+- `PATCH /admin/tax-rules/:id`
+- `POST /admin/tax-rules/:id/approve`
+- `POST /admin/tax-rules/:id/reject`
+- `GET /admin/discount-codes`
+- `POST /admin/discount-codes`
+- `PATCH /admin/discount-codes/:id`
+- `POST /admin/bookings/:id/financial-override` — audited manual exception for authorized staff only
 
 ### Anti-Circumvention — NEW v2
 - `GET /admin/anti-circumvention/queue`
@@ -863,7 +874,7 @@ Aggregate insights about the host's market areas.
 | `PROPERTY_NOT_AVAILABLE`, `ROOM_TYPE_NOT_AVAILABLE` | Dates booked |
 | `INSUFFICIENT_INVENTORY` | NEW v2: requested rooms_count > available_units |
 | `COMMISSION_PASSTHROUGH_LOCKED` | NEW v2: cannot toggle while active bookings exist |
-| `INSUFFICIENT_PERMISSIONS` | RBAC denial |
+| `INSUFFICIENT_PERMISSIONS` | Permission/capability denial |
 | `RATE_LIMITED` | Too many requests |
 | `PAYMENT_PROVIDER_ERROR` | Provider returned error |
 | `WALLET_INSUFFICIENT` | Withdrawal > available |

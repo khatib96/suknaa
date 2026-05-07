@@ -324,9 +324,10 @@ Guest selects 3 nights → POST /properties/:id/quote
    ↓
 Backend calls pricing engine:
    - Tier resolver picks rate
+   - Financial rules resolver loads commission/service-fee/tax/discount rules
    - Commission engine applies passthrough (gross-up)
-   - Service fee added
-   - Returns: {nights_subtotal: $340.92, service_fee: $6.82, total: $347.74}
+   - Service fee, tax lines, and discounts are resolved
+   - Returns: {nights_subtotal, service_fee, taxes, discounts, total}
    ↓
 Guest confirms → POST /bookings
    ↓
@@ -334,6 +335,8 @@ Bookings service creates booking with:
    - property_subtotal_cents = 34092
    - commission_cents = 4091 (12% of 34092)
    - service_fee_cents = 682
+   - tax_cents = 0 in this example
+   - fee_rule_snapshot = {...resolved rule IDs/sources...}
    - guest_total_cents = 34774
    - host_payout_cents = 30001 (essentially $300, exactly what host wanted)
    - commission_passthrough = true (snapshot)
@@ -341,7 +344,7 @@ Bookings service creates booking with:
 Payment initiated → confirmed → wallet entries created
    ↓
 Host wallet pending: +$300.01
-Guest receives invoice with: property $340.92 + service fee $6.82 = $347.74
+Guest receives invoice with: property $340.92 + service fee $6.82 + taxes if applicable = total
 NO mention of commission anywhere on guest's invoice.
 ```
 
@@ -374,7 +377,7 @@ Decision logged in audit_logs + availability_reduction_events
 2. **Nginx rate limiting**
 3. **JWT with short expiry + refresh tokens**
 4. **Refresh tokens in httpOnly cookies**, access tokens in memory
-5. **RBAC**: Guest, Host (RE/Hospitality), Admin, SuperAdmin
+5. **Permissions**: current simple roles are bootstrapping only; long-term authorization uses granular capabilities and templates with per-user overrides
 6. **All DB queries via Prisma** (parameterized)
 7. **Input validation at every layer** (Zod schemas shared)
 8. **CSRF protection** on state-changing endpoints
@@ -453,3 +456,6 @@ Decision logged in audit_logs + availability_reduction_events
 | 2026-04-29 (v2) | Service fee separate from commission | Allows promo flexibility while protecting baseline revenue |
 | 2026-04-29 (v2) | Force-reason on availability reduction | Detection of off-platform circumvention |
 | 2026-04-29 (v2) | Per-unit room tracking (not just count) | Audit + future per-room features |
+| 2026-05-08 | Financial rules engine before bookings/payment | Commission, service fee, taxes, discounts, and waivers must be configurable, permissioned, and snapshotted; no fixed rates in code |
+| 2026-05-08 | Hotel/host-entered taxes with Suknaa override | Hotels may know local fees, but Suknaa needs approval/override control for legal and checkout consistency |
+| 2026-05-08 | Granular permissions over rigid roles | Suknaa staff, hotels, and companies need per-user capabilities, permission templates, invitations, and audited overrides |

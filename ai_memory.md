@@ -20,7 +20,7 @@
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) مغلقة؛ Phase 3 هي التالية.
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
-- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M10)
+- **آخر تحديث للذاكرة**: 2026-05-08 (جلسة — financial rules + permissions decisions)
 - **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -47,14 +47,18 @@
   - "العمولة عليّ" (افتراضي): يكتب $50 → يستلم $44 → الزبون يشوف $50
   - "تمرير على الزبون": يكتب $50 صافي → النظام يحسب $56.82 → الزبون يشوف $56.82 → المؤجر يستلم $50
 - **الفاتورة لا تذكر العمولة أبداً للزبون** — في كل الأحوال
-- **رسوم الخدمة 2%** منفصلة عن العمولة وتظهر للزبون دائماً كبند صريح
+- **لا توجد عمولات/رسوم خدمة/ضرائب ثابتة داخل الكود**. أي أرقام مثل 12% أو 2% هي seed/config كبداية فقط، وليست business constants.
+- **رسوم الخدمة منفصلة عن العمولة** وتظهر للزبون كبند صريح عندما تُفرض. يمكن تخصيصها أو إعفاؤها حسب guest/promo/manual override.
+- **الضرائب والرسوم المحلية**: الفندق/الشركة/المضيف يمكنه إدخالها، لكن سُكنى تملك صلاحية الاعتماد أو التعديل أو التعطيل قبل ظهورها في checkout.
+- **Financial rules engine إلزامي قبل الحجوزات والمدفوعات**: commission + service fee + taxes + discounts/coupons + waivers + manual overrides.
 - **العملة**: USD مخزّنة كـ `BIGINT cents`؛ USD + SYP معروضة
 - **4 طبقات تسعير**: Base (إلزامي) + Weekly (≥7 ليالي، اختياري) + Monthly (≥30 ليلة، اختياري) + Seasonal Override (تواريخ محددة)
 - **Weekend uplift** اختياري (+X% على Fri/Sat)
 - **Money flow**: Escrow للـ Real Estate (الفلوس بتُحجز 24 ساعة بعد check-in)؛ Direct للـ Hospitality (فوري)
 - **Withdrawal**: weekly (الخميس) أو monthly (آخر يوم) أو manual، الحد الأدنى $10
-- العمولات الافتراضية: 12% بيوت/شقق/فيلات، 10% مزارع/كبائن/شاليهات/استوديوهات، 8% فنادق/منتجعات/hostels، 10% hotel-apartments
-- على كل booking لازم نخزّن snapshot للـ `commission_basis_points`، `commission_passthrough`، `service_fee_basis_points`، `money_flow`، `cancellation_policy` وقت الإنشاء — لا تعتمد أبداً على القيم الحالية على العقار/الفندق
+- Seed defaults المقترحة كبداية فقط: 12% بيوت/شقق/فيلات، 10% مزارع/كبائن/شاليهات/استوديوهات، 8% فنادق/منتجعات/hostels، 10% hotel-apartments، ورسوم خدمة أولية مثل 2%. كلها قابلة للتغيير حسب السوق والعقود.
+- على كل booking لازم نخزّن snapshot للـ `commission_basis_points`، `commission_passthrough`، `service_fee_basis_points`، tax lines، discounts/coupons، rule IDs/sources، `money_flow`، `cancellation_policy` وقت الإنشاء — لا تعتمد أبداً على القيم الحالية على العقار/الفندق.
+- ممكن نعمل عروض مثل 0% عمولة لأول 5 حجوزات، أو عمولة خاصة لفندق/شركة، أو خصم ضيف محدد، بشرط usage limits + audit logs.
 
 ### 2.3 الواجهة
 - **شريط tabs دائم على كل صفحة عامة**: `[الكل] [عقارات] [فنادق]`
@@ -89,6 +93,9 @@
 - جميع المعاملات المالية في `audit_logs` (append-only، حتى super-admin ما يقدر يحذف)
 - المفاتيح: `JWT access` 15min + `refresh` 7d (httpOnly + Secure + SameSite=Strict cookie)
 - Passwords: argon2id (memory 64MB، iterations 3، parallelism 4)
+- **الصلاحيات طويلة المدى granular** وليست roles جامدة فقط. flags الحالية (`is_guest/is_host/is_admin`) مقبولة كبداية Phase 2، لكن الداشبورد/الإدمن/الفنادق تحتاج capabilities لكل مستخدم + templates + overrides + audit.
+- الفنادق والشركات والمكاتب العقارية تحتاج organization/team membership: المالك يضيف موظفين ويعطيهم صلاحيات محددة (حجوزات، رسائل، محاسبة، تسعير، وثائق، إلخ).
+- صلاحيات مالية عالية الخطورة منفصلة: `commission.override`, `service_fee.override`, `tax_rules.approve`, `tax_rules.override`, `discount_codes.manage`, `wallet.adjust`, `refunds.process`.
 
 ### 2.5 قواعد عامة لا تُكسر
 - **أبداً لا تخلط `properties` و `hotels` في نفس الكود/endpoint**
@@ -202,6 +209,36 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-08 (Financial Rules + Permissions Decisions)
+**الـ AI المستخدم**: Codex
+
+**ما تم توثيقه**:
+1. تثبيت قرار أن العمولة ورسوم الخدمة والضرائب والخصومات ليست أرقاماً ثابتة داخل الكود، بل قواعد مالية قابلة للتخصيص.
+2. تحديث خطة Phase 5 لتشمل financial rules resolver قبل checkout:
+   - commission
+   - service fee
+   - taxes/local fees
+   - discounts/coupons/waivers
+   - manual overrides
+3. تثبيت أن الفندق/الشركة/المضيف يمكنه إدخال الضرائب المحلية، لكن سُكنى تملك الاعتماد أو التعديل أو التعطيل.
+4. تثبيت أن كل booking يخزن snapshot للقواعد المالية المطبقة عليه حتى لا تتغير الفواتير القديمة.
+5. تثبيت اتجاه الصلاحيات الطويل: granular permissions + organization/team membership بدلاً من الاعتماد على roles جامدة فقط.
+6. تثبيت أن نظام التسعير الذكي يبقى Phase 8، ويعطي اقتراحات ولا يغير الأسعار تلقائياً إلا عند قبول host/admin.
+
+**الملفات المحدثة**:
+- `docs/PAYMENT_SYSTEM.md`
+- `docs/BUILD_PLAN.md`
+- `docs/DATABASE_SCHEMA.md`
+- `docs/ARCHITECTURE.md`
+- `docs/SECURITY.md`
+- `docs/README.md`
+- `ai_memory.md`
+
+**التحقق**:
+- تغييرات توثيق فقط؛ لا توجد حاجة لاختبارات build/lint.
+
+---
 
 **التاريخ**: 2026-05-07 (Phase 2 Milestone 10 — Tests + Docs Closure)
 **الـ AI المستخدم**: Codex
@@ -1101,7 +1138,7 @@ npm run dev
 | القرار | التفصيل |
 |---|---|
 | **بوابة الدفع الدولية** | Manual transfer للسياح فقط في الإطلاق الإولي. Stripe/Paddle مؤجَّل لـ Phase 11. |
-| **العمولات الافتراضية** | نهائية: 12% (بيوت/شقق/فيلات) — 10% (مزارع/كبائن/شاليهات/استوديوهات/hotel-apartments) — 8% (فنادق/منتجعات/hostels) — 2% رسوم خدمة. |
+| **العمولات/الرسوم** | كانت أرقام seed أولية، وليست نهائية كثوابت. القرار الأحدث 2026-05-08: كل العمولة/رسوم الخدمة/الضرائب/الخصومات عبر financial rules قابلة للتخصيص + snapshots. |
 | **Mockups** | لا Figma/v0. نسكافولد Next.js skeleton مباشرة مع شاشات placeholder (يبدأ Phase 1). |
 | **Logo SVG** | مؤجَّل (PNG كافٍ). يُطلب من مصمم لاحقاً. |
 | **Admin panel i18n** | إنجليزية فقط في البداية (الموقع العام يبقى bilingual). |
@@ -1312,7 +1349,7 @@ npm run dev
 | DATABASE_SCHEMA | `docs/DATABASE_SCHEMA.md` | كل الجداول/الـ enums/الـ indexes (~50 جدول) |
 | API_SPEC | `docs/API_SPEC.md` | كل الـ REST endpoints منظمة بالأقسام |
 | PAYMENT_SYSTEM | `docs/PAYMENT_SYSTEM.md` | منطق العمولة + passthrough + service fee + cancellations |
-| SECURITY | `docs/SECURITY.md` | Auth + KYC + Anti-circumvention + RBAC |
+| SECURITY | `docs/SECURITY.md` | Auth + KYC + Anti-circumvention + permissions/capabilities |
 | BUILD_PLAN | `docs/BUILD_PLAN.md` | 11 مرحلة مع Exit Criteria + Risk Register |
 | DEPLOYMENT | `docs/DEPLOYMENT.md` | Hostinger + Nginx + Docker Compose + Backups + DR |
 
