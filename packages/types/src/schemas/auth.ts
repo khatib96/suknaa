@@ -34,6 +34,10 @@ export const authLoginSchema = z.object({
   rememberMe: z.boolean().optional().default(false),
 });
 
+export const loginIntentSchema = z.object({
+  intent: z.enum(["guest", "host"]),
+});
+
 export const authVerifyEmailSchema = z.object({
   email: emailField,
   token: z.string().min(32, "Invalid verification token"),
@@ -99,8 +103,38 @@ export const authLogin2faSchema = z.object({
   code: z.string().trim().min(6).max(32),
 });
 
+export const becomeHostSchema = z
+  .object({
+    hostCategory: z.enum(["real_estate", "hospitality"]),
+    hostSubtype: z.enum(["individual", "real_estate_office", "hotel_company"]),
+    displayName: z.string().trim().min(2).max(200),
+    companyName: z.string().trim().min(2).max(200).optional().nullable(),
+    companyRegistration: z.string().trim().min(2).max(100).optional().nullable(),
+    taxId: z.string().trim().min(2).max(100).optional().nullable(),
+    bioAr: z.string().trim().max(2000).optional().nullable(),
+    bioEn: z.string().trim().max(2000).optional().nullable(),
+    withdrawalSchedule: z.enum(["weekly", "monthly", "manual"]).default("monthly"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.hostCategory === "real_estate" && data.hostSubtype === "hotel_company") {
+      ctx.addIssue({
+        code: "custom",
+        message: "hotel_company subtype requires hospitality category",
+        path: ["hostSubtype"],
+      });
+    }
+    if (data.hostCategory === "hospitality" && data.hostSubtype !== "hotel_company") {
+      ctx.addIssue({
+        code: "custom",
+        message: "hospitality category requires hotel_company subtype",
+        path: ["hostSubtype"],
+      });
+    }
+  });
+
 export type AuthSignupInput = z.infer<typeof authSignupSchema>;
 export type AuthLoginInput = z.infer<typeof authLoginSchema>;
+export type LoginIntentInput = z.infer<typeof loginIntentSchema>;
 export type AuthVerifyEmailInput = z.infer<typeof authVerifyEmailSchema>;
 export type AuthRefreshInput = z.infer<typeof authRefreshSchema>;
 export type AuthLogoutInput = z.infer<typeof authLogoutSchema>;
@@ -111,3 +145,4 @@ export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type TotpConfirmInput = z.infer<typeof totpConfirmSchema>;
 export type TotpDisableInput = z.infer<typeof totpDisableSchema>;
 export type AuthLogin2faInput = z.infer<typeof authLogin2faSchema>;
+export type BecomeHostInput = z.infer<typeof becomeHostSchema>;

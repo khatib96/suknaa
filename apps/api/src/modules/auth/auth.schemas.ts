@@ -1,11 +1,13 @@
 export {
   authLogin2faSchema as login2faSchema,
+  becomeHostSchema,
   authLoginSchema as loginSchema,
   authLogoutSchema as logoutSchema,
   authRefreshSchema as refreshSchema,
   authSessionsQuerySchema as sessionsQuerySchema,
   authSignupSchema as signupSchema,
   authVerifyEmailSchema as verifyEmailSchema,
+  loginIntentSchema,
   requestOtpSchema,
   totpConfirmSchema,
   totpDisableSchema,

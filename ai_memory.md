@@ -165,6 +165,7 @@
 - [x] **Milestone 3 (Shared Infra فقط)**: `shared/messaging` provider-agnostic مع `MockMessageProvider` يكتب إلى `.dev-outbox` + `WhatsAppProvider` stub مع `NotImplementedException`؛ `shared/audit` (`AuditModule` + `AuditService.write()` مطابق لـ M2 cleanup schema)؛ `shared/errors/api-error.helpers.ts` + تمرير `details` في GlobalExceptionFilter؛ تحسينات منخفضة المخاطر فقط في `StorageService` (`ensureBucketExists` + `buildKycObjectKey`) و`RedisService` (`buildKey`, `setJson`, `getJson`) + env vars الجديدة (`MESSAGE_PROVIDER`, `DEV_OUTBOX_DIR`, `REDIS_KEY_PREFIX`) ✓ 2026-05-06
 - [x] **Milestone 4 (Auth Core)**: shared auth schemas في `packages/types`; `PasswordService` (argon2id: 64MB/3/4) + mock `PasswordBreachChecker`; strict RS256 keys required (`JWT_PRIVATE_KEY_PATH`, `JWT_PUBLIC_KEY_PATH`) + `TokensService` (access 15m + opaque refresh 256-bit hashed); `AuthModule/AuthController/AuthService` endpoints (`signup`, `verify-email`, `login`, `refresh`, `logout`, `logout-all`, `sessions`, `revoke session`, `/v1/me`); email verification عبر `otp_codes` (`purpose=email_verification`, `channel=email`, `delivery_target=email`, `code_hash` long opaque token); refresh rotation مع revoke session القديم؛ audit events (`auth.signup`, `auth.email_verified`, `auth.login`, `auth.refresh`, `auth.logout`, `auth.logout_all`, `auth.session_revoked`) ✓ 2026-05-06
 - [x] **Milestone 5 (OTP + Phone + 2FA)**: OTP phone verification + TOTP 2FA + backup codes + MFA login challenge + WhatsApp Cloud disabled prep; verified with Docker-backed `db:status` and `verify:m5` (`ok: true`). verified 2026-05-07
+- [x] **Milestone 6 (Login Intent + Roles + Become Host)**: login intent + RolesGuard + become-host endpoint + host profile creation; verified with Docker-backed `verify:m6` (`ok: true`, `isHost: true`). verified 2026-05-07
 - [ ] KYC flow + رفع الملفات + مسارات الإدمن
 - [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
@@ -199,6 +200,24 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-07 (Phase 2 Milestone 6 — Login Intent + Roles + Become Host)
+**الـ AI المستخدم**: Codex
+
+**ما تم تنفيذه**:
+1. إضافة schemas مشتركة لـ `loginIntentSchema` و`becomeHostSchema` في `@suknaa/types`.
+2. إضافة `POST /v1/auth/login/intent` لتسجيل intent ضيف/مضيف مع redirect hints.
+3. إضافة `RolesGuard` و`@Roles()` لاستخدامها في مسارات host/admin القادمة.
+4. إضافة `POST /v1/me/become-host` مع شرط `phoneVerified=true`، إنشاء `host_profiles`، وتفعيل `users.is_host=true` مع بقاء `host_profiles.is_verified=false` حتى KYC.
+5. إضافة `scripts/manual-m6-verify.ts` وسكربت `verify:m6`.
+
+**التحقق**:
+- `prisma:generate` → نجاح.
+- `build` → نجاح.
+- `lint` → نجاح.
+- `verify:m6` → نجاح: `ok: true`, `isHost: true`, `hostCategory: real_estate`, `hostSubtype: individual`.
+
+---
 
 **التاريخ**: 2026-05-07 (Phase 2 Milestone 5 — OTP + Phone Verification + 2FA)
 **الـ AI المستخدم**: Cursor Agent

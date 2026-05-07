@@ -12,10 +12,14 @@ import {
 import type { Request } from "express";
 import { badRequestError } from "../../shared/errors/api-error.helpers";
 import { CurrentUser } from "./decorators/current-user.decorator";
+import { Roles } from "./decorators/roles.decorator";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RolesGuard } from "./guards/roles.guard";
 import { AuthService } from "./auth.service";
 import {
+  becomeHostSchema,
   login2faSchema,
+  loginIntentSchema,
   loginSchema,
   logoutSchema,
   refreshSchema,
@@ -109,6 +113,29 @@ export class AuthController {
   @Get("me")
   async me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getCurrentUser(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("auth/login/intent")
+  async loginIntent(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: unknown,
+    @Req() req: Request,
+  ) {
+    const parsed = this.parse(loginIntentSchema.safeParse(body));
+    return this.authService.setLoginIntent(user, parsed.intent, this.requestContext(req));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("guest")
+  @Post("me/become-host")
+  async becomeHost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: unknown,
+    @Req() req: Request,
+  ) {
+    const parsed = this.parse(becomeHostSchema.safeParse(body));
+    return this.authService.becomeHost(user, parsed, this.requestContext(req));
   }
 
   @UseGuards(JwtAuthGuard)

@@ -11,6 +11,7 @@ import { PrismaModule } from "../../shared/prisma/prisma.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RolesGuard } from "./guards/roles.guard";
 import { MockPasswordBreachCheckerService } from "./services/mock-password-breach-checker.service";
 import { PasswordService } from "./services/password.service";
 import { PASSWORD_BREACH_CHECKER } from "./services/password-breach-checker.interface";
@@ -65,6 +66,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     TwoFactorService,
     JwtStrategy,
     JwtAuthGuard,
+    RolesGuard,
     MockPasswordBreachCheckerService,
     {
       provide: PASSWORD_BREACH_CHECKER,

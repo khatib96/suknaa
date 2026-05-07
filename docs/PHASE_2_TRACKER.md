@@ -4,9 +4,9 @@
 
 ## Current Status
 
-**Current milestone:** M6 - Login Intent + Roles + Become Host  
-**Completed:** M1, M2, M2 cleanup, M3, M4, M5  
-**Not started:** M6+
+**Current milestone:** M7 - KYC Submission + MinIO  
+**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6  
+**Not started:** M7+
 
 ## Phase 2 Rule
 
@@ -30,7 +30,7 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 | M3 | Shared Backend Infrastructure | Done | Messaging abstraction, mock outbox, disabled WhatsApp stub, AuditService, error helpers, storage/redis helpers. |
 | M4 | Auth Core | Done | Shared auth schemas, password/hash services, strict RS256 auth endpoints, email verification via mock outbox, refresh rotation, sessions, `/v1/me`, auth audit events. |
 | M5 | OTP + Phone Verification + 2FA | Done | Phone OTP (mock provider), optional phone verification, TOTP + backup codes, MFA login challenge (`mfa_token`), WhatsApp Cloud prep behind env gate. |
-| M6 | Login Intent + Roles + Become Host | Not started | Guest/host intent, roles guard, become-host endpoint, host profile creation. |
+| M6 | Login Intent + Roles + Become Host | Done | Guest/host intent, roles guard, become-host endpoint, host profile creation. |
 | M7 | KYC Submission + MinIO | Not started | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
 | M8 | Admin KYC Review + Audit Logs | Not started | Admin queue, approve/reject, KYC expiry, audit logs for decisions. |
 | M9 | Frontend BFF Integration | Not started | Next.js route handlers, connect existing auth/host forms to real API. |
@@ -87,6 +87,14 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 - `verify:m5`: passed (`ok: true`, `phoneVerified: true`, `backupCodesReturned: 10`)
 - WhatsApp Cloud sender stays disabled unless `WHATSAPP_CLOUD_ENABLED=true` (validated env)
 
+
+### M6
+
+- `prisma:generate`: passed
+- API build: passed
+- API lint: passed
+- `verify:m6`: passed (`ok: true`, `isHost: true`, `hostCategory: real_estate`, `hostSubtype: individual`)
+
 ## Standard Verification Commands
 
 Run from repo root:
@@ -96,7 +104,7 @@ npx pnpm@9.15.4 --filter api prisma:generate
 npx pnpm@9.15.4 db:status
 npx pnpm@9.15.4 --filter api build
 npx pnpm@9.15.4 --filter api lint
-npx pnpm@9.15.4 --filter api verify:m5
+npx pnpm@9.15.4 --filter api verify:m6
 ```
 
 If Docker services are needed:

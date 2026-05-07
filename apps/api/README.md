@@ -2,7 +2,7 @@
 
 NestJS backend for Suknaa. In production it will live behind `api.suknaa.com`; locally it runs on port `3001` and is reached by the public web app through the Next.js BFF (`apps/web/app/api/*`).
 
-## Phase 2 Status — Milestone 5 of 10
+## Phase 2 Status — Milestone 6 of 10
 
 Milestone 1 scaffolded the NestJS API, Zod env validation, Pino logger, Swagger, Prisma/Redis/MinIO shared services, and `GET /v1/health`.
 
@@ -33,6 +33,13 @@ Milestone 5 extends auth:
 - Login: if TOTP is enabled, `POST /v1/auth/login` returns `{ requires_2fa: true, mfa_token }` (no session/tokens until MFA completes).
 - `POST /v1/auth/login/2fa` completes MFA with an authenticator code or backup code, then issues normal tokens + session.
 - Messaging: default remains **mock** (`.dev-outbox`). WhatsApp Cloud Graph API sender is implemented but **off** unless `WHATSAPP_CLOUD_ENABLED=true` (with required Meta env vars).
+
+Milestone 6 extends account role flows:
+
+- `POST /v1/auth/login/intent` records guest/host login intent and returns redirect hints.
+- `POST /v1/me/become-host` creates a `host_profiles` row, sets `users.is_host=true`, and keeps the host unverified until KYC.
+- Become-host requires `phoneVerified=true`.
+- `RolesGuard` + `@Roles()` are available for upcoming host/admin endpoints.
 
 Milestone 3 adds shared backend infrastructure used by Auth/KYC flows:
 

@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
-import { UserExperience, type AuthSession, type User } from "@prisma/client";
+import {
+  HostCategory,
+  HostSubtype,
+  UserExperience,
+  type AuthSession,
+  type User,
+  type WithdrawalSchedule,
+} from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
 import {
   conflictError,
@@ -40,6 +47,18 @@ interface LoginInput {
   email: string;
   password: string;
   rememberMe: boolean;
+}
+
+interface BecomeHostInput {
+  hostCategory: HostCategory;
+  hostSubtype: HostSubtype;
+  displayName: string;
+  companyName?: string | null;
+  companyRegistration?: string | null;
+  taxId?: string | null;
+  bioAr?: string | null;
+  bioEn?: string | null;
+  withdrawalSchedule: WithdrawalSchedule;
 }
 
 @Injectable()
@@ -557,6 +576,137 @@ export class AuthService {
     return dbUser;
   }
 
+  async setLoginIntent(
+    user: AuthenticatedUser,
+    intent: "guest" | "host",
+    ctx: RequestContext,
+  ): Promise<{
+    intent: "guest" | "host";
+    becomeHostRequired: boolean;
+    redirectTo: string;
+  }> {
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.sub },
+      select: { id: true, isHost: true, isAdmin: true, isSuperAdmin: true },
+    });
+    if (!dbUser) {
+      throw notFoundError({
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+        message_en: "User not found",
+      });
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.sub },
+      data: { lastLoginAs: intent === "host" ? UserExperience.host : UserExperience.guest },
+    });
+
+    const becomeHostRequired = intent === "host" && !dbUser.isHost;
+    await this.auditService.write({
+      actorUserId: user.sub,
+      actorRole: dbUser.isAdmin || dbUser.isSuperAdmin ? "admin" : dbUser.isHost ? "host" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "auth.login_intent_updated",
+      entityType: "users",
+      entityId: user.sub,
+      metadata: { intent, becomeHostRequired },
+    });
+
+    return {
+      intent,
+      becomeHostRequired,
+      redirectTo: becomeHostRequired
+        ? "/become-a-host/apply"
+        : intent === "host"
+          ? "/host/dashboard"
+          : "/dashboard",
+    };
+  }
+
+  async becomeHost(
+    user: AuthenticatedUser,
+    input: BecomeHostInput,
+    ctx: RequestContext,
+  ): Promise<{ hostProfile: { userId: string; isVerified: boolean } }> {
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.sub },
+      select: {
+        id: true,
+        isHost: true,
+        isAdmin: true,
+        isSuperAdmin: true,
+        phoneVerified: true,
+        hostProfile: { select: { userId: true } },
+      },
+    });
+    if (!dbUser) {
+      throw notFoundError({
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+        message_en: "User not found",
+      });
+    }
+    if (!dbUser.phoneVerified) {
+      throw forbiddenError({
+        code: "PHONE_VERIFICATION_REQUIRED",
+        message: "Phone verification is required before becoming a host",
+        message_en: "Phone verification is required before becoming a host",
+      });
+    }
+    if (dbUser.hostProfile) {
+      throw conflictError({
+        code: "HOST_PROFILE_ALREADY_EXISTS",
+        message: "Host profile already exists",
+        message_en: "Host profile already exists",
+      });
+    }
+
+    this.assertHostCategorySubtype(input.hostCategory, input.hostSubtype);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const hostProfile = await tx.hostProfile.create({
+        data: {
+          userId: user.sub,
+          hostCategory: input.hostCategory,
+          hostSubtype: input.hostSubtype,
+          displayName: input.displayName,
+          companyName: input.companyName ?? null,
+          companyRegistration: input.companyRegistration ?? null,
+          taxId: input.taxId ?? null,
+          bioAr: input.bioAr ?? null,
+          bioEn: input.bioEn ?? null,
+          withdrawalSchedule: input.withdrawalSchedule,
+        },
+        select: { userId: true, isVerified: true },
+      });
+      await tx.user.update({
+        where: { id: user.sub },
+        data: { isHost: true, lastLoginAs: UserExperience.host },
+      });
+      return hostProfile;
+    });
+
+    await this.auditService.write({
+      actorUserId: user.sub,
+      actorRole: dbUser.isAdmin || dbUser.isSuperAdmin ? "admin" : "guest",
+      actorIp: ctx.ipAddress ?? null,
+      userAgent: ctx.userAgent ?? null,
+      requestId: ctx.requestId ?? null,
+      action: "host.become_host",
+      entityType: "host_profiles",
+      entityId: user.sub,
+      metadata: {
+        hostCategory: input.hostCategory,
+        hostSubtype: input.hostSubtype,
+      },
+    });
+
+    return { hostProfile: result };
+  }
+
   private async createEmailVerificationToken(userId: string, email: string): Promise<void> {
     const token = this.tokensService.generateRefreshToken();
     const tokenHash = await this.passwordService.hashOpaqueToken(token);
@@ -652,6 +802,24 @@ export class AuthService {
   private deriveDefaultNameFromEmail(email: string): string {
     const localPart = email.split("@")[0] ?? "guest";
     return localPart.slice(0, 1).toUpperCase() + localPart.slice(1);
+  }
+
+  private assertHostCategorySubtype(
+    hostCategory: HostCategory,
+    hostSubtype: HostSubtype,
+  ): void {
+    if (
+      (hostCategory === HostCategory.real_estate &&
+        hostSubtype === HostSubtype.hotel_company) ||
+      (hostCategory === HostCategory.hospitality &&
+        hostSubtype !== HostSubtype.hotel_company)
+    ) {
+      throw forbiddenError({
+        code: "WRONG_HOST_CATEGORY",
+        message: "Host subtype does not match host category",
+        message_en: "Host subtype does not match host category",
+      });
+    }
   }
 
   private toAuthUserPayload(user: User) {
