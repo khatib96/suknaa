@@ -19,9 +19,9 @@
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) — Phase 1 + 1.5 مكتملان كـ UI skeleton ببيانات mock.
-- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 7 (KYC Submission + MinIO)** — KYC upload + private MinIO storage + pending submission flow.
-- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M7)
-- **آخر AI عمل على المشروع**: Codex
+- **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **الواجهة الخلفية (Phase 2)**: مكتمل **Milestone 8 (Admin KYC Review)** — admin queue + approve/reject + audit logs.
+- **آخر تحديث للذاكرة**: 2026-05-07 (جلسة — Phase 2 M8)
+- **آخر AI عمل على المشروع**: Claude
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة، 10 ملفات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
@@ -167,7 +167,7 @@
 - [x] **Milestone 5 (OTP + Phone + 2FA)**: OTP phone verification + TOTP 2FA + backup codes + MFA login challenge + WhatsApp Cloud disabled prep; verified with Docker-backed `db:status` and `verify:m5` (`ok: true`). verified 2026-05-07
 - [x] **Milestone 6 (Login Intent + Roles + Become Host)**: login intent + RolesGuard + become-host endpoint + host profile creation; verified with Docker-backed `verify:m6` (`ok: true`, `isHost: true`). verified 2026-05-07
 - [x] **Milestone 7 (KYC Submission + MinIO)**: KYC shared schemas, API multipart upload, magic-byte MIME validation, private MinIO object keys, subtype-required document validation, pending `kyc_submissions`, safe latest/history responses, and `kyc.submitted` audit log; verified with Docker-backed `verify:m7` (`ok: true`, `status: pending`, `hostVerified: false`). verified 2026-05-07
-- [ ] Admin KYC review + approve/reject
+- [x] **Milestone 8 (Admin KYC Review)**: `GET /v1/admin/kyc/queue` (cursor-paginated, document-presence booleans, no raw keys) + `POST /v1/admin/kyc/:id/approve` (sets approved + expiresAt +2y + host isVerified=true in transaction) + `POST /v1/admin/kyc/:id/reject` (reason required, host unchanged); audit events `admin.kyc.approved` / `admin.kyc.rejected`; double-review blocked with `KYC_ALREADY_REVIEWED`. ✓ 2026-05-07
 - [ ] BFF للويب + سياسة الكوكيز/CSRF المتفق عليها
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
 
@@ -201,6 +201,26 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-07 (Phase 2 Milestone 8 — Admin KYC Review)
+**الـ AI المستخدم**: Claude
+
+**ما تم تنفيذه**:
+1. إضافة `adminKycRejectSchema` في `packages/types/src/schemas/admin-kyc.ts` وتصديره من `@suknaa/types`.
+2. إنشاء `AdminModule` في `apps/api/src/modules/admin/` يحتوي على:
+   - `AdminKycService`: `listQueue` (cursor pagination، document-presence بooleans، بدون raw storage keys) + `approveKyc` (transaction: kyc approved + host isVerified=true + expiresAt +730 يوم) + `rejectKyc` (reason required، host unchanged).
+   - `AdminKycController`: `GET /v1/admin/kyc/queue` + `POST /v1/admin/kyc/:id/approve` + `POST /v1/admin/kyc/:id/reject` — محمية بـ `JwtAuthGuard + RolesGuard + @Roles("admin")`.
+3. ربط `AdminModule` في `AppModule`.
+4. إضافة `scripts/manual-m8-verify.ts` وسكربت `verify:m8`.
+
+**التحقق**:
+- `prisma:generate` → نجاح.
+- `db:status` → clean.
+- `build` → نجاح.
+- `lint` → نجاح.
+- `verify:m8` → نجاح: `ok: true`, `approvedSubmissionId`, `rejectedSubmissionId`.
+
+---
 
 **التاريخ**: 2026-05-07 (Phase 2 Milestone 7 — KYC Submission + MinIO)
 **الـ AI المستخدم**: Codex

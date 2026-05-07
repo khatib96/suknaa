@@ -12,6 +12,7 @@ import { AuditModule } from "./shared/audit/audit.module";
 import { HealthModule } from "./modules/health/health.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { KycModule } from "./modules/kyc/kyc.module";
+import { AdminModule } from "./modules/admin/admin.module";
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { KycModule } from "./modules/kyc/kyc.module";
     HealthModule,
     AuthModule,
     KycModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

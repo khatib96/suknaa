@@ -2,7 +2,7 @@
 
 NestJS backend for Suknaa. In production it will live behind `api.suknaa.com`; locally it runs on port `3001` and is reached by the public web app through the Next.js BFF (`apps/web/app/api/*`).
 
-## Phase 2 Status — Milestone 7 of 10
+## Phase 2 Status — Milestone 8 of 10
 
 Milestone 1 scaffolded the NestJS API, Zod env validation, Pino logger, Swagger, Prisma/Redis/MinIO shared services, and `GET /v1/health`.
 
@@ -40,6 +40,14 @@ Milestone 6 extends account role flows:
 - `POST /v1/me/become-host` creates a `host_profiles` row, sets `users.is_host=true`, and keeps the host unverified until KYC.
 - Become-host requires `phoneVerified=true`.
 - `RolesGuard` + `@Roles()` are available for upcoming host/admin endpoints.
+
+Milestone 8 adds admin KYC review:
+
+- `GET /v1/admin/kyc/queue` returns review submissions paginated (cursor) with optional `status`, submitter email/name, host context, document-presence booleans, and no raw storage keys.
+- `POST /v1/admin/kyc/:id/approve` transitions status to `approved`, sets `reviewedBy`/`reviewedAt`/`expiresAt` (+2 years), and sets `host_profiles.is_verified=true` in a single transaction. Writes `admin.kyc.approved` audit log.
+- `POST /v1/admin/kyc/:id/reject` requires `rejectionReason` (1–1000 chars), transitions status to `rejected`, sets `reviewedBy`/`reviewedAt`. Writes `admin.kyc.rejected` audit log. Host profile is not touched on rejection.
+- Re-reviewing an already-reviewed submission returns `409 KYC_ALREADY_REVIEWED`.
+- All three endpoints require `is_admin=true` or `is_super_admin=true` (enforced by `JwtAuthGuard` + `RolesGuard`).
 
 Milestone 7 adds KYC submission and private MinIO document storage:
 
@@ -183,6 +191,22 @@ npx pnpm@9.15.4 --filter api verify:m5
 ```
 
 This exercises phone OTP (mock outbox), phone verification, TOTP setup/confirm/backup codes, MFA login (`requires_2fa` + `mfa_token`), backup-code login, a control user without 2FA (normal M4-style tokens), and expected `audit_logs` actions.
+
+## Milestone 8 Manual Verification
+
+Prerequisites:
+
+- Docker Postgres + Redis + MinIO running (`infrastructure/docker-compose.yml`).
+- `apps/api/.env` copied from `.env.example`, JWT key paths set, and `TOTP_ENC_KEY` set.
+- Do **not** commit `.env`, PEM keys, `.dev-outbox/`, `.tmp-scripts/`, or uploaded test objects.
+
+From repo root:
+
+```powershell
+npx pnpm@9.15.4 --filter api verify:m8
+```
+
+This creates an admin user directly in the DB, creates two verified host candidates with pending KYC submissions, approves the first, rejects the second (with reason), asserts DB state for both submissions and host profiles, verifies `admin.kyc.approved` and `admin.kyc.rejected` audit logs, and confirms double-review is blocked with `KYC_ALREADY_REVIEWED`.
 
 ## Milestone 7 Manual Verification
 

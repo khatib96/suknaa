@@ -4,9 +4,9 @@
 
 ## Current Status
 
-**Current milestone:** M8 - Admin KYC Review + Audit Logs  
-**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7  
-**Not started:** M8+
+**Current milestone:** M9 - Frontend BFF Integration  
+**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8  
+**Not started:** M9+
 
 ## Phase 2 Rule
 
@@ -32,7 +32,7 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 | M5 | OTP + Phone Verification + 2FA | Done | Phone OTP (mock provider), optional phone verification, TOTP + backup codes, MFA login challenge (`mfa_token`), WhatsApp Cloud prep behind env gate. |
 | M6 | Login Intent + Roles + Become Host | Done | Guest/host intent, roles guard, become-host endpoint, host profile creation. |
 | M7 | KYC Submission + MinIO | Done | KYC document validation, upload flow, private MinIO storage, per-subtype requirements. |
-| M8 | Admin KYC Review + Audit Logs | Not started | Admin queue, approve/reject, KYC expiry, audit logs for decisions. |
+| M8 | Admin KYC Review + Audit Logs | Done | Admin queue (cursor-paginated), approve (sets host isVerified + expiresAt), reject (reason required), admin.kyc.approved/rejected audit logs. |
 | M9 | Frontend BFF Integration | Not started | Next.js route handlers, connect existing auth/host forms to real API. |
 | M10 | Tests + Docs Closure | Not started | Focused auth/KYC tests, Swagger review, docs and memory final update. |
 
@@ -95,6 +95,19 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 - API lint: passed
 - `verify:m6`: passed (`ok: true`, `isHost: true`, `hostCategory: real_estate`, `hostSubtype: individual`)
 
+### M8
+
+- `prisma:generate`: passed
+- `db:status`: clean
+- API build: passed
+- API lint: passed
+- `verify:m8`: passed (`ok: true`, `approvedSubmissionId`, `rejectedSubmissionId`)
+- Approved submission: `status=approved`, `reviewedAt` set, `expiresAt` set +2 years, `host_profiles.is_verified=true`.
+- Rejected submission: `status=rejected`, `reviewedAt` set, `rejectionReason` set, host profile unchanged.
+- `admin.kyc.approved` and `admin.kyc.rejected` audit logs present.
+- Double-review correctly blocked with `KYC_ALREADY_REVIEWED`.
+- Admin queue response contains no raw MinIO storage keys.
+
 ### M7
 
 - `prisma:generate`: passed
@@ -113,7 +126,7 @@ npx pnpm@9.15.4 --filter api prisma:generate
 npx pnpm@9.15.4 db:status
 npx pnpm@9.15.4 --filter api build
 npx pnpm@9.15.4 --filter api lint
-npx pnpm@9.15.4 --filter api verify:m7
+npx pnpm@9.15.4 --filter api verify:m8
 ```
 
 If Docker services are needed:
