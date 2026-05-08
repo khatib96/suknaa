@@ -110,10 +110,10 @@ export function HostLoginForm() {
             منطقة المضيفين
           </span>
           <h1 className="mt-4 text-2xl font-extrabold text-charcoal md:text-3xl">
-            أهلاً عودتك يا شريكنا 🏡
+            أهلاً بعودتك يا شريكنا
           </h1>
           <p className="mt-2 text-sm text-muted md:text-base">
-            أدِر عقاراتك، حجوزاتك، وأرباحك من مكان واحد.
+            أدِر بيوت عطلاتك، حجوزاتك، وأرباحك من مكان واحد.
           </p>
         </div>
 

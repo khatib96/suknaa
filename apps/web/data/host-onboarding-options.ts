@@ -19,10 +19,10 @@ export const PORTFOLIO_SIZE_OPTIONS: ReadonlyArray<{
   labelAr: string;
   hint?: string;
 }> = [
-  { id: "1", labelAr: "عقار واحد فقط", hint: "بداية مثالية" },
-  { id: "2-3", labelAr: "عقاران أو ثلاثة" },
-  { id: "4-10", labelAr: "بين 4 و 10 عقارات" },
-  { id: "10+", labelAr: "أكثر من 10 عقارات", hint: "نتواصل معك مباشرة" },
+  { id: "1", labelAr: "بيت عطلات واحد فقط", hint: "بداية مثالية" },
+  { id: "2-3", labelAr: "بيتا عطلات أو ثلاثة" },
+  { id: "4-10", labelAr: "بين 4 و 10 بيوت عطلات" },
+  { id: "10+", labelAr: "أكثر من 10 بيوت عطلات", hint: "نتواصل معك مباشرة" },
 ];
 
 export const START_TIMELINE_OPTIONS: ReadonlyArray<{
@@ -40,7 +40,7 @@ export const BIGGEST_CHALLENGE_OPTIONS: ReadonlyArray<{
   id: BiggestChallenge;
   labelAr: string;
 }> = [
-  { id: "pricing", labelAr: "تسعير عقاري بشكل عادل" },
+  { id: "pricing", labelAr: "تسعير بيت العطلات بشكل عادل" },
   { id: "attracting_guests", labelAr: "اجتذاب ضيوف" },
   { id: "managing_bookings", labelAr: "تنظيم الحجوزات" },
   { id: "verification", labelAr: "التحقق من الضيوف وثقتهم" },
@@ -53,17 +53,15 @@ export const BIGGEST_CHALLENGE_OPTIONS: ReadonlyArray<{
 
 export const HOST_CATEGORY_LABELS: Record<
   HostCategory,
-  { title: string; subtitle: string; emoji: string }
+  { title: string; subtitle: string }
 > = {
   real_estate: {
-    title: "عقارات",
+    title: "بيوت عطلات",
     subtitle: "بيت، شقة، فيلا، مزرعة، شاليه، استوديو...",
-    emoji: "🏡",
   },
   hospitality: {
     title: "فنادق ومنتجعات",
     subtitle: "فندق، منتجع، شقق فندقية، هوستل.",
-    emoji: "🏨",
   },
 };
 
@@ -72,16 +70,16 @@ export const HOST_SUBTYPE_LABELS: Record<
   { title: string; subtitle: string }
 > = {
   individual: {
-    title: "فرد / مالك",
-    subtitle: "أعرض عقاري الشخصي للحجز.",
+    title: "حساب شخصي",
+    subtitle: "أعرض بيتي أو شقتي للحجز كمالك.",
   },
   re_office: {
-    title: "مكتب عقاري",
-    subtitle: "أدير عدة عقارات لأصحابها.",
+    title: "تجاري",
+    subtitle: "للمكاتب العقارية أو من يدير عدة بيوت عطلات نيابة عن أصحابها.",
   },
   hotel_company: {
-    title: "شركة فندقية",
-    subtitle: "أملك أو أدير منشأة فندقية.",
+    title: "تجاري",
+    subtitle: "للشركات الفندقية أو من يدير منشأة فندقية أو منتجع.",
   },
 };
 

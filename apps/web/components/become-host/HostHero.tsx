@@ -29,7 +29,7 @@ export function HostHero() {
             انضم لمجتمع المضيفين السوريين
           </span>
           <h1 className="mt-6 text-4xl font-extrabold leading-tight md:text-6xl">
-            حوّل عقارك إلى مصدر دخل
+            حوّل بيت عطلاتك إلى مصدر دخل
           </h1>
           <p className="mt-5 text-lg leading-8 text-white/90 md:text-xl">
             مع سُكنى، أنت تتحكَّم بكل شيء — السعر، التوفر، القواعد. نحن نتولّى

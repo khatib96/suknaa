@@ -14,7 +14,7 @@ export const DEFAULT_TAB: TabValue = "all";
 
 export const TAB_LABELS: Record<TabValue, string> = {
   all: "الكل",
-  real_estate: "عقارات",
+  real_estate: "بيوت عطلات",
   hospitality: "فنادق",
 };
 

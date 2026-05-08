@@ -20,7 +20,7 @@
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
 - **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) مغلقة؛ Phase 3 هي التالية.
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
-- **آخر تحديث للذاكرة**: 2026-05-08 (جلسة — financial rules + permissions decisions)
+- **آخر تحديث للذاكرة**: 2026-05-08 (جلسة — Pre-Phase-3 Mini UX Cleanup)
 - **آخر AI عمل على المشروع**: Codex
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -209,6 +209,41 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-08 (Pre-Phase-3 Mini UX Cleanup)
+**الـ AI المستخدم**: Codex
+
+**ما تم تنفيذه**:
+1. إضافة placeholder pages لمنع 404 بعد login:
+   - `/dashboard` للضيف، تعتمد على `/api/me` وتعرض حسابي/حجوزاتي/CTA للاستضافة.
+   - `/host/dashboard` للمضيف، تعتمد على `isHost` من `/api/me` وتعرض بطاقات مبدئية للتحقق/بيوت العطلات/الحجوزات/الأرباح.
+2. تحديث مسميات واجهة الاستضافة:
+   - `individual` يظهر كـ "حساب شخصي".
+   - `re_office` يظهر كـ "مكتب عقاري (تجاري)".
+   - `hotel_company` يظهر كـ "شركة فندقية (تجاري)".
+3. استبدال التصنيف العام الظاهر للمستخدم من "عقارات" إلى "بيوت عطلات" في واجهات `apps/web` فقط، مع إبقاء `real_estate` والـ routes والـ types كما هي.
+4. إخفاء مسار الفنادق مؤقتاً في Step 1 من host onboarding ككرت disabled "قريباً"، بدون حذف `hospitality` أو تغيير schema/backend.
+5. تنظيف واجهة KYC نصياً:
+   - تسميات عربية أوضح للحقول.
+   - شرح سبب طلب الوثائق.
+   - إخفاء `hotel_license` من الواجهة لأن مسار الفنادق مؤجل.
+   - لا يوجد تخصيص كامل حسب subtype لأن `/api/me` لا يرجع `hostProfile.hostSubtype` أو KYC status حالياً.
+6. جعل الـ public Navbar يقرأ `/api/me` ويعرض رابط لوحة الحساب/لوحة المضيف بدل "تسجيل الدخول" عندما تكون الجلسة فعالة.
+7. إزالة الإيموجي من نقاط onboarding والداشبورد واستبدالها بأيقونات Lucide بألوان سُكنى: primary لبيوت العطلات وgold للفنادق.
+8. تحديث `docs/UX_BACKLOG.md` بوضع علامات على البنود المنجزة وتوثيق البند المفتوح الخاص بإظهار `hostSubtype` وKYC status من API لاحقاً.
+
+**قرارات مهمة**:
+- لا migration جديدة.
+- لا تعديل على `apps/api`.
+- لا تعديل على Prisma schema أو DB enums.
+- لا تعديل على route names أو API endpoints.
+- بقي كـ next-session candidate: إضافة API يعرض `hostProfile.hostSubtype` وKYC status عند بدء dashboard/KYC الديناميكي الحقيقي.
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter web lint` → نجاح.
+- `npx pnpm@9.15.4 --filter web build` → نجاح. build ولّد `/dashboard` و`/host/dashboard` ضمن routes.
+
+---
 
 **التاريخ**: 2026-05-08 (Financial Rules + Permissions Decisions)
 **الـ AI المستخدم**: Codex
@@ -1357,4 +1392,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-07 (Phase 2 M10).**
+**نهاية الملف. آخر تحديث: 2026-05-08 (Pre-Phase-3 Mini UX Cleanup).**

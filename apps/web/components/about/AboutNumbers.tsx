@@ -4,7 +4,7 @@ type StatItem = {
 };
 
 const STATS: StatItem[] = [
-  { value: "+500", label: "عقار وفندق" },
+  { value: "+500", label: "بيت عطلات وفندق" },
   { value: "+50", label: "مضيف موثَّق" },
   { value: "+1,000", label: "ضيف مسجَّل" },
   { value: "+200", label: "حجز مكتمل" },

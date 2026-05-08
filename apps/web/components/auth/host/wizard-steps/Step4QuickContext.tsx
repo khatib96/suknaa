@@ -39,7 +39,7 @@ export function Step4QuickContext() {
       </header>
 
       <FieldGroup
-        title="كم عدد العقارات التي تخطط لعرضها؟"
+        title="كم عدد بيوت العطلات التي تخطط لعرضها؟"
         hint="تقدير تقريبي."
       >
         <div className="grid gap-2 sm:grid-cols-2">

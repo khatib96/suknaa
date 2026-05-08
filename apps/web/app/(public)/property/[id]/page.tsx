@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const property = findProperty(id);
   if (!property) {
-    return { title: "العقار غير موجود" };
+    return { title: "مكان الإقامة غير موجود" };
   }
   return {
     title: property.title,
@@ -56,7 +56,7 @@ export default async function PropertyDetailPage({ params }: Params) {
             <li aria-hidden>›</li>
             <li>
               <Link href="/search?tab=real_estate" className="hover:text-primary">
-                عقارات
+                بيوت عطلات
               </Link>
             </li>
             <li aria-hidden>›</li>

@@ -39,7 +39,7 @@ export function PropertyHostSnippet({ hostSlug, hostDisplayName }: Props) {
             href={`/host/${hostSlug}`}
             className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:underline"
           >
-            عرض كل عقارات هذا المضيف
+            عرض كل بيوت عطلات هذا المضيف
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
         </div>

@@ -54,7 +54,7 @@ export function EarningsCalculator() {
             احسب دخلك التقديري
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted">
-            أدخل تفاصيل عقارك واحصل على تقدير سريع لدخلك الشهري.
+            أدخل تفاصيل بيت عطلاتك واحصل على تقدير سريع لدخلك الشهري.
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export function EarningsCalculator() {
             <div className="space-y-6 p-8 md:p-10">
               <div>
                 <label className="mb-2 block text-sm font-bold text-charcoal">
-                  نوع العقار
+                  نوع بيت العطلة
                 </label>
                 <select
                   value={propertyTypeId}

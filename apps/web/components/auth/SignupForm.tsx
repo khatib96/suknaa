@@ -176,7 +176,7 @@ export function SignupForm() {
       </div>
 
       <div className="mt-5 rounded-2xl border border-[#E8E0D3] bg-cream/70 p-4 text-center text-sm">
-        <span className="text-muted">تريد عرض عقار؟ </span>
+        <span className="text-muted">تريد عرض بيت عطلات؟ </span>
         <Link
           href="/become-a-host/apply"
           className="font-bold text-primary hover:underline"

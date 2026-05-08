@@ -3,7 +3,7 @@ import { HostLoginForm } from "@/components/auth/host/HostLoginForm";
 
 export const metadata: Metadata = {
   title: "دخول المضيفين",
-  description: "ادخل لوحة المضيفين على سُكنى لإدارة عقاراتك وأرباحك.",
+  description: "ادخل لوحة المضيفين على سُكنى لإدارة بيوت عطلاتك وأرباحك.",
 };
 
 export default function HostLoginPage() {

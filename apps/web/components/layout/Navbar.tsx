@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Home, User } from "lucide-react";
+import { Home, LayoutDashboard, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/web-api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,12 +17,19 @@ import { DEFAULT_TAB, parseTab, type TabValue } from "@/lib/tab";
 
 const NAV_TABS: ReadonlyArray<{ key: TabValue; label: string }> = [
   { key: "all", label: "الكل" },
-  { key: "real_estate", label: "عقارات" },
+  { key: "real_estate", label: "بيوت عطلات" },
   { key: "hospitality", label: "فنادق" },
 ];
 
+interface NavbarUser {
+  email: string;
+  fullName?: string | null;
+  isHost: boolean;
+}
+
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [currentUser, setCurrentUser] = useState<NavbarUser | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -35,6 +43,31 @@ export function Navbar() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadCurrentUser() {
+      try {
+        const result = await apiRequest<NavbarUser>({
+          path: "/api/me",
+          method: "GET",
+        });
+        if (alive) {
+          setCurrentUser(result);
+        }
+      } catch {
+        if (alive) {
+          setCurrentUser(null);
+        }
+      }
+    }
+
+    void loadCurrentUser();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const buildHref = (tab: TabValue) => {
@@ -111,64 +144,77 @@ export function Navbar() {
           ))}
         </nav>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
+        {currentUser ? (
+          <Link
+            href={currentUser.isHost ? "/host/dashboard" : "/dashboard"}
             className={cn(
               "inline-flex items-center gap-2 rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
             )}
           >
-            <User className="h-4 w-4" />
-            تسجيل الدخول
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            sideOffset={10}
-            className="w-56 rounded-2xl border border-[#E8E0D3] p-1.5 shadow-warm-md"
-          >
-            <DropdownMenuItem
-              render={
-                <Link
-                  href="/login"
-                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
-                />
-              }
+            <LayoutDashboard className="h-4 w-4" />
+            {currentUser.isHost ? "لوحة المضيف" : "لوحة الحساب"}
+          </Link>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+              )}
             >
-              دخول
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              render={
-                <Link
-                  href="/host/login"
-                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
-                />
-              }
+              <User className="h-4 w-4" />
+              تسجيل الدخول
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={10}
+              className="w-56 rounded-2xl border border-[#E8E0D3] p-1.5 shadow-warm-md"
             >
-              دخول كمؤجِّر
-            </DropdownMenuItem>
-            <div className="my-1 h-px bg-[#F1ECE2]" aria-hidden />
-            <DropdownMenuItem
-              render={
-                <Link
-                  href="/signup"
-                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
-                />
-              }
-            >
-              إنشاء حساب
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              render={
-                <Link
-                  href="/become-a-host"
-                  className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold text-gold hover:text-primary"
-                />
-              }
-            >
-              كن مضيفاً
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href="/login"
+                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
+                  />
+                }
+              >
+                دخول
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href="/host/login"
+                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
+                  />
+                }
+              >
+                دخول كمؤجِّر
+              </DropdownMenuItem>
+              <div className="my-1 h-px bg-[#F1ECE2]" aria-hidden />
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href="/signup"
+                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-charcoal hover:text-primary"
+                  />
+                }
+              >
+                إنشاء حساب
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href="/become-a-host"
+                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold text-gold hover:text-primary"
+                  />
+                }
+              >
+                كن مضيفاً
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       <div className="border-t border-[#E8E0D3] bg-white/95 px-4 py-2 md:hidden">

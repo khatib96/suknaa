@@ -27,11 +27,11 @@ export const HOST_KIND_LABELS: Record<HostKind, HostKindLabels> = {
   },
   re_office: {
     greeting: "تعرَّف على المكتب",
-    typeLabel: "مكتب عقاري",
+    typeLabel: "تجاري",
   },
   hotel_company: {
     greeting: "تعرَّف على المُشغِّل",
-    typeLabel: "شركة فنادق",
+    typeLabel: "تجاري",
   },
 };
 
@@ -69,7 +69,7 @@ export const HOSTS: Host[] = [
     slug: "abu-omar",
     displayName: "أبو عمر",
     kind: "individual",
-    bio: "مضيف من دمشق منذ أكثر من ثلاث سنوات، يحرص على راحة ضيوفه واستقبالهم بكرم سوري أصيل. عقاراته نظيفة، مرتَّبة، وقريبة من المعالم السياحية.",
+    bio: "مضيف من دمشق منذ أكثر من ثلاث سنوات، يحرص على راحة ضيوفه واستقبالهم بكرم سوري أصيل. بيوت عطلاته نظيفة، مرتَّبة، وقريبة من المعالم السياحية.",
     languages: ["العربية", "الإنجليزية"],
     responseTimeMinutes: 25,
     responseRatePercent: 98,
@@ -148,7 +148,7 @@ export const HOSTS: Host[] = [
     slug: "office-cham",
     displayName: "مكتب الشام العقاري",
     kind: "re_office",
-    bio: "مكتب عقاري متخصِّص في إدارة البيوت الدمشقية التراثية والشقق العصرية في قلب العاصمة. فريقنا يعتني بكل عقار كما لو كان منزله الخاص.",
+    bio: "مكتب عقاري متخصِّص في إدارة البيوت الدمشقية التراثية والشقق العصرية في قلب العاصمة. فريقنا يعتني بكل بيت عطلات كما لو كان منزله الخاص.",
     languages: ["العربية", "الإنجليزية"],
     responseTimeMinutes: 15,
     responseRatePercent: 99,

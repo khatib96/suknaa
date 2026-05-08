@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "سُكنى — منصة حجز السكن في سوريا",
     short_name: "سُكنى",
     description:
-      "اكتشف واحجز عقارات وفنادق ومنتجعات في سوريا بكل سهولة.",
+      "اكتشف واحجز بيوت عطلات وفنادق ومنتجعات في سوريا بكل سهولة.",
     lang: "ar",
     dir: "rtl",
     start_url: "/",

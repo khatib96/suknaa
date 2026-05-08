@@ -192,7 +192,7 @@ export function SearchFilters({
             />
           </Section>
 
-          <Section title="نوع العقار">
+          <Section title="نوع بيت العطلة">
             <ul className="space-y-2">
               {Object.entries(PROPERTY_TYPE_LABELS).map(([id, label]) => (
                 <li key={id}>

@@ -11,7 +11,7 @@ const reasons: Reason[] = [
   {
     icon: <ShieldCheck className="h-7 w-7" />,
     title: "حجز موثَّق ومضمون",
-    description: "نتحقق من كل عقار وكل مضيف قبل النشر.",
+    description: "نتحقق من كل مكان إقامة وكل مضيف قبل النشر.",
   },
   {
     icon: <CreditCard className="h-7 w-7" />,

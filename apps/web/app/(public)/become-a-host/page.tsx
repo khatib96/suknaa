@@ -11,7 +11,7 @@ import { LiveNumbersStrip } from "@/components/become-host/LiveNumbersStrip";
 export const metadata: Metadata = {
   title: "كن مضيفاً",
   description:
-    "حوّل عقارك أو فندقك إلى مصدر دخل عبر سُكنى. عمولة عادلة، حماية كاملة، ودعم بالعربي.",
+    "حوّل بيت عطلاتك أو فندقك إلى مصدر دخل عبر سُكنى. عمولة عادلة، حماية كاملة، ودعم بالعربي.",
 };
 
 export default function BecomeAHostPage() {

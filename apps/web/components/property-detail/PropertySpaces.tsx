@@ -13,7 +13,7 @@ export function PropertySpaces({ spaces }: { spaces: PropertySpace[] }) {
   return (
     <section aria-labelledby="property-spaces-heading">
       <h2 id="property-spaces-heading" className="text-xl font-bold text-charcoal">
-        غرف ومساحات هذا العقار
+        غرف ومساحات هذا المكان
       </h2>
       <p className="mt-1 text-sm text-muted">
         تفاصيل لكل مساحة بصور خاصة بها — لتعرف بالضبط ما الذي ستحجزه.

@@ -12,7 +12,7 @@ import { runSearch, type SearchParamsRecord } from "@/lib/search-utils";
 
 export const metadata: Metadata = {
   title: "البحث",
-  description: "ابحث عن السكن المثالي في سوريا — عقارات وفنادق بأسعار تناسبك.",
+  description: "ابحث عن السكن المثالي في سوريا — بيوت عطلات وفنادق بأسعار تناسبك.",
 };
 
 type PageProps = {

@@ -3,7 +3,7 @@ import { Ban, Cigarette, Clock, PartyPopper, PawPrint } from "lucide-react";
 const rules = [
   { icon: <Clock className="h-4 w-4" />, label: "تسجيل الوصول بعد الساعة 14:00" },
   { icon: <Clock className="h-4 w-4" />, label: "المغادرة قبل الساعة 12:00" },
-  { icon: <Cigarette className="h-4 w-4" />, label: "ممنوع التدخين داخل العقار" },
+  { icon: <Cigarette className="h-4 w-4" />, label: "ممنوع التدخين داخل مكان الإقامة" },
   { icon: <PartyPopper className="h-4 w-4" />, label: "ممنوع إقامة حفلات أو فعاليات" },
   { icon: <PawPrint className="h-4 w-4" />, label: "الحيوانات الأليفة بحسب توافر الإذن" },
   { icon: <Ban className="h-4 w-4" />, label: "ممنوع تجاوز عدد الضيوف المسجّل" },

@@ -12,7 +12,7 @@ const steps: Step[] = [
   {
     number: "1",
     icon: <House className="h-6 w-6" />,
-    title: "أضف عقارك",
+    title: "أضف بيت عطلاتك",
     description: "صور + وصف + مميزات في أقل من 15 دقيقة.",
   },
   {

@@ -22,7 +22,7 @@ export function PropertyCard({ item }: { item: PropertyCardData }) {
           <Heart className="h-4 w-4" />
         </button>
         <span className="absolute right-3 top-3 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
-          عقار
+          بيت عطلات
         </span>
       </div>
 

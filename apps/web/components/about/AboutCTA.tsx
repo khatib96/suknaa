@@ -6,8 +6,8 @@ export function AboutCTA() {
       <div className="mx-auto max-w-5xl rounded-3xl bg-gradient-to-bl from-primary via-[#A84A33] to-[#8a3d2a] p-10 text-center text-white shadow-warm-lg md:p-16">
         <h2 className="text-3xl font-extrabold md:text-4xl">انضم لنا</h2>
         <p className="mx-auto mt-4 max-w-xl text-base text-white/90 md:text-lg">
-          سواء كنت تبحث عن مكان لإقامتك القادمة أو لديك عقار تريد عرضه، سُكنى
-          هي بيتك الرقمي.
+          سواء كنت تبحث عن مكان لإقامتك القادمة أو لديك بيت عطلات تريد عرضه،
+          سُكنى هي بيتك الرقمي.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link

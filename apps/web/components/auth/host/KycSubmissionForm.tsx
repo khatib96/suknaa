@@ -17,17 +17,62 @@ type KycFileKind =
 const FILE_FIELDS: Array<{
   kind: KycFileKind;
   label: string;
+  description: string;
   requirement: "always" | "host_type";
 }> = [
-  { kind: "id_front", label: "صورة الهوية (الوجه الأمامي)", requirement: "always" },
-  { kind: "id_back", label: "صورة الهوية (الوجه الخلفي)", requirement: "always" },
-  { kind: "selfie", label: "سيلفي مع الهوية", requirement: "always" },
-  { kind: "ownership_proof", label: "إثبات ملكية", requirement: "host_type" },
-  { kind: "company_registration", label: "سجل تجاري", requirement: "host_type" },
-  { kind: "tax_certificate", label: "شهادة ضريبية", requirement: "host_type" },
-  { kind: "authorization_letter", label: "كتاب تفويض (عند الحاجة)", requirement: "host_type" },
-  { kind: "hotel_license", label: "رخصة فندق", requirement: "host_type" },
+  {
+    kind: "id_front",
+    label: "الهوية الشخصية — الوجه الأمامي",
+    description: "صورة واضحة للوجه الأمامي من بطاقتك أو وثيقة هويتك.",
+    requirement: "always",
+  },
+  {
+    kind: "id_back",
+    label: "الهوية الشخصية — الوجه الخلفي",
+    description: "صورة واضحة للوجه الخلفي من بطاقتك أو وثيقة هويتك.",
+    requirement: "always",
+  },
+  {
+    kind: "selfie",
+    label: "صورة شخصية (سيلفي) مع الهوية",
+    description: "صورة شخصية وأنت تمسك بوثيقة الهوية للتأكد من الملكية.",
+    requirement: "always",
+  },
+  {
+    kind: "ownership_proof",
+    label: "إثبات ملكية أو تفويض",
+    description: "صك ملكية، عقد إيجار، أو وثيقة تفويض تسمح لك بعرض المكان.",
+    requirement: "host_type",
+  },
+  {
+    kind: "company_registration",
+    label: "سجل تجاري",
+    description: "مطلوب للحسابات التجارية مثل المكاتب العقارية.",
+    requirement: "host_type",
+  },
+  {
+    kind: "tax_certificate",
+    label: "شهادة ضريبية",
+    description: "مطلوبة للحسابات التجارية عند توفرها.",
+    requirement: "host_type",
+  },
+  {
+    kind: "authorization_letter",
+    label: "كتاب تفويض (عند الحاجة)",
+    description: "ارفعه إذا كنت تدير المكان نيابة عن المالك.",
+    requirement: "host_type",
+  },
+  {
+    kind: "hotel_license",
+    label: "رخصة فندق (للشركات الفندقية)",
+    description: "سيظهر هذا الحقل عندما نفتح مسار الشركات الفندقية.",
+    requirement: "host_type",
+  },
 ];
+
+const VISIBLE_FILE_FIELDS = FILE_FIELDS.filter(
+  (field) => field.kind !== "hotel_license",
+);
 
 interface KycHistoryItem {
   id: string;
@@ -47,7 +92,7 @@ export function KycSubmissionForm() {
   const [history, setHistory] = useState<KycHistoryItem[]>([]);
 
   const requiredMissing = useMemo(() => {
-    return FILE_FIELDS.filter((field) => field.requirement === "always").filter((field) => {
+    return VISIBLE_FILE_FIELDS.filter((field) => field.requirement === "always").filter((field) => {
       return !files[field.kind] && !uploadedKeys[field.kind];
     });
   }, [files, uploadedKeys]);
@@ -96,7 +141,7 @@ export function KycSubmissionForm() {
 
     try {
       const nextKeys: Partial<Record<KycFileKind, string>> = { ...uploadedKeys };
-      for (const field of FILE_FIELDS) {
+      for (const field of VISIBLE_FILE_FIELDS) {
         const selected = files[field.kind];
         if (!selected || nextKeys[field.kind]) {
           continue;
@@ -143,21 +188,25 @@ export function KycSubmissionForm() {
           تحقق الهوية (KYC)
         </h1>
         <p className="mt-2 text-sm text-muted">
-          ارفع الوثائق المطلوبة حسب نوع حسابك. الملفات تبقى ضمن مسار آمن ولا تُعرض مفاتيح التخزين في الواجهة.
+          هذه الوثائق تساعدنا في حمايتك وحماية ضيوفك. تبقى مشفرة ولا تُعرض
+          إلا لفريق المراجعة.
         </p>
         <div className="mt-4 rounded-xl border border-[#E8E0D3] bg-cream/60 px-4 py-3 text-xs leading-relaxed text-charcoal">
-          <p className="font-semibold">متطلبات KYC حسب نوع المضيف:</p>
+          <p className="font-semibold">متطلبات التحقق حسب نوع الحساب:</p>
           <p className="mt-1">
-            فرد: <span className="font-semibold">id_front, id_back, selfie, ownership_proof</span>
+            الحساب الشخصي: الهوية الشخصية (الوجهان) + صورة شخصية مع الهوية +
+            إثبات ملكية أو تفويض.
           </p>
           <p>
-            مكتب عقاري: <span className="font-semibold">id_front, id_back, selfie, company_registration, tax_certificate</span>
+            الحساب التجاري (مكتب عقاري): الهوية الشخصية (الوجهان) + صورة
+            شخصية مع الهوية + سجل تجاري + شهادة ضريبية.
           </p>
           <p>
-            شركة فندقية: <span className="font-semibold">id_front, id_back, selfie, company_registration, tax_certificate, hotel_license</span>
+            الشركة الفندقية (مسار قيد التحضير): نفس وثائق الحساب التجاري +
+            رخصة فندق.
           </p>
           <p className="mt-1 text-muted">
-            الحقول الموسومة بـ * مطلوبة دائمًا. الحقول الموسومة بـ &quot;حسب نوع المضيف&quot; قد تكون إلزامية بحسب subtype.
+            متطلبات الفنادق ستُفعَّل لاحقاً ولا تظهر كحقول مطلوبة الآن.
           </p>
         </div>
 
@@ -191,15 +240,18 @@ export function KycSubmissionForm() {
             </select>
           </label>
 
-          {FILE_FIELDS.map((field) => (
+          {VISIBLE_FILE_FIELDS.map((field) => (
             <label key={field.kind} className="block space-y-1">
               <span className="text-sm font-semibold text-charcoal">
                 {field.label}{" "}
                 {field.requirement === "always" ? (
                   <span className="text-[#9F1239]">*</span>
                 ) : (
-                  <span className="text-xs font-medium text-muted">(حسب نوع المضيف)</span>
+                  <span className="text-xs font-medium text-muted">(حسب نوع الحساب)</span>
                 )}
+              </span>
+              <span className="block text-xs leading-5 text-muted">
+                {field.description}
               </span>
               <input
                 type="file"

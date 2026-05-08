@@ -60,7 +60,7 @@ export function Step5Review({ submitted }: { submitted: boolean }) {
         <SummaryRow
           stepHref="?step=1"
           label="نوع الاستضافة"
-          value={cat ? `${cat.emoji} ${cat.title}` : "—"}
+          value={cat?.title ?? "—"}
         />
         <SummaryRow
           stepHref="?step=2"
@@ -91,7 +91,7 @@ export function Step5Review({ submitted }: { submitted: boolean }) {
         />
         <SummaryRow
           stepHref="?step=4"
-          label="عدد العقارات"
+          label="عدد بيوت العطلات"
           value={portfolio?.labelAr ?? "لم يُحدَّد"}
           muted={!portfolio}
         />
@@ -114,7 +114,7 @@ export function Step5Review({ submitted }: { submitted: boolean }) {
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
             بعد إنشاء الحساب، سنرسل لك رابط تأكيد البريد، ونوجّهك لرفع
-            وثائق التحقق الخاصة بنوع حسابك. لا تستطيع نشر عقار قبل اكتمال
+            وثائق التحقق الخاصة بنوع حسابك. لا تستطيع نشر بيت عطلات قبل اكتمال
             التحقق.
           </span>
         </p>
@@ -169,7 +169,7 @@ function SuccessPanel({ email }: { email?: string }) {
           </span>
           <div>
             <h2 className="text-xl font-extrabold text-[#1F4C3A] md:text-2xl">
-              أهلاً بك في عائلة سُكنى! 🎉
+              أهلاً بك في عائلة سُكنى!
             </h2>
             {email ? (
               <p className="mt-0.5 text-sm text-[#2C6850]" dir="ltr">
@@ -179,7 +179,7 @@ function SuccessPanel({ email }: { email?: string }) {
           </div>
         </div>
         <p className="mt-4 text-sm leading-relaxed text-[#2C6850]">
-          تم تفعيل حساب المضيف. أكمل رفع وثائق KYC ثم تابع إضافة عقارك الأول.
+          تم تفعيل حساب المضيف. أكمل رفع وثائق KYC ثم تابع إضافة بيت عطلاتك الأول.
         </p>
       </div>
 
@@ -197,7 +197,7 @@ function SuccessPanel({ email }: { email?: string }) {
         />
         <NextStepCard
           icon={<Sparkles className="h-5 w-5" />}
-          title="إضافة عقارك الأول"
+          title="إضافة بيت عطلاتك الأول"
           description="تجهيز الإعلان: صور، تسعير، قواعد الإقامة. نُعاين قبل النشر."
         />
       </div>

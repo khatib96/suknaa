@@ -35,7 +35,7 @@ export default function NotFound() {
             className="inline-flex items-center gap-2 rounded-full border border-[#E8E0D3] bg-white px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:text-primary"
           >
             <Search className="h-4 w-4" />
-            تصفح العقارات والفنادق
+            تصفح بيوت العطلات والفنادق
           </Link>
         </div>
       </div>

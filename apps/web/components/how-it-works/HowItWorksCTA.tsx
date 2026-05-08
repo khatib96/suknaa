@@ -7,7 +7,7 @@ export function HowItWorksCTA() {
         <article className="rounded-3xl border border-[#F5EFE6] bg-white p-8 shadow-warm-sm md:p-10">
           <h3 className="text-2xl font-extrabold text-charcoal">جاهز كزبون؟</h3>
           <p className="mt-2 text-sm leading-7 text-charcoal/75">
-            ابدأ بتصفُّح آلاف العقارات والفنادق، واحجز ما يناسبك بثقة.
+            ابدأ بتصفُّح بيوت العطلات والفنادق، واحجز ما يناسبك بثقة.
           </p>
           <Link
             href="/signup"
@@ -20,7 +20,7 @@ export function HowItWorksCTA() {
         <article className="rounded-3xl border border-[#F5EFE6] bg-white p-8 shadow-warm-sm md:p-10">
           <h3 className="text-2xl font-extrabold text-charcoal">جاهز كمضيف؟</h3>
           <p className="mt-2 text-sm leading-7 text-charcoal/75">
-            حوِّل عقارك أو فندقك إلى مصدر دخل ثابت مع منصة موثوقة.
+            حوِّل بيت عطلاتك أو فندقك إلى مصدر دخل ثابت مع منصة موثوقة.
           </p>
           <Link
             href="/become-a-host"
