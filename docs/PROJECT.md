@@ -182,6 +182,9 @@ These are the features that make Suknaa more than "Airbnb+Booking for Syria":
 | **Scarcity nudges** | Honest urgency signals ("3 rooms booked in the last 24 hours") to help decisions |
 | **Smart upgrades at checkout** | "$15 more for a balcony view" — increases revenue, improves guest experience |
 | **Nearby attractions on map** | Restaurants, sites, mosques, hospitals shown around each listing with distances |
+| **Discover Syria** | Destination guides, landmarks, restaurants, and local stories that make Suknaa a travel reference, not only a booking tool |
+| **Trips and planning** | Guest trip dashboard plus future multi-city planning for travelers visiting more than one Syrian city |
+| **AI search assistant** | Data-grounded assistant for finding stays, comparing prices, choosing dates, and planning trips from live Suknaa data |
 | **Dual rating** | Both the property AND the host get rated separately |
 | **Host profile pages** | See all properties from one host; build trust through reputation |
 
@@ -226,4 +229,5 @@ These are the features that make Suknaa more than "Airbnb+Booking for Syria":
 | `PAYMENT_SYSTEM.md` | Money flow, escrow, withdrawals, commission passthrough |
 | `SECURITY.md` | Auth, KYC, fraud prevention, anti-circumvention |
 | `DEPLOYMENT.md` | VPS setup, CI/CD, backups |
-| `.cursorrules` | Rules for Cursor AI when generating code |
+| `PRODUCT_IDEAS.md` | Future product ideas: Discover Syria, trips, multi-city planning, AI assistant |
+| `.cursor/rules/suknaa.mdc` | Rules for Cursor AI when generating code |

@@ -1,6 +1,8 @@
 # 🗺️ BUILD_PLAN — Suknaa Phased Build Roadmap (v2)
 
 > **v2 changes**: Phases reorganized to handle the dual-system (Real Estate + Hospitality) architecture. New features (price intelligence, anti-circumvention, sharing wishlists, comparisons, price alerts, smart upgrades, nearby attractions) distributed across phases.
+>
+> Broader future product ideas, including Discover Syria, trips dashboard, multi-city trip planning, and AI search/travel assistant, are tracked in `docs/PRODUCT_IDEAS.md`.
 
 ---
 
@@ -26,7 +28,7 @@
 - [x] Git repository (private GitHub repo)
 - [x] Monorepo scaffolded with Turborepo + pnpm
 - [x] All v2 documentation in `/docs/` committed
-- [x] `.cursorrules` file written and committed
+- [x] Cursor rules file written and committed (`.cursor/rules/suknaa.mdc`)
 - [x] Local dev environment working (Docker Compose: Postgres+PostGIS, Redis, MinIO)
 - [ ] **5 visual mockups** (Figma or v0.dev): Homepage with tabs, Real Estate search results, Hotel detail page, Property detail page (with per-room sections), Host commission-passthrough toggle UI
 - [ ] Logo files in SVG, PNG (multiple sizes), and favicon set
@@ -367,6 +369,10 @@ This phase adds the Suknaa "magic" — features that differentiate it from gener
 - [ ] **Price Alerts**:
   - User can set alerts on listings
   - Cron job checks daily; sends notification on trigger
+- [ ] **AI-Assisted Search / Trip Planning**:
+  - Natural-language search grounded in Suknaa inventory, pricing, availability, and verified content
+  - Multi-city planning support after real bookings and availability exist
+  - No invented prices, availability, ratings, or travel facts
 
 ### Exit Criteria
 The platform feels intelligent. Hosts get useful insights. Guests get useful nudges. Off-platform circumvention is detectable.
@@ -432,6 +438,7 @@ Both apps are live in stores, used by beta users, with feature parity to web.
 - [ ] Hotel chain partnerships
 - [ ] Referral program for hosts
 - [ ] SEO content strategy (blog at `suknaa.com/blog`)
+- [ ] Discover Syria content strategy: destinations, landmarks, restaurants, local stories, and curated Suknaa picks
 - [ ] Performance optimization based on real load
 - [ ] Capacity planning per `ARCHITECTURE.md` Section 9
 

@@ -181,7 +181,7 @@ suknaa/
 │   ├── nginx/                  # Nginx configs
 │   └── scripts/                # Deployment scripts
 │
-├── .cursorrules                # Cursor AI rules
+├── .cursor/rules/suknaa.mdc    # Cursor AI rules
 ├── .github/                    # CI/CD workflows
 ├── turbo.json
 ├── pnpm-workspace.yaml
