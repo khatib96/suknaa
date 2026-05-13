@@ -15,6 +15,7 @@ import { RolesGuard } from "./guards/roles.guard";
 import { MockPasswordBreachCheckerService } from "./services/mock-password-breach-checker.service";
 import { PasswordService } from "./services/password.service";
 import { PASSWORD_BREACH_CHECKER } from "./services/password-breach-checker.interface";
+import { AuthRateLimitService } from "./services/auth-rate-limit.service";
 import { OtpService } from "./services/otp.service";
 import { TokensService } from "./services/tokens.service";
 import { TotpSecretCryptoService } from "./services/totp-secret-crypto.service";
@@ -59,6 +60,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
   controllers: [AuthController],
   providers: [
     AuthService,
+    AuthRateLimitService,
     PasswordService,
     TokensService,
     TotpSecretCryptoService,

@@ -1,25 +1,37 @@
 # Phase 2 Tracker — Backend Foundation + Auth + KYC
 
-> Purpose: a simple progress tracker for Mohammad. This file shows where Phase 2 stands, what each milestone means, and when it is safe to move forward.
+> Purpose: a simple progress tracker for Mohammad. **Phase 2** milestones (M1–M10), **Phase 2.5** stabilization (complete 2026-05-13), and handoff to **Phase 3** are recorded here.
 
 ## Current Status
 
-**Current milestone:** Phase 2 closed; Phase 3 is next  
-**Completed:** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9, M10  
+**Phase 2:** closed (M1–M10).  
+**Phase 2.5:** stabilization **complete** (2026-05-13) — see [Phase 2.5 — Stabilization](#phase-25--stabilization-post-phase-2) below.  
+**Phase 3:** **next** — Real Estate system (end-to-end), per `docs/BUILD_PLAN.md`.
+
+**Completed (Phase 2):** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9, M10  
 **In progress:** None  
 **Not started:** Phase 3
 
+## Phase 2.5 — Stabilization (post-Phase 2)
+
+Short hardening pass between Phase 2 and Phase 3 (`docs/PHASE_2_5_STABILIZATION_PLAN.md`). **Completed 2026-05-13.**
+
+| Milestone | Summary |
+|---|---|
+| **2.5 M1** | Reproducible `web` build: local fonts (`next/font/local`), no Google Fonts fetch at build time. |
+| **2.5 M2** | API **Helmet** security headers + env-driven **`CORS_ORIGINS`**. |
+| **2.5 M3** | Redis-backed **auth rate limiting** on login, signup, password reset, MFA completion paths. |
+| **2.5 M4** | Focused **auth tests** (`node:test` / `apps/api/tests/auth-flows.test.ts`). |
+| **2.5 M5** | Single root gate: **`npx pnpm@9.15.4 verify:phase2.5`** (web + api lint/build, `prisma validate`, api tests). Requires Docker (`suknaa_postgres`, `suknaa_redis`, `suknaa_minio`) and valid `apps/api/.env`. |
+| **2.5 M6** | Documentation closure — this tracker, stabilization plan, `BUILD_PLAN.md`, `ai_memory.md`, Cursor rules aligned. |
+
+**Final gate (recorded):** `npx pnpm@9.15.4 verify:phase2.5` **passed** after M5 implementation (re-run before Phase 3 work as needed).
+
 ## Phase 2 Rule
 
-Do not start Phase 3 until all Phase 2 exit criteria are done:
+Phase 2 exit criteria are satisfied (guest/host flows, KYC, audit, verification). **Phase 2.5 stabilization is also complete.** Do not skip the **pre–Phase 3 health check** when touching auth/infra: from repo root run `npx pnpm@9.15.4 verify:phase2.5` with Docker services and `apps/api/.env` as in `docs/PHASE_2_5_STABILIZATION_PLAN.md` (M5).
 
-- Guest can sign up, verify email, log in, refresh session, and log out.
-- User can choose login intent: guest or host.
-- User can start become-host flow for real estate or hospitality.
-- KYC submission can be created with the correct document requirements.
-- Admin can approve or reject KYC.
-- Audit logs are written for sensitive actions.
-- API build, lint, Prisma generate, migrations, and focused checks are clean.
+When starting **Phase 3**, follow `docs/BUILD_PLAN.md` and keep the dual-system mindset (Real Estate vs Hospitality) for all new backend work.
 
 ## Milestones
 
@@ -170,6 +182,12 @@ Do not start Phase 3 until all Phase 2 exit criteria are done:
 ## Standard Verification Commands
 
 Run from repo root:
+
+```powershell
+npx pnpm@9.15.4 verify:phase2.5
+```
+
+This is the **Phase 2.5** umbrella gate (web + api + Prisma validate + auth tests). For Phase-2–specific scripts only, you can still use:
 
 ```powershell
 npx pnpm@9.15.4 --filter api prisma:generate

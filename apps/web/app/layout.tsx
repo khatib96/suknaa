@@ -1,17 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Tajawal } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const tajawal = Tajawal({
+const tajawal = localFont({
   variable: "--font-tajawal",
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "700", "800"],
+  display: "swap",
+  src: [
+    {
+      path: "../assets/fonts/tajawal/tajawal-arabic-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../assets/fonts/tajawal/tajawal-arabic-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../assets/fonts/tajawal/tajawal-arabic-700-normal.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../assets/fonts/tajawal/tajawal-arabic-800-normal.woff2",
+      weight: "800",
+      style: "normal",
+    },
+  ],
 });
 
-const inter = Inter({
+const inter = localFont({
   variable: "--font-inter",
-  subsets: ["latin"],
   display: "swap",
+  src: "../assets/fonts/inter/inter-latin-wght-normal.woff2",
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {

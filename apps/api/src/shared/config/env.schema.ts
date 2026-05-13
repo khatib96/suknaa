@@ -14,6 +14,14 @@ export const envSchema = z.object({
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
 
+  /**
+   * Comma-separated browser origins allowed for CORS (e.g. Next.js dev server).
+   * Not a substitute for auth — server-to-server and curl ignore CORS.
+   */
+  CORS_ORIGINS: z
+    .string()
+    .default("http://localhost:3000,http://127.0.0.1:3000"),
+
   // ---- Postgres ----
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 
@@ -47,6 +55,17 @@ export const envSchema = z.object({
   OTP_CODE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
   OTP_PHONE_RATE_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(3),
+
+  // ---- Auth rate limits (Phase 2.5 M3, Redis sliding/fixed window via INCR+EXPIRE) ----
+  AUTH_RL_LOGIN_MAX: z.coerce.number().int().positive().default(5),
+  AUTH_RL_LOGIN_WINDOW_SEC: z.coerce.number().int().positive().default(60),
+  AUTH_RL_SIGNUP_MAX: z.coerce.number().int().positive().default(3),
+  AUTH_RL_SIGNUP_WINDOW_SEC: z.coerce.number().int().positive().default(3600),
+  AUTH_RL_PASSWORD_RESET_MAX: z.coerce.number().int().positive().default(5),
+  AUTH_RL_PASSWORD_RESET_WINDOW_SEC: z.coerce.number().int().positive().default(3600),
+  AUTH_RL_MFA_MAX: z.coerce.number().int().positive().default(5),
+  AUTH_RL_MFA_WINDOW_SEC: z.coerce.number().int().positive().default(600),
+
   TWO_FACTOR_ISSUER: z.string().min(1).default("Suknaa"),
   TWO_FACTOR_TEMP_SECRET_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   /** 64-char hex (32 bytes) or a long passphrase (scrypt-derived). Required before encrypting TOTP secrets at rest. */

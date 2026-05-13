@@ -422,9 +422,11 @@ When generating UI code:
 
 ## 14. Phase Awareness
 
-Currently in: **Phase 2** (Backend Foundation + Auth + KYC). Phase 1 + 1.5 are complete as public UI skeleton with mock data.
+**Phase 2** (Backend Foundation + Auth + KYC) is closed. **Phase 2.5** stabilization is **complete** (2026-05-13). **Phase 3** (Real Estate end-to-end) is the **next active implementation phase** — follow `docs/BUILD_PLAN.md` and `ai_memory.md`. Phase 1 + 1.5 remain the public UI skeleton with mock data until Phase 3+ wiring replaces mocks where planned.
 
-When generating code, ensure it matches the current phase scope. Don't build Phase 5 features during Phase 2. If a request seems to require future-phase work, flag it and ask Mohammad whether to:
+**Phase 2.5 verification gate** (from repo root, with Docker + `apps/api/.env` as documented in `docs/PHASE_2_5_STABILIZATION_PLAN.md` M5): `npx pnpm@9.15.4 verify:phase2.5`
+
+When generating code, ensure it matches the current phase scope. Don't build Phase 5 features while still in **Phase 3** unless the task explicitly calls for cross-phase work. If a request seems to require future-phase work, flag it and ask Mohammad whether to:
 - Build it now (re-prioritize)
 - Stub it for later (placeholder)
 - Reject (out of scope)

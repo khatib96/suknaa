@@ -3,11 +3,21 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { ConfigService } from "@nestjs/config";
+import helmet from "helmet";
 import { Logger as PinoLogger } from "nestjs-pino";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import type { Env } from "./shared/config/env.schema";
 import { GlobalExceptionFilter } from "./shared/errors/global-exception.filter";
+
+function parseCorsOrigins(raw: string): Set<string> {
+  return new Set(
+    raw
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean),
+  );
+}
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -17,6 +27,17 @@ async function bootstrap(): Promise<void> {
   // Wire Pino as the framework logger so Nest's own logs go through it too.
   app.useLogger(app.get(PinoLogger));
 
+  const config = app.get(ConfigService<Env, true>);
+
+  // Helmet: CSP disabled temporarily so Swagger UI at /api/docs keeps working.
+  // CSP remains important for production APIs; a tailored policy (or hosting Swagger separately) is deferred.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
   // All controllers live under /v1/* per docs/API_SPEC.md.
   // Swagger UI mounts at /api/docs and is excluded from the prefix below.
   app.setGlobalPrefix("v1");
@@ -25,7 +46,33 @@ async function bootstrap(): Promise<void> {
 
   app.set("trust proxy", 1);
 
-  const config = app.get(ConfigService<Env, true>);
+  const allowedOriginSet = parseCorsOrigins(
+    config.get("CORS_ORIGINS", { infer: true }),
+  );
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      if (allowedOriginSet.has(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Authorization",
+      "Content-Type",
+      "X-CSRF-Token",
+      "X-Request-Id",
+      "Accept-Language",
+    ],
+  });
+
   const port = config.get("PORT", { infer: true });
 
   const swaggerConfig = new DocumentBuilder()

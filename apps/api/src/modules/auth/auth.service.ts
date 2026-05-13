@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import {
   HostCategory,
   HostSubtype,
@@ -18,6 +18,7 @@ import {
 import { AuditService } from "../../shared/audit/audit.service";
 import { MessagingService } from "../../shared/messaging/messaging.service";
 import { PrismaService } from "../../shared/prisma/prisma.service";
+import { AuthRateLimitService } from "./services/auth-rate-limit.service";
 import { PasswordService } from "./services/password.service";
 import {
   PASSWORD_BREACH_CHECKER,
@@ -26,7 +27,6 @@ import {
 import { TokensService } from "./services/tokens.service";
 import { TwoFactorService } from "./services/two-factor.service";
 import type { AuthenticatedUser } from "./types/authenticated-user.type";
-import { Inject } from "@nestjs/common";
 import type { Env } from "../../shared/config/env.schema";
 
 interface RequestContext {
@@ -73,9 +73,11 @@ export class AuthService {
     private readonly messagingService: MessagingService,
     private readonly auditService: AuditService,
     private readonly config: ConfigService<Env, true>,
+    private readonly authRateLimit: AuthRateLimitService,
   ) {}
 
   async signup(input: SignupInput, ctx: RequestContext): Promise<{ userId: string }> {
+    await this.authRateLimit.consumeSignupAttempt(ctx);
     const email = input.email.toLowerCase();
     const existing = await this.prisma.user.findFirst({
       where: { email, deletedAt: null },
@@ -203,6 +205,7 @@ export class AuthService {
     ctx: RequestContext,
   ): Promise<{ requested: true }> {
     const normalizedEmail = email.toLowerCase();
+    await this.authRateLimit.consumePasswordResetRequest(email, ctx);
     const user = await this.prisma.user.findFirst({
       where: { email: normalizedEmail, deletedAt: null, emailVerified: true },
       select: {
@@ -266,6 +269,7 @@ export class AuthService {
     ctx: RequestContext,
   ): Promise<{ reset: true; revokedSessions: number }> {
     const normalizedEmail = email.toLowerCase();
+    await this.authRateLimit.consumePasswordResetConfirm(email, token, ctx);
     const user = await this.prisma.user.findFirst({
       where: { email: normalizedEmail, deletedAt: null },
       select: {
@@ -351,6 +355,7 @@ export class AuthService {
   }
 
   async login(input: LoginInput, ctx: RequestContext) {
+    await this.authRateLimit.consumeLoginAttempt(input.email, ctx);
     const user = await this.prisma.user.findFirst({
       where: { email: input.email.toLowerCase(), deletedAt: null },
     });
@@ -450,6 +455,8 @@ export class AuthService {
         message_en: "Invalid or expired MFA token",
       });
     }
+
+    await this.authRateLimit.consumeMfaLoginAttempt(user.id, ctx);
 
     await this.twoFactorService.verifySecondFactor(user.id, code);
 

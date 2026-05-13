@@ -141,6 +141,14 @@ A guest can sign up + verify phone + login. A user can choose to become a real-e
 
 ---
 
+### Phase 2.5 — Stabilization (between Phase 2 and Phase 3)
+
+**Status 2026-05-13:** **Complete.** A short stabilization pass (build reliability, API headers/CORS, Redis auth rate limits, focused auth tests, unified verification) ran after Phase 2 and before Real Estate implementation. Details: `docs/PHASE_2_5_STABILIZATION_PLAN.md`.
+
+**Canonical pre–Phase 3 gate (repo root):** `npx pnpm@9.15.4 verify:phase2.5` — runs `web` + `api` lint/build, `prisma validate`, and `api` tests (requires Docker Postgres/Redis/MinIO and `apps/api/.env` per that plan).
+
+---
+
 ## 🟢 PHASE 3 — Real Estate System (End-to-End)
 **Estimated:** 4–5 weeks
 

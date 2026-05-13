@@ -1,5 +1,6 @@
 dist
 .tmp-scripts/
+.tmp-tests/
 node_modules
 *.log
 .env

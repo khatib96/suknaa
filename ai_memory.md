@@ -18,10 +18,10 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 2 (Backend Foundation + Auth + KYC) مغلقة؛ Phase 3 هي التالية.
+- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة بالكامل** (M1–M6: خطوط محلية + Helmet/`CORS_ORIGINS` + Redis auth RL + اختبارات auth مركّزة + بوابة **`verify:phase2.5`** + إغلاق توثيق M6). **Phase 3** — نظام العقارات (Real Estate end-to-end) **هي المرحلة النشطة التالية** للتنفيذ (لم يبدأ محتوى Phase 3 بعد).
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
-- **آخر تحديث للذاكرة**: 2026-05-08 (جلسة — Pre-Phase-3 Mini UX Cleanup)
-- **آخر AI عمل على المشروع**: Codex
+- **آخر تحديث للذاكرة**: 2026-05-13 (جلسة — Phase 2.5 M6: Documentation Closure)
+- **آخر AI عمل على المشروع**: Cursor
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
@@ -72,7 +72,7 @@
   - 🔵 فيروزي `#3D8A95` → شقق فندقية
 - **أرقام دائماً Latin** (1, 2, 3) حتى في الواجهة العربية — لا تستخدم Arabic-Indic (١٢٣)
 - **لا تستخدم أسود نقي** `#000` — الـ body text هو charcoal `#2C2826`
-- خطوط: Tajawal للعربي، Inter + Plus Jakarta Sans للإنجليزي
+- خطوط: Tajawal للعربي، Inter للاتينية والأرقام (`font-numeric`) — **مستضافة محلياً** عبر `next/font/local` وملفات `woff2` تحت `apps/web/assets/fonts/` (لا جلب Google Fonts أثناء `next build`). Plus Jakarta Sans غير مستخدم حالياً في الكود الرئيسي للـ layout.
 - RTL أولاً (logical CSS properties: `ms-`, `me-`, `ps-`, `pe-`)
 - **Scarcity nudges فقط على بيانات حقيقية** — لا تنبيهات وهمية
 
@@ -93,6 +93,7 @@
 - جميع المعاملات المالية في `audit_logs` (append-only، حتى super-admin ما يقدر يحذف)
 - المفاتيح: `JWT access` 15min + `refresh` 7d (httpOnly + Secure + SameSite=Strict cookie)
 - Passwords: argon2id (memory 64MB، iterations 3، parallelism 4)
+- **Phase 2.5 M3 (2026-05-13)**: حدّ إضافي عبر Redis على `login` / `signup` / طلب وتأكيد إعادة كلمة المرور / إكمال MFA؛ لا يُخزَّن توكن إعادة التعيين خاماً في مفاتيح Redis؛ يُكمّل حدود OTP الهاتفي الحالية ولا يستبدلها.
 - **الصلاحيات طويلة المدى granular** وليست roles جامدة فقط. flags الحالية (`is_guest/is_host/is_admin`) مقبولة كبداية Phase 2، لكن الداشبورد/الإدمن/الفنادق تحتاج capabilities لكل مستخدم + templates + overrides + audit.
 - الفنادق والشركات والمكاتب العقارية تحتاج organization/team membership: المالك يضيف موظفين ويعطيهم صلاحيات محددة (حجوزات، رسائل، محاسبة، تسعير، وثائق، إلخ).
 - صلاحيات مالية عالية الخطورة منفصلة: `commission.override`, `service_fee.override`, `tax_rules.approve`, `tax_rules.override`, `discount_codes.manage`, `wallet.adjust`, `refunds.process`.
@@ -179,8 +180,17 @@
 - [x] **Milestone 10 (Tests + Docs Closure)**: password reset API+BFF، سكربت `verify:m10` عميق، توثيق قرارات SMS→WhatsApp وتأجيل language/dashboard/admin UI، وإغلاق Phase 2. ✓ 2026-05-07
 - [ ] **ملاحظة تحقق محلي**: إن ظهر **P1002** (advisory lock) أو **EPERM** على `prisma generate` — أوقف عمليات `dev`/Nest التي تشغّل Prisma وأعد تشغيل PostgreSQL ثم أعد `db:migrate` و `prisma:generate`
 
+### Phase 2.5 — Stabilization (قبل Phase 3) — **مكتملة 2026-05-13**
+- مرجع الخطة: `docs/PHASE_2_5_STABILIZATION_PLAN.md` (**Status: Completed**).
+- [x] **M1 — Reproducible web build (خطوط محلية)**: استبدال `next/font/google` بـ `next/font/local` في `apps/web/app/layout.tsx`؛ إضافة Tajawal (عربي 400/500/700/800) + Inter (latin variable woff2) تحت `apps/web/assets/fonts/` مع `README.md` (OFL + مصادر upstream / لقطة من حزم Fontsource). الحفاظ على `--font-tajawal` و `--font-inter`؛ بدون تغيير RTL أو `globals.css`. التحقق: `npx pnpm@9.15.4 --filter web lint` و `build` نجاح؛ لا `fonts.googleapis.com` في تطبيق الويب. ✓ 2026-05-09
+- [x] **M2 — API Helmet + CORS**: `helmet` في `main.ts` (CSP معطّل مؤقتاً لتوافق Swagger؛ `crossOriginEmbedderPolicy: false`); `CORS_ORIGINS` في `env.schema` مع افتراضي محلي؛ `enableCors` بأصول صريحة + `credentials` بدون `*`؛ `allowedHeaders`: Authorization, Content-Type, X-CSRF-Token, X-Request-Id, Accept-Language (بدون `X-Internal-Api-Key` في CORS). تحديث `.env.example` و`PHASE_2_5_STABILIZATION_PLAN.md`. ✓ 2026-05-10
+- [x] **M3 — Auth rate limiting (Redis)**: `AuthRateLimitService` + استدعاءات في `AuthService` (`login` بداية؛ `signup` بداية IP-only؛ `requestPasswordReset` مبكراً قبل early-return؛ `confirmPasswordReset` بداية مع بصمة توكن (هاش)؛ `completeMfaLogin` بعد JWT MFA صالح قبل TOTP). مفاتيح `auth:rl:*` + `incrementWithTtl`؛ رموز 429: `AUTH_LOGIN_RATE_LIMITED` / `AUTH_SIGNUP_RATE_LIMITED` / `AUTH_PASSWORD_RESET_RATE_LIMITED` / `AUTH_MFA_RATE_LIMITED`. متغيرات `AUTH_RL_*` في `env.schema` و`.env.example`. سكربت `verify:m3` + `manual-m3-verify.ts`. OTP الحالي وباقي السلوك كما هو. ✓ 2026-05-13
+- [x] **M4 — Focused auth tests**: `tsconfig.tests.json` + `tests/auth-flows.test.ts` مع `node --test` بعد `tsc` إلى `.tmp-tests/`؛ `pnpm --filter api test` يشغّل الحزمة (11 سيناريو: signup، duplicate email، verify-email، login فاشل، refresh rotation، logout، password reset generic + confirm، login rate limit 429، become-host قبل الهاتف، KYC بدون ownership). عناوين IP تركيبية لكل scope لتفادي تصادم Redis عند التوازي. ESLint يشمل `tests/**`. سكربتات `verify:m*` لم تُغيَّر. ✓ 2026-05-13
+- [x] **M5 — Verification Gate**: `scripts/verify-phase-2-5.mjs` يشغّل بالتسلسل: `web lint` → `web build` → `api lint` → `api build` → `api exec prisma validate` → `api test`؛ يتوقف عند أول فشل ويطبع اسم الخطوة. من الجذر: `npx pnpm@9.15.4 verify:phase2.5`. يتطلّب `api test` Docker (`suknaa_postgres`، `suknaa_redis`، `suknaa_minio`) + `apps/api/.env` صالحاً (انظر `docs/PHASE_2_5_STABILIZATION_PLAN.md` M5). ✓ 2026-05-13
+- [x] **M6 — Documentation Closure**: تحديث `PHASE_2_5_STABILIZATION_PLAN.md` (حالة Completed + M6)، `PHASE_2_TRACKER.md` (حالة Phase 2.5 + بوابة)،`BUILD_PLAN.md` (ملاحظة Phase 2.5)،`ai_memory.md`،`.cursor/rules/suknaa.mdc`؛ إعادة تشغيل **`npx pnpm@9.15.4 verify:phase2.5`** وتسجيل النجاح. ✓ 2026-05-13
+
 ### Phase 3 — Real Estate System (End-to-End)
-- لم يبدأ بعد
+- **التالية للتنفيذ** — محتوى المنتج لم يُبدأ بعد؛ المرجع `docs/BUILD_PLAN.md` (PHASE 3).
 
 ### Phase 4 — Hospitality System (End-to-End)
 - لم يبدأ بعد
@@ -209,6 +219,112 @@
 ---
 
 ## 4. آخر جلسة عمل
+
+**التاريخ**: 2026-05-13 (Phase 2.5 M6 — Documentation Closure)
+**الـ AI المستخدم**: Cursor
+
+**ما تم تنفيذه**:
+1. **`docs/PHASE_2_5_STABILIZATION_PLAN.md`**: الحالة **Completed**؛ M1–M6 موثّقة؛ قسم M6 — Completed؛ **Still deferred** يبقي Non-Goals صريحة؛ Phase 3 يمكن البدء بها.
+2. **`docs/PHASE_2_TRACKER.md`**: الحالة — Phase 2 مغلقة، Phase 2.5 مكتملة، Phase 3 التالية؛ قسم Phase 2.5 + ترتيب أوامر التحقق مع **`verify:phase2.5`** أولاً.
+3. **`docs/BUILD_PLAN.md`**: ملاحظة قصيرة بين Phase 2 و Phase 3 عن إكمال 2.5 والبوابة `verify:phase2.5`.
+4. **`ai_memory.md`** (هذا الملف) + **`.cursor/rules/suknaa.mdc`**: Phase 2.5 مكتملة؛ Phase 3 نشطة تالياً؛ الإبقاء على أمر البوابة.
+
+**التحقق** (جلسة M6، من جذر الريبو؛ Docker + `apps/api/.env` عند تشغيل `api test`):
+- `npx pnpm@9.15.4 verify:phase2.5` → **نجاح** (الخطوات الست؛ `api test` **11/11**؛ ختام السكربت `[verify:phase2.5] All steps passed.`) — نتيجة التشغيل الفعلي لهذه الجلسة (انظر الطرفية).
+
+**التالي**: **Phase 3** — نظام العقارات end-to-end (`docs/BUILD_PLAN.md`).
+
+---
+
+**التاريخ السابق**: 2026-05-13 (Phase 2.5 M5 — Verification Gate)
+**الـ AI المستخدم**: Cursor
+
+**ملخص M5 (مرجعي)**:
+- **`scripts/verify-phase-2-5.mjs`** + **`package.json`** جذر `verify:phase2.5`؛ توثيق M5 في `PHASE_2_5_STABILIZATION_PLAN.md`؛ تحديث أولي لـ `suknaa.mdc`.
+
+**التحقق (M5، مسجّل سابقاً)**:
+- `npx pnpm@9.15.4 verify:phase2.5` → **نجاح**: `web lint` → `web build` (Next 16.2.4، 57 route) → `api lint` → `api build` → `api prisma validate` → `api test` (**11/11**)؛ `[verify:phase2.5] All steps passed.`
+
+---
+
+**التاريخ السابق**: 2026-05-13 (Phase 2.5 M4 — Focused auth tests، `node:test`)
+**الـ AI المستخدم**: Cursor
+
+**ما تم تنفيذه (M4)**:
+1. **`apps/api/tsconfig.tests.json`**: تجميع `src/**/*.ts` + `tests/**/*.ts` إلى `.tmp-tests/` (مُستثنى في `.gitignore`).
+2. **`apps/api/tests/auth-flows.test.ts`**: 11 اختباراً عبر `NestFactory.createApplicationContext(AppModule)`؛ قراءة التوكن من `.dev-outbox`؛ عناوين IP تركيبية مستمدة من `SHA256(runId:scope)` لكل سيناريو لتفادي تصادم حدّ التسجيل عند التوازي؛ إغلاق السياق في `after`.
+3. **`apps/api/package.json`**: `test` يشغّل `pnpm --filter @suknaa/types build` ثم `tsc -p tsconfig.tests.json` ثم `node --test .tmp-tests/tests/auth-flows.test.js`؛ الإبقاء على `verify:m3`…`verify:m10` كما هي.
+4. **`eslint.config.mjs`** + **`lint`**: تضمين `tests/**/*.ts`.
+5. تحديث **`docs/PHASE_2_5_STABILIZATION_PLAN.md`** (M4: Completed) وهذا الملف.
+
+**التحقق (M4)** (Docker Compose شغّال + `.env`):
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `npx pnpm@9.15.4 --filter api test` → **11/11** نجاح (`Focused auth flows (Phase 2.5 M4)`).
+
+---
+
+**التاريخ السابق**: 2026-05-13 (Phase 2.5 M3 — Auth rate limiting عبر Redis)
+**الـ AI المستخدم**: Cursor
+
+**ما تم تنفيذه**:
+1. **`AuthRateLimitService`** (`apps/api/src/modules/auth/services/auth-rate-limit.service.ts`): حدود عبر `RedisService.incrementWithTtl`، مفاتيح `auth:rl:…` مع لاحقة SHA256 لمادّة مستقرة (بدون تخزين توكن إعادة التعيين خام في Redis).
+2. **`AuthService`**: استهلاك الحدود في المواضع المتفق عليها؛ الإبقاء على حدّ `otp_codes` لطلب إعادة التعيين وعلى منطق OTP الحالي دون تغيير.
+3. **`env.schema.ts`** + **`apps/api/.env.example`**: متغيرات `AUTH_RL_LOGIN_*`, `AUTH_RL_SIGNUP_*`, `AUTH_RL_PASSWORD_RESET_*`, `AUTH_RL_MFA_*` بقيم افتراضية مطابقة لجدول M3.
+4. **`verify:m3`** و **`scripts/manual-m3-verify.ts`**: سياق Nest كامل؛ يثبت أن المحاولة السادسة لفاشلة `login` ترجع 429 بالرمز `AUTH_LOGIN_RATE_LIMITED` و`message`/`message_en`.
+5. تحديث **`docs/PHASE_2_5_STABILIZATION_PLAN.md`** (قسم M3: Completed) وهذا الملف.
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter api lint` → نجاح (في بيئة التنفيذ).
+- `npx pnpm@9.15.4 --filter api build` → نجاح (في بيئة التنفيذ).
+- `npx pnpm@9.15.4 --filter api verify:m3` → يتطلّب Postgres + Redis شغّالين (مثلاً Docker Compose من `infrastructure/docker-compose.yml`); في جلسة التنفيذ فشل الإقلاع بسبب عدم توفر Docker daemon (`Can't reach database server at localhost:5432`). بعد تشغيل Docker و`.env` الصحيح يُعاد تشغيل الأمر للتأكيد.
+
+**الحدود الافتراضية (قابلة للضبط عبر `AUTH_RL_*` في `.env`)**:
+
+| المسار / السلوك | الحدّ | النافذة | مفتاح Redis (مختصر) |
+|---|---:|---|---|
+| `POST …/auth/login` | 5 محاولات | 60 ثانية | IP + بريد مُطبَّع → `auth:rl:login:<hash>` |
+| `POST …/auth/signup` | 3 محاولات | ساعة | IP فقط → `auth:rl:signup:<hash>` |
+| `POST …/auth/password-reset/request` | 5 | ساعة | IP + بريد → `auth:rl:pw_reset_req:<hash>` |
+| `POST …/auth/password-reset/confirm` | 5 | ساعة | IP + بريد + بصمة توكن (SHA256 داخلي) → `auth:rl:pw_reset_conf:<hash>` |
+| `POST …/auth/login/2fa` | 5 | 10 دقائق | IP + `userId` بعد JWT MFA صالح → `auth:rl:mfa_login:<hash>` |
+
+**ملفات مرجعية (M3)**:
+- جديد: `apps/api/src/modules/auth/services/auth-rate-limit.service.ts`، `apps/api/scripts/manual-m3-verify.ts`
+- تعديل: `apps/api/src/modules/auth/auth.service.ts`، `apps/api/src/modules/auth/auth.module.ts`، `apps/api/src/shared/config/env.schema.ts`، `apps/api/.env.example`، `apps/api/package.json` (`verify:m3`)، `docs/PHASE_2_5_STABILIZATION_PLAN.md` (قسم M3 — Completed)، `ai_memory.md`
+
+**التالي (تاريخي بعد M3)**: أُنجز لاحقاً **M4–M6**؛ **Phase 2.5 مُغلقة توثيقياً 2026-05-13**؛ المرحلة النشطة التالية **Phase 3**.
+
+---
+
+**التاريخ السابق**: 2026-05-10 (Phase 2.5 M2 — Helmet + CORS للـ API)
+
+**ما تم تنفيذه (M2)**:
+1. تبعية **`helmet`** في `apps/api`؛ تطبيق في `main.ts` مع تعطيل CSP مؤقتاً (Swagger `/api/docs`) وتعطيل `crossOriginEmbedderPolicy`.
+2. **`CORS_ORIGINS`** (Zod + `.env.example`): قائمة مفصولة بفواصل، افتراضي `http://localhost:3000,http://127.0.0.1:3000`؛ CORS للمتصفح فقط — طلبات بدون `Origin` مسموحة لـ curl/health؛ لا `X-Internal-Api-Key` في `allowedHeaders`.
+3. تحديث **`docs/PHASE_2_5_STABILIZATION_PLAN.md`** (M2: `CORS_ORIGINS` بدل `WEB_ORIGIN` + ملاحظة CSP).
+
+**التحقق (M2)**:
+- `npx pnpm@9.15.4 --filter api lint` → نجاح.
+- `npx pnpm@9.15.4 --filter api build` → نجاح.
+- `npx pnpm@9.15.4 --filter api exec prisma validate` → نجاح.
+
+---
+
+**التاريخ**: 2026-05-09 (Phase 2.5 M1 — خطوط محلية، بناء ويب قابل للتكرار)
+**الـ AI المستخدم**: Cursor
+
+**ما تم تنفيذه**:
+1. إغلاق **Phase 2.5 Milestone 1** حسب `docs/PHASE_2_5_STABILIZATION_PLAN.md`: إزالة اعتماد `next/font/google` (كان يسبب فشل `web build` في بيئات بدون اتصال بـ Google Fonts).
+2. **`apps/web/app/layout.tsx`**: `localFont` من `next/font/local` — Tajawal بأربعة ملفات `woff2`، Inter بملف variable واحد (`weight: "100 900"`).
+3. **`apps/web/assets/fonts/`**: ملفات الخطوط المضافة للريبو + `README.md` يوثّق SIL OFL 1.1 والمصادر (Google Fonts / google/fonts، لقطة من `@fontsource/tajawal` و `@fontsource-variable/inter` عند إعداد الأصول).
+4. لم يُمس `apps/api`، ولا M2/M3، ولا `globals.css` (المتغيرات CSS كما هي).
+
+**التحقق**:
+- `npx pnpm@9.15.4 --filter web lint` → نجاح.
+- `npx pnpm@9.15.4 --filter web build` → نجاح (Next.js 16.2.4، 57 route).
+
+---
 
 **التاريخ**: 2026-05-08 (Pre-Phase-3 Mini UX Cleanup)
 **الـ AI المستخدم**: Codex
@@ -1049,7 +1165,7 @@ npm run dev
 
 **ما تم إنجازه في الجلسات (4 و 4.5) — Setup فني + Global Layout**:
 - **هيكلة المشروع**: Next.js 16 App Router + TypeScript + Tailwind v4 (turbopack) + ESLint + shadcn/ui + lucide-react + clsx + tailwind-merge + cva.
-- **خط Tajawal + Inter** عبر `next/font/google`.
+- **خط Tajawal + Inter**: أصلاً عبر `next/font/google`؛ **محدّث 2026-05-09** إلى `next/font/local` + `apps/web/assets/fonts/` (Phase 2.5 M1).
 - **Design tokens** في `globals.css`: primary #C85A3D، gold #D4A24C، charcoal #2C2826، cream #FBF7F2 + warm shadows + radius scale.
 - **`<html lang="ar" dir="rtl">`** + body fonts.
 - **`components/layout/Navbar.tsx`** — fixed header، 72px desktop، logo PNG + tabs pill (الكل/عقارات/فنادق) + dropdown تسجيل الدخول (دخول كضيف / دخول كمضيف / إنشاء حساب) + mobile scrollable tabs.
@@ -1109,11 +1225,31 @@ npm run dev
 
 | الملف | التعديل | السبب |
 |---|---|---|
+| `apps/api/tsconfig.tests.json` | **إنشاء** (2026-05-13) | Phase 2.5 M4: تجميع الاختبارات إلى `.tmp-tests/` |
+| `apps/api/tests/auth-flows.test.ts` | **إنشاء** (2026-05-13) | M4: 11 سيناريو auth/KYC عبر `node:test` + Nest context |
+| `apps/api/package.json` | **تحديث** (2026-05-13) | M3: `verify:m3`؛ M4: سكربت `test` (`tsc` + `node --test`) |
+| `apps/api/eslint.config.mjs` | **تحديث** (2026-05-13) | M4: lint لـ `tests/**/*.ts` |
+| `apps/api/.gitignore` | **تحديث** (2026-05-13) | تجاهل `.tmp-tests/` |
+| `docs/PHASE_2_5_STABILIZATION_PLAN.md` | **تحديث** (2026-05-13) | أقسام M3 + M4 (Completed) |
+| `apps/api/src/modules/auth/services/auth-rate-limit.service.ts` | **إنشاء** (2026-05-13) | Phase 2.5 M3: Redis `incrementWithTtl` + مفاتيح `auth:rl:*` + `rateLimitedError` |
+| `apps/api/src/modules/auth/auth.service.ts` | **تحديث** (2026-05-13) | M3: استدعاءات الحدّ في `login` / `signup` / password reset / `completeMfaLogin` |
+| `apps/api/src/modules/auth/auth.module.ts` | **تحديث** (2026-05-13) | M3: تسجيل `AuthRateLimitService` في `providers` |
+| `apps/api/src/shared/config/env.schema.ts` | **تحديث** (2026-05-13) | M3: متغيرات `AUTH_RL_*` بقيم افتراضية |
+| `apps/api/.env.example` | **تحديث** (2026-05-13) | M3: توثيق `AUTH_RL_*` |
+| `apps/api/package.json` | **تحديث** (2026-05-13) | M3: سكربت `verify:m3` |
+| `apps/api/scripts/manual-m3-verify.ts` | **إنشاء** (2026-05-13) | M3: تحقق يدوي — 6 محاولات `login` فاشلة → 429 `AUTH_LOGIN_RATE_LIMITED` |
+| `apps/api/src/main.ts` | **تحديث** (2026-05-10) | Phase 2.5 M2: Helmet + `enableCors` من `CORS_ORIGINS` |
+| `apps/api/src/shared/config/env.schema.ts` | **تحديث** (2026-05-10) | `CORS_ORIGINS` + افتراضي محلي |
+| `apps/api/package.json` + `pnpm-lock.yaml` | **تحديث** (2026-05-10) | تبعية `helmet` |
+| `apps/api/.env.example` | **تحديث** (2026-05-10) | قسم `CORS_ORIGINS` |
+| `docs/PHASE_2_5_STABILIZATION_PLAN.md` | **تحديث** (2026-05-10) | M2: `CORS_ORIGINS` + ملاحظة CSP مؤقت |
+| `apps/web/app/layout.tsx` | **تحديث** (2026-05-09) | Phase 2.5 M1: `next/font/local` بدل Google Fonts؛ نفس `--font-tajawal` / `--font-inter` |
+| `apps/web/assets/fonts/**` (+ `README.md`) | **إنشاء** (2026-05-09) | خطوط Tajawal + Inter `woff2` مضافة للمستودع + ملاحظات ترخيص OFL |
 | `.cursor/rules/suknaa.mdc` | **إنشاء** (نُقل المحتوى من `cursorrules`) | اعتماد Cursor Project Rules الحديث؛ يُحمَّل تلقائياً |
 | `cursorrules` | **حذف** | استُبدل بـ `.cursor/rules/suknaa.mdc` |
 | `docs/*.md` (10 ملفات) | **استبدال** (حذف v1، نقل v2 من المسار العميق) | اعتماد v2 كمرجع وحيد؛ لا التباس |
 | `docs/mnt/` | **حذف** | مجلد مؤقت، لم يعد ضرورياً بعد نقل v2 |
-| `ai_memory.md` | تحديث (هذا الملف) | عكس قرارات محمد + المسارات الجديدة |
+| `ai_memory.md` | **تحديث** (2026-05-09 + سابقاً) | Phase 2.5 M1 + تسجيل الجلسات والقرارات |
 | `COMPREHENSION_REPORT.md` | تحديث | إزالة الأسئلة المُجابة + تنظيف |
 | `docs/UI_UX_VISION.md` | **إنشاء** (جلسة 3) | دليل التصميم الشامل — الخيار 3 Light (النسخة أ) |
 | `docs/UI_UX_VISION.md` | **تحديث رئيسي** (جلسة 4) | إزالة Host CTA Banner؛ صفحة /host مستقلة؛ فوتر جديد؛ Empty State للمضيف؛ خريطة 62 صفحة؛ 30+ لمسة إبداعية |
@@ -1141,8 +1277,14 @@ npm run dev
 | `apps/web/components/auth/{LoginForm,SignupForm,host/HostLoginForm,host/HostApplyWizard}.tsx` | **تحديث** (جلسة 15) | إزالة تسجيل كلمة المرور من console mock |
 | `docs/ARCHITECTURE.md`, `.cursor/rules/suknaa.mdc` | **تحديث** (جلسة 15) | Next.js 16 + Tailwind 4 + ملاحظة ترقية |
 | `package.json` (جذر), `pnpm-lock.yaml` | **تحديث** (جلسة 15) | `pnpm.overrides.postcss` لإغلاق ثغرة transitive |
+| `scripts/verify-phase-2-5.mjs` | **إنشاء** (2026-05-13) | Phase 2.5 M5: بوابة تحقق جذرية متسلسلة |
+| `package.json` (جذر) | **تحديث** (2026-05-13) | Phase 2.5 M5: `verify:phase2.5` |
 | `apps/web/components/search/{PropertyResultCard,HotelResultCard}.tsx` | **تحديث** (جلسة 15) | زر القلب خارج Link + `'use client'` |
 | `apps/web/lib/search-utils.ts` | **تحديث** (جلسة 15) | فلتر ضيوف + توثيق توفر Phase 5 |
+| `.cursor/rules/suknaa.mdc` | **تحديث** (2026-05-13) | Phase 2.5 M6: Phase 3 next + بوابة `verify:phase2.5` |
+| `docs/PHASE_2_5_STABILIZATION_PLAN.md` | **تحديث** (2026-05-13) | M6: Completed + Still deferred؛ إغلاق Phase 2.5 |
+| `docs/PHASE_2_TRACKER.md` | **تحديث** (2026-05-13) | Phase 2.5 قسم + `verify:phase2.5` في Standard Verification |
+| `docs/BUILD_PLAN.md` | **تحديث** (2026-05-13) | ملاحظة Phase 2.5 بين Phase 2 و 3 |
 | `apps/web/components/hotel-detail/RoomTypesList.tsx` | **تحديث** (جلسة 15) | breakdown رسوم خدمة منفصلة |
 
 ---
@@ -1150,6 +1292,39 @@ npm run dev
 ## 6. القرارات الجديدة (التي طُرأت أثناء التطوير)
 
 > أي قرار يُتخذ مع محمد أثناء العمل ولم يكن في `/docs/` يُسجَّل هنا.
+
+### 2026-05-13 — Phase 2.5 M6: Documentation Closure
+
+- **القرار**: إغلاق Phase 2.5 في الوثائق والذاكرة وقواعد Cursor؛ **Phase 3** أصبحت المرحلة التالية للتنفيذ؛ الإبقاء على **`npx pnpm@9.15.4 verify:phase2.5`** كفحص صحّة دوري قبل عمل كبير.
+- **المرجع**: `docs/PHASE_2_5_STABILIZATION_PLAN.md` (Status: Completed، M6)؛ `docs/PHASE_2_TRACKER.md`؛ `docs/BUILD_PLAN.md`؛ `ai_memory.md`؛ `.cursor/rules/suknaa.mdc`.
+
+### 2026-05-13 — Phase 2.5 M5: Verification Gate
+
+- **القرار**: سكربت جذر `scripts/verify-phase-2-5.mjs` يشغّل أوامر `npx pnpm@9.15.4 --filter …` بالتسلسل مع `stdio: 'inherit'` وإيقاف عند أول فشل؛ بدون تبعية npm جديدة.
+- **الأمر من الجذر**: `npx pnpm@9.15.4 verify:phase2.5` بعد `docker compose -f infrastructure/docker-compose.yml up -d` (Postgres/Redis/MinIO) و`apps/api/.env` صالح.
+- **المرجع**: `docs/PHASE_2_5_STABILIZATION_PLAN.md` — M5 (Completed). أُغلقت Phase 2.5 لاحقاً بـ **M6** في نفس اليوم.
+
+### 2026-05-13 — Phase 2.5 M4: Focused auth tests (`node:test`)
+
+- **القرار**: عدم إضافة Jest/Vitest؛ استخدام **`node --test`** + تجميع TypeScript إلى `.tmp-tests/` ثم تشغيل ملف الاختبار المُجمَّع.
+- **الأمر**: `npx pnpm@9.15.4 --filter api test` من جذر الريبو (يُشغّل أيضاً بناء `@suknaa/types`). سكربتات `verify:m*` تبقى للتحقق اليدوي العميق.
+- **البيئة**: Postgres + Redis + MinIO (Docker Compose) و`MESSAGE_PROVIDER=mock` و`.dev-outbox` للتوكنات.
+- **المرجع**: `docs/PHASE_2_5_STABILIZATION_PLAN.md` — M4 (Completed).
+
+### 2026-05-13 — Phase 2.5 M3: Auth rate limiting (Redis)
+- **القرار**: طبقة حدّ إضافية على مسارات المصادقة الحسّاسة عبر `RedisService.incrementWithTtl`؛ مفاتيح `auth:rl:<flow>:<hash>` بدون تخزين توكن إعادة التعيين خام في Redis (بصمة التوكن عبر SHA256 داخل مادّة المفتاح فقط).
+- **الاستجابة**: HTTP 429 عبر `rateLimitedError()` مع رموز `AUTH_LOGIN_RATE_LIMITED`، `AUTH_SIGNUP_RATE_LIMITED`، `AUTH_PASSWORD_RESET_RATE_LIMITED`، `AUTH_MFA_RATE_LIMITED` ورسائل عربية/إنجليزية.
+- **ما لم يُغيَّر**: حدّ OTP الهاتفي الحالي؛ حدّ طلب إعادة التعيين القائم على عدّ `otp_codes` في الساعة؛ سلوك التعداد الآمن لطلب إعادة التعيين (429 إضافي فقط عند الإفراط على Redis).
+- **المرجع**: `docs/PHASE_2_5_STABILIZATION_PLAN.md` — M3 (Completed).
+
+### 2026-05-10 — Phase 2.5 M2: Helmet + CORS (`CORS_ORIGINS`)
+- **القرار**: رؤوس أمان عبر `helmet`؛ CORS صريح من `CORS_ORIGINS` (بدون `*` مع credentials). CSP معطّل مؤقتاً لأن Swagger UI يحتاج سياسة مخصصة — التشديد لاحقاً أو مع فصل Swagger.
+- **ليس بديل auth**: CORS يقيّد سلوك المتصفح فقط.
+
+### 2026-05-09 — Phase 2.5 M1: خطوط الويب محلية (بدون Google Fonts أثناء البناء)
+- **السياق**: `next/font/google` كان يجلب الخطوط أثناء `pnpm --filter web build` ويفشل في بيئات مقيّدة الشبكة.
+- **القرار**: اعتماد `next/font/local` + ملفات `woff2` مضمّنة في `apps/web/assets/fonts/` مع توثيق OFL في `README.md` داخل المجلد؛ الإبقاء على `--font-tajawal` و `--font-inter`.
+- **المرجع**: `docs/PHASE_2_5_STABILIZATION_PLAN.md` — M1؛ **M3 مكتمل 2026-05-13** (انظر قسم M3 أعلاه).
 
 ### 2026-04-30 — اعتماد v2 كمرجع وحيد
 - **المشكلة**: المستودع يحتوي على نسختين من الوثائق: v1 في `/docs/` و v2 في `docs/mnt/user-data/outputs/suknaa-docs-v2/`. v2 أكمل وأحدث ويغطي قرارات حرجة (النظامين المنفصلين، commission passthrough، 4-tier pricing).
@@ -1392,4 +1567,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-08 (Pre-Phase-3 Mini UX Cleanup).**
+**نهاية الملف. آخر تحديث: 2026-05-13 (Phase 2.5 M6 — Documentation Closure؛ Phase 3 التالية).**
