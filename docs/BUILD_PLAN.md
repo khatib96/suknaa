@@ -1,6 +1,6 @@
 # 🗺️ BUILD_PLAN — Suknaa Phased Build Roadmap (v2)
 
-> **v2 changes**: Phases reorganized to handle the dual-system (Real Estate + Hospitality) architecture. New features (price intelligence, anti-circumvention, sharing wishlists, comparisons, price alerts, smart upgrades, nearby attractions) distributed across phases.
+> **v2 changes**: Phases reorganized to handle the dual-system (Vacation Rentals / Holiday Homes + Hospitality) architecture. New features (price intelligence, anti-circumvention, sharing wishlists, comparisons, price alerts, smart upgrades, nearby attractions) distributed across phases.
 >
 > Broader future product ideas, including Discover Syria, trips dashboard, multi-city trip planning, and AI search/travel assistant, are tracked in `docs/PRODUCT_IDEAS.md`.
 
@@ -14,7 +14,7 @@
 
 **Done means done**: a phase is complete only when deliverables work, tests are written for critical paths, documentation is updated, and a demo to yourself works end-to-end.
 
-**Critical mindset for v2**: every backend feature must consciously support BOTH real-estate AND hospitality models. Resist the temptation to build only one and "add the other later" — they need to coexist from Phase 3 onward.
+**Critical mindset for v2**: every backend feature must consciously support BOTH vacation-rentals AND hospitality models. Resist the temptation to build only one and "add the other later" — they need to coexist from Phase 3 onward.
 
 ---
 
@@ -30,11 +30,11 @@
 - [x] All v2 documentation in `/docs/` committed
 - [x] Cursor rules file written and committed (`.cursor/rules/suknaa.mdc`)
 - [x] Local dev environment working (Docker Compose: Postgres+PostGIS, Redis, MinIO)
-- [ ] **5 visual mockups** (Figma or v0.dev): Homepage with tabs, Real Estate search results, Hotel detail page, Property detail page (with per-room sections), Host commission-passthrough toggle UI
+- [ ] **5 visual mockups** (Figma or v0.dev): Homepage with tabs, Vacation Rentals search results, Hotel detail page, Vacation Rental detail page (with per-room sections), Host commission-passthrough toggle UI
 - [ ] Logo files in SVG, PNG (multiple sizes), and favicon set
 
 ### Exit Criteria
-You can show a friend the visual mockups and they understand both the Real Estate AND the Hotel experiences, and how the tabs separate them.
+You can show a friend the visual mockups and they understand both the Vacation Rentals AND the Hotel experiences, and how the tabs separate them.
 
 ---
 
@@ -60,7 +60,7 @@ You can show a friend the visual mockups and they understand both the Real Estat
   - Filters sidebar adapts to tab selection (RE filters vs Hotel filters)
   - Property cards (RE) and Hotel cards (separate visual style)
   - Map view toggle with category color-coded markers (placeholder map)
-- [x] **Property Detail page (Real Estate)**:
+- [x] **Vacation Rental Detail page**:
   - Hero gallery
   - Description
   - **Per-room sections** (bedrooms, bathrooms, kitchen — each with photos and amenities)
@@ -135,7 +135,7 @@ You can show a friend the visual mockups and they understand both the Real Estat
 - [x] Audit log writes for all Phase 2 admin KYC actions
 
 ### Exit Criteria
-A guest can sign up + verify phone + login. A user can choose to become a real-estate host OR a hotel-company host with the right KYC documents. An admin can approve their KYC.
+A guest can sign up + verify phone + login. A user can choose to become a vacation-rental host OR a hotel-company host with the right KYC documents. An admin can approve their KYC.
 
 **Status 2026-05-07:** Phase 2 M1-M10 are complete. Password reset is implemented and covered by `verify:m10`. SMS was intentionally replaced by WhatsApp provider prep. Language/i18n UI, profile/dashboard UI, admin dashboard UI, and mandatory 2FA enforcement are deferred outside the Phase 2 foundation closure.
 
@@ -143,19 +143,24 @@ A guest can sign up + verify phone + login. A user can choose to become a real-e
 
 ### Phase 2.5 — Stabilization (between Phase 2 and Phase 3)
 
-**Status 2026-05-13:** **Complete.** A short stabilization pass (build reliability, API headers/CORS, Redis auth rate limits, focused auth tests, unified verification) ran after Phase 2 and before Real Estate implementation. Details: `docs/PHASE_2_5_STABILIZATION_PLAN.md`.
+**Status 2026-05-13:** **Complete.** A short stabilization pass (build reliability, API headers/CORS, Redis auth rate limits, focused auth tests, unified verification) ran after Phase 2 and before Vacation Rentals implementation. Details: `docs/PHASE_2_5_STABILIZATION_PLAN.md`.
 
 **Canonical pre–Phase 3 gate (repo root):** `npx pnpm@9.15.4 verify:phase2.5` — runs `web` + `api` lint/build, `prisma validate`, and `api` tests (requires Docker Postgres/Redis/MinIO and `apps/api/.env` per that plan).
 
 ---
 
-## 🟢 PHASE 3 — Real Estate System (End-to-End)
+## 🟢 PHASE 3 — Vacation Rentals / Holiday Homes System (End-to-End)
 **Estimated:** 4–5 weeks
 
+**Canonical Phase 3 plan:** `docs/PHASE_3_VACATION_RENTALS_PLAN.md`.
+
+**Naming decision:** this phase is about **بيوت العطلات / Vacation Rentals**, not a broad real-estate marketplace. New user-facing copy and new Phase 3 code should avoid "عقارات", "Real Estate", and "RE" as domain labels.
+
 ### Deliverables
-- [ ] Prisma schema: `properties`, `property_spaces`, `property_space_images`, `property_images`, `amenities`, `property_amenities`, `space_amenities`, `property_availability_blocks`, `property_pricing_overrides`
-- [ ] Seed data: amenities (with `applies_to_*` flags), property types
-- [ ] **Property creation wizard** (host side, multi-step):
+- [ ] Phase 3 domain naming/contracts finalized before schema work.
+- [ ] Prisma schema for vacation rentals, spaces, images, amenities, availability blocks, and pricing overrides.
+- [ ] Seed data: amenities (with `applies_to_*` flags), vacation rental types
+- [ ] **Vacation rental creation wizard** (host side, multi-step):
   1. Type (house / apartment / villa / farm / cabin / chalet / studio)
   2. Location (map picker with PostGIS storage)
   3. Basic info (name, description, capacity)
@@ -163,27 +168,27 @@ A guest can sign up + verify phone + login. A user can choose to become a real-e
      - For each bedroom: bed config, photos, room amenities
      - For each bathroom: type, photos
      - Kitchen, living rooms, outdoor spaces
-  5. **Property-wide amenities**
-  6. **Photo gallery** (property-wide)
+  5. **Listing-wide amenities**
+  6. **Photo gallery** (listing-wide)
   7. **Pricing** (4 tiers: base + weekly + monthly + weekend uplift)
   8. **Commission passthrough** toggle (with clear UX showing both modes)
   9. House rules + cancellation policy
   10. Review and submit (status: `pending_review`)
-- [ ] **Admin review queue** for properties
-- [ ] **Search API for real estate** with PostGIS:
+- [ ] **Admin review queue** for vacation rentals
+- [ ] **Search API for vacation rentals** with PostGIS:
   - Geographic + text search
   - Filters: bedrooms, bathrooms, type, capacity, amenities, dates, price range
   - Sort options
   - Pagination (cursor)
 - [ ] **Search results page** (frontend) with filters
-- [ ] **Property detail page** (frontend) with all real data
+- [ ] **Vacation rental detail page** (frontend) with all real data
 - [ ] **Map display** with category color coding
 - [ ] **Availability calendar** on detail page
 - [ ] **Image optimization**: WebP/AVIF, multiple sizes via sharp on upload
 - [ ] **Search results cached in Redis** (60s TTL)
 
 ### Exit Criteria
-A real RE host can list a real property with full per-room details. A guest can find it via search and see a complete page. The map works.
+A vacation rental host can list a real holiday home with full per-room/space details. A guest can find it via search and see a complete page. The map works.
 
 ---
 
@@ -269,7 +274,7 @@ A real hotel host can list a hotel with multiple room types. A guest can browse 
 - [ ] All financial actions → audit log
 
 ### Exit Criteria
-End-to-end booking + payment + withdrawal works for both real-estate AND hospitality, in both commission modes (absorb + passthrough), with financial-rule snapshots covering commission, service fee, taxes, discounts, and overrides.
+End-to-end booking + payment + withdrawal works for both vacation-rentals AND hospitality, in both commission modes (absorb + passthrough), with financial-rule snapshots covering commission, service fee, taxes, discounts, and overrides.
 
 ---
 
@@ -277,7 +282,7 @@ End-to-end booking + payment + withdrawal works for both real-estate AND hospita
 **Estimated:** 3–4 weeks
 
 ### Deliverables
-- [ ] **Host dashboard** with **two tabs at top: "Real Estate" and "Hospitality"** (only shown for the categories the host is registered in):
+- [ ] **Host dashboard** with **two tabs at top: "Vacation Rentals" and "Hospitality"** (only shown for the categories the host is registered in):
   - Overview (upcoming check-ins, recent bookings, this month's earnings)
   - Properties / Hotels (list, edit, pause, delete)
   - Bookings (calendar + list views)
@@ -480,7 +485,7 @@ Update `/docs` whenever a major decision changes.
 | After Phase | Decision to make |
 |---|---|
 | Phase 1 | Does the dual-system feel intuitive? Show 5 people. |
-| Phase 3 | Are real RE hosts willing to upload? Test with 3 friends. |
+| Phase 3 | Are real vacation rental hosts willing to upload? Test with 3 friends. |
 | Phase 4 | Are real hotels willing to integrate? Talk to 2 small hotels. |
 | Phase 5 | Is the payment integration with Sham/MTN actually viable? |
 | Phase 8 | Are smart features actually being used by hosts/guests? |

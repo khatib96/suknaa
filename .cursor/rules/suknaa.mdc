@@ -1,5 +1,5 @@
 ---
-description: Suknaa project rules — dual-system rental platform (Real Estate + Hospitality). Read at the start of every session before generating code.
+description: Suknaa project rules — dual-system rental platform (Vacation Rentals + Hospitality). Read at the start of every session before generating code.
 alwaysApply: true
 ---
 
@@ -13,7 +13,7 @@ alwaysApply: true
 
 You are working on **Suknaa (سُكنى)** — a Syrian rental platform with **TWO DISTINCT SYSTEMS**:
 
-1. **Real Estate System (Real Estate / P2P)**: houses, apartments, villas, farms, cabins, chalets, studios. Modeled after Airbnb (per-property listing with detailed per-room information).
+1. **Vacation Rentals / Holiday Homes System (بيوت العطلات / P2P)**: houses, apartments, villas, farms, cabins, chalets, studios rented as short-stay holiday homes. Modeled after Airbnb (per-listing details with room/space information). Do not describe this domain as a broad "Real Estate" marketplace in new Phase 3 work.
 2. **Hospitality System (Hotels / B2B)**: hotels, hotel-apartments, resorts, hostels. Modeled after Booking.com (one establishment with multiple room types and per-unit inventory).
 
 Bilingual (Arabic RTL + English LTR). Mohammad is the developer; he is a beginner programmer using AI tools as his primary coding partner.
@@ -22,9 +22,10 @@ Bilingual (Arabic RTL + English LTR). Mohammad is the developer; he is a beginne
 - `docs/PROJECT.md` — vision, brand, dual-system overview
 - `docs/ARCHITECTURE.md` — tech stack, system design (note dual-domain module structure)
 - `docs/BUILD_PLAN.md` — phased roadmap (11 phases)
+- `docs/PHASE_3_VACATION_RENTALS_PLAN.md` — active Phase 3 plan and naming decision
 - `docs/DESIGN_SYSTEM.md` — colors, typography, components, RTL rules, tab navigation
-- `docs/DATABASE_SCHEMA.md` — tables grouped by section A (shared), B (real estate), C (hospitality), D (bookings), E (payments), F (reviews), G (price intelligence), H (anti-circumvention), I (guest features), J (attractions)
-- `docs/API_SPEC.md` — endpoints; note `/properties/*` (RE) vs `/hotels/*` (Hospitality) separation
+- `docs/DATABASE_SCHEMA.md` — tables grouped by section A (shared), B (legacy real estate/vacation rentals), C (hospitality), D (bookings), E (payments), F (reviews), G (price intelligence), H (anti-circumvention), I (guest features), J (attractions)
+- `docs/API_SPEC.md` — endpoints; Phase 3 M1 must align legacy `/properties/*` naming with Vacation Rentals terminology before implementation
 - `docs/PAYMENT_SYSTEM.md` — money flow, escrow, withdrawals, **commission passthrough**
 - `docs/SECURITY.md` — auth, KYC, fraud prevention, **anti-circumvention**
 - `docs/DEPLOYMENT.md` — VPS, Docker, CI/CD
@@ -39,7 +40,7 @@ Bilingual (Arabic RTL + English LTR). Mohammad is the developer; he is a beginne
 
 These two systems share infrastructure but have **fundamentally different data models**:
 
-| Aspect | Real Estate | Hospitality |
+| Aspect | Vacation Rentals / Holiday Homes | Hospitality |
 |---|---|---|
 | Listing unit | One `properties` row | One `hotels` row + many `room_types` |
 | Photos | Per-property + per-space (bedroom/bathroom/kitchen) | Per-hotel (categorized) + per-room-type |
@@ -47,11 +48,11 @@ These two systems share infrastructure but have **fundamentally different data m
 | Booking | Books the whole property | Books one or more units of a room type |
 | Pricing | Per-property (4 tiers + seasonal) | Per-room-type (4 tiers + seasonal) |
 | Address | Approximate by default | Always precise |
-| Host type | Individual or Real Estate Office | Hotel Company only |
+| Host type | Individual or vacation rental office/operator | Hotel Company only |
 
-**When writing code, always ask: "Does this apply to RE, Hospitality, or both?"**
+**When writing code, always ask: "Does this apply to Vacation Rentals, Hospitality, or both?"**
 - Both (auth, payments, chat, reviews) → put in shared module
-- RE only → put in `modules/real-estate/`
+- Vacation Rentals only → prefer `modules/vacation-rentals/` for new Phase 3 work
 - Hospitality only → put in `modules/hospitality/`
 - Touches both via polymorphism (bookings, search) → handle both branches explicitly
 
@@ -159,9 +160,9 @@ Schemas live in `packages/types/` and are reused by the backend.
 - Dates: `date-fns` with active locale.
 
 ### Tab Navigation (CRITICAL — UI pattern)
-The persistent header shows three tabs: `[الكل] [عقارات] [فنادق]`.
+The persistent header shows three tabs: `[الكل] [بيوت عطلات] [فنادق]`.
 - Default tab: "الكل" (All).
-- Tab state lives in URL (`?tab=all|real_estate|hospitality`).
+- Tab state currently lives in URL (`?tab=all|real_estate|hospitality`); Phase 3 M1 should decide whether to rename this value to `vacation_rentals`.
 - Switching tab updates filters, search results, and map markers.
 - Components must check current tab and render appropriate UI variants.
 
@@ -179,7 +180,7 @@ Two distinct buttons in the header: **"دخول كزبون"** (Login as Guest) a
 ```
 apps/api/src/modules/
 ├── auth/, users/, kyc/                # Shared
-├── real-estate/                       # RE domain (properties, spaces, etc.)
+├── vacation-rentals/                  # Vacation rentals domain (holiday homes, spaces, etc.)
 ├── hospitality/                       # Hotels domain (hotels, room_types, room_units)
 ├── search/                            # Unified search
 ├── bookings/                          # Polymorphic
@@ -209,7 +210,7 @@ apps/api/src/modules/
 - Public endpoints opt-out with `@Public()`.
 - Role-restricted: `@Roles(UserRole.ADMIN)`.
 - **Object-level authorization in service layer** (always check ownership).
-- **Category-level authorization**: a real-estate host attempting `/me/hotels/*` returns `WRONG_HOST_CATEGORY` error.
+- **Category-level authorization**: a vacation-rental host attempting `/me/hotels/*` returns `WRONG_HOST_CATEGORY` error.
 
 ### Money Handling (CRITICAL — see PAYMENT_SYSTEM.md)
 - All amounts in **`BIGINT` cents** in PostgreSQL.
@@ -346,6 +347,7 @@ async createHotel(dto: CreateHotelDto, userId: string) {
 async getBookingDetails(bookingId: string) {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
   if (booking.kind === 'real_estate') {
+    // Legacy enum value until Phase 3 M1 finalizes naming.
     return { ...booking, property: await prisma.property.findUnique({ where: { id: booking.propertyId! } }) };
   } else {
     return {
@@ -385,7 +387,7 @@ When generating UI code:
 ## 11. What NOT to Do
 
 - ❌ Don't add libraries without good reason. Check `package.json` first.
-- ❌ Don't merge real-estate and hospitality logic in one file/function.
+- ❌ Don't merge vacation-rentals and hospitality logic in one file/function.
 - ❌ Don't show commission to guests (anywhere, ever).
 - ❌ Don't create new architectural patterns when an existing one fits.
 - ❌ Don't optimize prematurely.
@@ -422,7 +424,7 @@ When generating UI code:
 
 ## 14. Phase Awareness
 
-**Phase 2** (Backend Foundation + Auth + KYC) is closed. **Phase 2.5** stabilization is **complete** (2026-05-13). **Phase 3** (Real Estate end-to-end) is the **next active implementation phase** — follow `docs/BUILD_PLAN.md` and `ai_memory.md`. Phase 1 + 1.5 remain the public UI skeleton with mock data until Phase 3+ wiring replaces mocks where planned.
+**Phase 2** (Backend Foundation + Auth + KYC) is closed. **Phase 2.5** stabilization is **complete** (2026-05-13). **Phase 3** (Vacation Rentals / Holiday Homes end-to-end) is the **next active implementation phase** — follow `docs/BUILD_PLAN.md`, `docs/PHASE_3_VACATION_RENTALS_PLAN.md`, and `ai_memory.md`. Phase 1 + 1.5 remain the public UI skeleton with mock data until Phase 3+ wiring replaces mocks where planned.
 
 **Phase 2.5 verification gate** (from repo root, with Docker + `apps/api/.env` as documented in `docs/PHASE_2_5_STABILIZATION_PLAN.md` M5): `npx pnpm@9.15.4 verify:phase2.5`
 
@@ -435,7 +437,7 @@ When generating code, ensure it matches the current phase scope. Don't build Pha
 
 ## 15. Critical v2 Reminders
 
-1. **Two systems, never confused** — Real Estate ≠ Hospitality at every layer.
+1. **Two systems, never confused** — Vacation Rentals / Holiday Homes ≠ Hospitality at every layer.
 2. **Commission passthrough is invisible to guest** — invoice never mentions commission.
 3. **Service fee is always visible to guest** — clear line item, 2% by default.
 4. **Pricing has 4 tiers** — base, weekly, monthly, seasonal overrides.

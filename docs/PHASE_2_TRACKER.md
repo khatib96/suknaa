@@ -6,7 +6,7 @@
 
 **Phase 2:** closed (M1–M10).  
 **Phase 2.5:** stabilization **complete** (2026-05-13) — see [Phase 2.5 — Stabilization](#phase-25--stabilization-post-phase-2) below.  
-**Phase 3:** **next** — Real Estate system (end-to-end), per `docs/BUILD_PLAN.md`.
+**Phase 3:** **next** — Vacation Rentals / Holiday Homes system (end-to-end), per `docs/BUILD_PLAN.md` and `docs/PHASE_3_VACATION_RENTALS_PLAN.md`.
 
 **Completed (Phase 2):** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9, M10  
 **In progress:** None  
@@ -31,7 +31,26 @@ Short hardening pass between Phase 2 and Phase 3 (`docs/PHASE_2_5_STABILIZATION_
 
 Phase 2 exit criteria are satisfied (guest/host flows, KYC, audit, verification). **Phase 2.5 stabilization is also complete.** Do not skip the **pre–Phase 3 health check** when touching auth/infra: from repo root run `npx pnpm@9.15.4 verify:phase2.5` with Docker services and `apps/api/.env` as in `docs/PHASE_2_5_STABILIZATION_PLAN.md` (M5).
 
-When starting **Phase 3**, follow `docs/BUILD_PLAN.md` and keep the dual-system mindset (Real Estate vs Hospitality) for all new backend work.
+When starting **Phase 3**, follow `docs/BUILD_PLAN.md` and `docs/PHASE_3_VACATION_RENTALS_PLAN.md`. Keep the dual-system mindset: **Vacation Rentals / Holiday Homes** for short-stay homes, and **Hospitality** for hotels.
+
+## Phase 3 — Vacation Rentals / Holiday Homes
+
+Detailed plan: `docs/PHASE_3_VACATION_RENTALS_PLAN.md`.
+
+| Milestone | Status | Summary |
+|---|---:|---|
+| **P3 M0** | Done | Pre-phase health gate passed: `npx pnpm@9.15.4 verify:phase2.5` on 2026-05-13; web lint/build, api lint/build, Prisma validate, and api tests 11/11 passed. |
+| **P3 M1** | Not started | Domain naming and contracts: replace misleading Real Estate terminology with Vacation Rentals / Holiday Homes before schema/API work spreads. |
+| **P3 M2** | Not started | Database schema and migration for vacation rentals, spaces, images, amenities, availability, pricing. |
+| **P3 M3** | Not started | Reference data endpoints and seeds. |
+| **P3 M4** | Not started | Host vacation rental CRUD. |
+| **P3 M5** | Not started | Spaces, amenities, pricing, and availability management. |
+| **P3 M6** | Not started | Image upload and optimization. |
+| **P3 M7** | Not started | Admin review queue. |
+| **P3 M8** | Not started | Search API with PostGIS and Redis cache. |
+| **P3 M9** | Not started | Host creation wizard. |
+| **P3 M10** | Not started | Guest search and detail UI. |
+| **P3 M11** | Not started | Phase 3 verification gate. |
 
 ## Milestones
 

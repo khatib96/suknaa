@@ -2,9 +2,9 @@
 
 > **Status: Completed** (documentation closure 2026-05-13)  
 > Date: 2026-05-09 (plan) · Closed: 2026-05-13  
-> Purpose: stabilize the Phase 2 foundation before starting Phase 3 real estate work.
+> Purpose: stabilize the Phase 2 foundation before starting Phase 3 Vacation Rentals / Holiday Homes work.
 
-**Phase 2.5 is complete.** **Phase 3 may start** when you are ready to implement real-estate scope (see `docs/BUILD_PLAN.md`). The final health gate passed: `npx pnpm@9.15.4 verify:phase2.5` (after Docker + `apps/api/.env` — see M5 below).
+**Phase 2.5 is complete.** **Phase 3 may start** when you are ready to implement Vacation Rentals / Holiday Homes scope (see `docs/BUILD_PLAN.md` and `docs/PHASE_3_VACATION_RENTALS_PLAN.md`). The final health gate passed: `npx pnpm@9.15.4 verify:phase2.5` (after Docker + `apps/api/.env` — see M5 below).
 
 **Milestones M1–M6:** all delivered — reproducible web build (local fonts), Helmet + `CORS_ORIGINS`, Redis auth rate limiting, focused `node:test` auth suite, root verification gate, and this documentation closure.
 
@@ -12,7 +12,7 @@
 
 Phase 2 is functionally closed, but Phase 3 will add larger database models, host listing workflows, image handling, search, maps, and more frontend/backend integration. Before adding that surface area, the project needs a short stabilization pass focused on build reliability, auth hardening, and verification.
 
-This phase is intentionally narrow. It should not add product features, rewrite the UI, or start the real estate schema.
+This phase is intentionally narrow. It should not add product features, rewrite the UI, or start the vacation rentals schema.
 
 ## Current Verified State
 
@@ -40,7 +40,7 @@ The diagnostic report is useful as a broad review, but a few findings should not
 
 ## Non-Goals
 
-- Do not start Phase 3 property schema or property UI.
+- Do not start Phase 3 vacation rentals schema or UI.
 - Do not perform a large `AuthService` refactor unless required by tests or security work.
 - Do not split `HeroSearchBar` in this phase.
 - Do not move `components/ui` into `packages/ui` in this phase.
@@ -274,4 +274,3 @@ Phase 2.5 is complete when:
 ## Still deferred (unchanged intent)
 
 Items listed under **Non-Goals** above remain out of scope for Phase 2.5 (no full i18n, no `HeroSearchBar` split, no `packages/ui` move, no full profile/dashboard/admin UI in this stabilization pass). Phase 2 tracker deferred items (e.g. mandatory 2FA enforcement for hosts/admins, full admin UI) stay on the roadmap for later phases — see `docs/PHASE_2_TRACKER.md` and `docs/BUILD_PLAN.md`.
-
