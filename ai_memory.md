@@ -18,9 +18,9 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة بالكامل**. **Phase 3** — نظام **بيوت العطلات / Vacation Rentals** — **M1 naming & contracts موثّق** في `docs/PHASE_3_M1_NAMING_PLAN.md` (2026-05-13)؛ التنفيذ البرمجي والـ migrations تبدأ من M2/M2b.
+- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة**. **Phase 3** — **بيوت العطلات / Vacation Rentals** — **M2 schema/migration منفّذ** (2026-05-15)؛ التالي **M3** (reference data + amenity seed). **M2b** (`host_category` → `vacation_rentals`) لم يُنفَّذ بعد.
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
-- **آخر تحديث للذاكرة**: 2026-05-13 (جلسة — Phase 3 planning + Vacation Rentals naming)
+- **آخر تحديث للذاكرة**: 2026-05-15 (جلسة — Phase 3 M2 vacation rentals DB schema)
 - **آخر AI عمل على المشروع**: Cursor
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات)، و**`docs/PHASE_3_M1_NAMING_PLAN.md`** لتسمية وعقود بيوت العطلات (`vacation_rentals`) قبل M2. لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -190,9 +190,11 @@
 - [x] **M6 — Documentation Closure**: تحديث `PHASE_2_5_STABILIZATION_PLAN.md` (حالة Completed + M6)، `PHASE_2_TRACKER.md` (حالة Phase 2.5 + بوابة)،`BUILD_PLAN.md` (ملاحظة Phase 2.5)،`ai_memory.md`،`.cursor/rules/suknaa.mdc`؛ إعادة تشغيل **`npx pnpm@9.15.4 verify:phase2.5`** وتسجيل النجاح. ✓ 2026-05-13
 
 ### Phase 3 — Vacation Rentals / Holiday Homes System (End-to-End)
-- **نشطة تالياً للتنفيذ** — M0 مكتمل: `npx pnpm@9.15.4 verify:phase2.5` نجح بتاريخ 2026-05-13 (web lint/build، api lint/build، Prisma validate، api tests 11/11).
-- [x] **M1 — Domain naming & contracts (وثائق فقط)** ✓ 2026-05-13: `docs/PHASE_3_M1_NAMING_PLAN.md`؛ تحديث `PROJECT` / `ARCHITECTURE` / `API_SPEC` / `DATABASE_SCHEMA` / `SECURITY` / `BUILD_PLAN` / `PHASE_3_VACATION_RENTALS_PLAN`؛ `ai_memory` + `.cursor/rules/suknaa.mdc` للتسميات المستهدفة (`vacation_rentals`، بيوت العطلات). لا migrations في M1.
-- المرجع التفصيلي للمرحلة: `docs/PHASE_3_VACATION_RENTALS_PLAN.md` + عقد التسمية: **`docs/PHASE_3_M1_NAMING_PLAN.md`**. الاسم المنتج الصحيح: **بيوت العطلات / Vacation Rentals** وليس "عقارات" أو "Real Estate" كاسم واجهة أو نطاق جديد.
+- **نشطة تالياً:** **M3** (reference endpoints + amenity catalogue seed).
+- [x] **M0** ✓ 2026-05-13 — `verify:phase2.5` passed.
+- [x] **M1 — Domain naming & contracts (وثائق فقط)** ✓ 2026-05-13 — `docs/PHASE_3_M1_NAMING_PLAN.md`.
+- [x] **M2 — Database schema & migration** ✓ 2026-05-15 — `apps/api/prisma/schema.prisma` + migration `20260515174722_phase3_m2_vacation_rentals`: جداول `vacation_rentals`، `vacation_rental_spaces`، `vacation_rental_images`، `vacation_rental_space_images`، `amenities`، `vacation_rental_amenities`، `vacation_rental_space_amenities`، `vacation_rental_availability_blocks`، `vacation_rental_pricing_overrides`؛ enums `vacation_rental_type`، `vacation_rental_listing_status`، + shared enums (`location_precision`, `booking_mode`, …). PostGIS `geography(Point,4326)`؛ فهارس partial/GiST/child في SQL فقط. **لم يُمسّ:** `host_category`/`real_estate_office`/`re_total_listings` (M2b). **مؤجّل لـ M3:** amenity seed + `GET /reference/*` (لا seed pipeline بعد). تحقق: `prisma validate`، `api build`، `db:migrate` نجحت.
+- المرجع: `docs/PHASE_3_VACATION_RENTALS_PLAN.md` + **`docs/PHASE_3_M1_NAMING_PLAN.md`**. المنتج: **بيوت العطلات / Vacation Rentals**.
 
 ### Phase 4 — Hospitality System (End-to-End)
 - لم يبدأ بعد
@@ -222,19 +224,44 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-13 (Phase 2.5 M6 — Documentation Closure)
+**التاريخ**: 2026-05-15 (Phase 3 M2 — Vacation Rentals database schema & migration)
 **الـ AI المستخدم**: Cursor
 
+**السياق**: بعد M0 (بوابة `verify:phase2.5`) و M1 (تسمية `vacation_rentals` في الوثائق)، تنفيذ **P3 M2** — مخطط Prisma + migration لبيوت العطلات فقط، دون M2b ولا UI ولا CRUD.
+
 **ما تم تنفيذه**:
-1. **`docs/PHASE_2_5_STABILIZATION_PLAN.md`**: الحالة **Completed**؛ M1–M6 موثّقة؛ قسم M6 — Completed؛ **Still deferred** يبقي Non-Goals صريحة؛ Phase 3 يمكن البدء بها.
-2. **`docs/PHASE_2_TRACKER.md`**: الحالة — Phase 2 مغلقة، Phase 2.5 مكتملة، Phase 3 التالية؛ قسم Phase 2.5 + ترتيب أوامر التحقق مع **`verify:phase2.5`** أولاً.
-3. **`docs/BUILD_PLAN.md`**: ملاحظة قصيرة بين Phase 2 و Phase 3 عن إكمال 2.5 والبوابة `verify:phase2.5`.
-4. **`ai_memory.md`** (هذا الملف) + **`.cursor/rules/suknaa.mdc`**: Phase 2.5 مكتملة؛ Phase 3 نشطة تالياً؛ الإبقاء على أمر البوابة.
+1. **`apps/api/prisma/schema.prisma`**: 10 enums + 9 models بأسماء مستهدفة (`vacation_rentals`، `vacation_rental_*`، `amenities` مع `applies_to_vacation_rental` / `applies_to_vacation_rental_space` — **ليس** `applies_to_property`). PostGIS: `Unsupported("geography(Point,4326)") @map("location")`. علاقات `User`: `VacationRentalHost` + `VacationRentalApprovedBy`. **لا `@@index` على جداول M2** — الفهارس في SQL فقط (نمط Phase 2).
+2. **Migration** `20260515174722_phase3_m2_vacation_rentals`: `CREATE EXTENSION IF NOT EXISTS postgis`؛ `geography(Point, 4326)`؛ فهارس partial (host/status/type/city + `deleted_at`)؛ GiST للموقع (`published` + غير محذوف)؛ فهارس child btree (sort/date)؛ unique cover جزئي؛ قيود CHECK (أسعار، إقامة، sort_order، أبعاد صور، `amenities.sort_order`). UUID: `gen_random_uuid()` كما في Phase 2.
+3. **سير العمل**: `prisma migrate dev --create-only` → تعديل SQL يدوياً → `db:migrate` (`prisma migrate deploy`) — **بدون** `migrate dev` بعد تعديل SQL.
+4. **وثائق**: `PHASE_2_TRACKER` (P3 M2 Done)، `PHASE_3_VACATION_RENTALS_PLAN` (M2 منفذ + نص إغلاق seed)، `DATABASE_SCHEMA` §B0 (amenities applicability + فهارس `deleted_at`).
 
-**التحقق** (جلسة M6، من جذر الريبو؛ Docker + `apps/api/.env` عند تشغيل `api test`):
-- `npx pnpm@9.15.4 verify:phase2.5` → **نجاح** (الخطوات الست؛ `api test` **11/11**؛ ختام السكربت `[verify:phase2.5] All steps passed.`) — نتيجة التشغيل الفعلي لهذه الجلسة (انظر الطرفية).
+**قرار إغلاق M2 (موثّق)**:
+> M2 closes schema/migration only; amenity catalogue seed and reference endpoints are explicitly deferred to M3 because no seed pipeline exists yet.
 
-**التالي**: **Phase 3** — نظام بيوت العطلات / Vacation Rentals end-to-end (`docs/BUILD_PLAN.md` + `docs/PHASE_3_VACATION_RENTALS_PLAN.md`).
+**لم يُمسّ (عمداً)**:
+- **M2b**: `host_category` / `real_estate_office` / `re_total_listings`
+- Nest `vacation-rentals` module، web/Next، `packages/types` schemas
+
+**Enums جديدة**: `vacation_rental_type`, `vacation_rental_listing_status`, `location_precision`, `booking_mode`, `cancellation_policy`, `space_type`, `bathroom_type`, `amenity_category`, `availability_reason`, `season_type`
+
+**جداول جديدة**: `vacation_rentals`, `vacation_rental_spaces`, `vacation_rental_images`, `vacation_rental_space_images`, `amenities`, `vacation_rental_amenities`, `vacation_rental_space_amenities`, `vacation_rental_availability_blocks`, `vacation_rental_pricing_overrides`
+
+**التحقق** (من جذر الريبو؛ Docker + `apps/api/.env`):
+- `npx pnpm@9.15.4 --filter api exec prisma validate` → **نجاح**
+- `npx pnpm@9.15.4 --filter api build` → **نجاح**
+- `npx pnpm@9.15.4 db:migrate` → طُبّق `20260515174722_phase3_m2_vacation_rentals`
+- `npx pnpm@9.15.4 db:status` → Database schema is up to date
+- `npx pnpm@9.15.4 db:generate` → Prisma Client محدّث
+
+**التالي**: **P3 M3** — reference data (`GET /reference/*`) + seed كتالوج `amenities` + إعداد seed pipeline إن لزم (`docs/PHASE_3_VACATION_RENTALS_PLAN.md`).
+
+---
+
+**التاريخ السابق**: 2026-05-13 (Phase 2.5 M6 — Documentation Closure)
+**الـ AI المستخدم**: Cursor
+
+**ملخص M6 (مرجعي)**:
+- إغلاق Phase 2.5 في الوثائق؛ `verify:phase2.5` نجح (11/11 api tests).
 
 ---
 
@@ -1569,4 +1596,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-13 (Phase 3 M1 naming docs مكتملة؛ M0 مكتمل).**
+**نهاية الملف. آخر تحديث: 2026-05-15 (Phase 3 M2 vacation rentals DB schema/migration منفّذ؛ التالي M3).**

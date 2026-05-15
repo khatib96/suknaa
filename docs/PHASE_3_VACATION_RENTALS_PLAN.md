@@ -88,6 +88,10 @@ Acceptance criteria:
 
 ### M2 - Database Schema And Migration
 
+**Status:** Completed 2026-05-15.
+
+**Migration:** `apps/api/prisma/migrations/20260515174722_phase3_m2_vacation_rentals`
+
 Purpose: add the persistent vacation rentals data model.
 
 Scope:
@@ -101,12 +105,28 @@ Scope:
 - PostGIS location storage and indexes.
 - Status lifecycle: `draft`, `pending_review`, `published`, `paused`, `rejected`, `archived`.
 
-Acceptance criteria:
+**M2 closure note (documented decision):**
+
+> M2 closes schema/migration only; amenity catalogue seed and reference endpoints are explicitly deferred to M3 because no seed pipeline exists yet.
+
+Acceptance criteria (M2 — met):
 
 - Prisma schema validates.
-- Migration applies cleanly on local Postgres.
-- Seed data includes vacation rental types and amenities.
-- Indexes exist for host ownership, status, city/governorate, and geo search.
+- Migration applies cleanly on local Postgres (`npx pnpm@9.15.4 db:migrate` → `prisma migrate deploy`).
+- Indexes exist for host ownership, status, rental type, city/governorate, and geo search (partial/GiST in migration SQL only).
+
+Acceptance criteria (original plan — deferred to M3):
+
+- Seed data for amenity catalogue rows (enum types need no seed rows).
+
+**Verification (recorded 2026-05-15):**
+
+```powershell
+npx pnpm@9.15.4 --filter api exec prisma validate
+npx pnpm@9.15.4 --filter api build
+npx pnpm@9.15.4 db:status
+npx pnpm@9.15.4 db:migrate
+```
 
 ### M3 - Reference Data
 

@@ -1,7 +1,8 @@
-// Suknaa Phase 2 — core auth / users / KYC tables (see docs/DATABASE_SCHEMA.md §A1).
+// Suknaa — core auth (Phase 2) + vacation rentals (Phase 3 M2). See docs/DATABASE_SCHEMA.md.
 //
 // DB naming: snake_case tables/columns via @@map / @map.
-// Additional partial & expression indexes live in the first migration SQL (Prisma cannot declare them in schema).
+// Phase 2 partial indexes: see phase2 migration SQL.
+// Phase 3 M2 indexes (partial, GiST, child btree, cover unique, CHECK): migration SQL only — no @@index on M2 models.
 
 generator client {
   provider = "prisma-client-js"
@@ -126,7 +127,9 @@ model User {
   authSessions      AuthSession[]
   otpCodes          OtpCode[]
   twoFactorSecret   TwoFactorSecret?
-  auditLogsAsActor  AuditLog[]      @relation("AuditLogActor")
+  auditLogsAsActor         AuditLog[]        @relation("AuditLogActor")
+  vacationRentalsHosted    VacationRental[]  @relation("VacationRentalHost")
+  vacationRentalsApproved  VacationRental[]  @relation("VacationRentalApprovedBy")
 
   @@map("users")
 }
@@ -290,4 +293,334 @@ model AuditLog {
   @@index([entityType, entityId], map: "idx_audit_logs_entity")
   @@index([createdAt(sort: Desc)], map: "idx_audit_logs_created_at")
   @@map("audit_logs")
+}
+
+// --- Phase 3 M2: Vacation rentals / holiday homes (docs/DATABASE_SCHEMA.md §B0) ---
+
+enum VacationRentalType {
+  apartment @map("apartment")
+  house     @map("house")
+  villa     @map("villa")
+  farm      @map("farm")
+  chalet    @map("chalet")
+  cabin     @map("cabin")
+  studio    @map("studio")
+
+  @@map("vacation_rental_type")
+}
+
+enum VacationRentalListingStatus {
+  draft          @map("draft")
+  pending_review @map("pending_review")
+  published      @map("published")
+  paused         @map("paused")
+  rejected       @map("rejected")
+  archived       @map("archived")
+
+  @@map("vacation_rental_listing_status")
+}
+
+enum LocationPrecision {
+  precise     @map("precise")
+  approximate @map("approximate")
+
+  @@map("location_precision")
+}
+
+enum BookingMode {
+  instant      @map("instant")
+  request      @map("request")
+  contact_only @map("contact_only")
+
+  @@map("booking_mode")
+}
+
+enum CancellationPolicy {
+  flexible @map("flexible")
+  medium   @map("medium")
+  strict   @map("strict")
+
+  @@map("cancellation_policy")
+}
+
+enum SpaceType {
+  bedroom     @map("bedroom")
+  bathroom    @map("bathroom")
+  kitchen     @map("kitchen")
+  living_room @map("living_room")
+  dining_room @map("dining_room")
+  balcony     @map("balcony")
+  terrace     @map("terrace")
+  garden      @map("garden")
+  pool_area   @map("pool_area")
+  rooftop     @map("rooftop")
+  parking     @map("parking")
+  storage     @map("storage")
+  office      @map("office")
+  gym         @map("gym")
+  other       @map("other")
+
+  @@map("space_type")
+}
+
+enum BathroomType {
+  full         @map("full")
+  half         @map("half")
+  shower_only  @map("shower_only")
+  wc_only      @map("wc_only")
+
+  @@map("bathroom_type")
+}
+
+enum AmenityCategory {
+  essentials     @map("essentials")
+  kitchen        @map("kitchen")
+  bathroom       @map("bathroom")
+  bedroom        @map("bedroom")
+  living         @map("living")
+  outdoor        @map("outdoor")
+  pool_spa       @map("pool_spa")
+  parking        @map("parking")
+  safety         @map("safety")
+  family         @map("family")
+  accessibility  @map("accessibility")
+  work           @map("work")
+  entertainment  @map("entertainment")
+  services       @map("services")
+
+  @@map("amenity_category")
+}
+
+enum AvailabilityReason {
+  booked         @map("booked")
+  host_blocked   @map("host_blocked")
+  maintenance    @map("maintenance")
+
+  @@map("availability_reason")
+}
+
+enum SeasonType {
+  summer          @map("summer")
+  winter          @map("winter")
+  eid             @map("eid")
+  ramadan         @map("ramadan")
+  new_year        @map("new_year")
+  school_holiday  @map("school_holiday")
+  custom          @map("custom")
+
+  @@map("season_type")
+}
+
+model VacationRental {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hostId      String              @map("host_id") @db.Uuid
+  host        User                @relation("VacationRentalHost", fields: [hostId], references: [id], onDelete: Restrict)
+  rentalType  VacationRentalType  @map("rental_type")
+
+  titleAr       String  @map("title_ar") @db.VarChar(200)
+  titleEn       String? @map("title_en") @db.VarChar(200)
+  descriptionAr String  @map("description_ar")
+  descriptionEn String? @map("description_en")
+
+  countryCode        String            @default("SY") @map("country_code") @db.Char(2)
+  governorate        String            @map("governorate") @db.VarChar(100)
+  city               String            @map("city") @db.VarChar(100)
+  neighborhood       String?           @map("neighborhood") @db.VarChar(150)
+  addressLine        String?           @map("address_line") @db.VarChar(255)
+  location           Unsupported("geography(Point,4326)") @map("location")
+  locationPrecision  LocationPrecision @default(approximate) @map("location_precision")
+
+  maxGuests      Int     @map("max_guests") @db.SmallInt
+  bedroomsCount  Int     @default(0) @map("bedrooms_count") @db.SmallInt
+  bedsCount      Int     @default(0) @map("beds_count") @db.SmallInt
+  bathroomsCount Decimal @default(1.0) @map("bathrooms_count") @db.Decimal(3, 1)
+  areaSqm        Int?    @map("area_sqm")
+
+  basePriceCents    BigInt  @map("base_price_cents")
+  weeklyPriceCents  BigInt? @map("weekly_price_cents")
+  monthlyPriceCents BigInt? @map("monthly_price_cents")
+  weekendUpliftPct  Int     @default(0) @map("weekend_uplift_pct") @db.SmallInt
+  cleaningFeeCents  BigInt  @default(0) @map("cleaning_fee_cents")
+  minimumStayNights Int     @default(1) @map("minimum_stay_nights") @db.SmallInt
+  maximumStayNights Int?    @map("maximum_stay_nights") @db.SmallInt
+  currency          String  @default("USD") @map("currency") @db.Char(3)
+
+  commissionPassthrough Boolean            @default(false) @map("commission_passthrough")
+  bookingMode           BookingMode        @default(request) @map("booking_mode")
+  cancellationPolicy    CancellationPolicy @map("cancellation_policy")
+
+  status              VacationRentalListingStatus @default(draft) @map("status")
+  rejectionReason     String?                     @map("rejection_reason")
+  submittedForReviewAt DateTime?                   @map("submitted_for_review_at") @db.Timestamptz(3)
+  approvedAt          DateTime?                   @map("approved_at") @db.Timestamptz(3)
+  approvedByUserId    String?                     @map("approved_by") @db.Uuid
+  approvedByUser      User?                       @relation("VacationRentalApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+
+  totalBookings                  Int      @default(0) @map("total_bookings")
+  totalViews                     Int      @default(0) @map("total_views")
+  averageRating                  Decimal? @map("average_rating") @db.Decimal(3, 2)
+  totalReviews                   Int      @default(0) @map("total_reviews")
+  lastAvailabilityReductionAt    DateTime? @map("last_availability_reduction_at") @db.Timestamptz(3)
+  availabilityReductionsCount    Int      @default(0) @map("availability_reductions_count")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  spaces              VacationRentalSpace[]
+  images              VacationRentalImage[]
+  amenities           VacationRentalAmenity[]
+  availabilityBlocks  VacationRentalAvailabilityBlock[]
+  pricingOverrides    VacationRentalPricingOverride[]
+
+  @@map("vacation_rentals")
+}
+
+model VacationRentalSpace {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vacationRentalId  String         @map("vacation_rental_id") @db.Uuid
+  vacationRental    VacationRental @relation(fields: [vacationRentalId], references: [id], onDelete: Cascade)
+
+  spaceType     SpaceType @map("space_type")
+  labelAr       String    @map("label_ar") @db.VarChar(100)
+  labelEn       String?   @map("label_en") @db.VarChar(100)
+  descriptionAr String?   @map("description_ar")
+  descriptionEn String?   @map("description_en")
+  sortOrder     Int       @default(0) @map("sort_order")
+
+  beds          Json?         @map("beds") @db.JsonB
+  hasEnsuite    Boolean?      @map("has_ensuite")
+  bathroomType  BathroomType? @map("bathroom_type")
+  isShared      Boolean?      @map("is_shared")
+  areaSqm       Int?          @map("area_sqm")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  images    VacationRentalSpaceImage[]
+  amenities VacationRentalSpaceAmenity[]
+
+  @@map("vacation_rental_spaces")
+}
+
+model VacationRentalImage {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vacationRentalId String         @map("vacation_rental_id") @db.Uuid
+  vacationRental   VacationRental @relation(fields: [vacationRentalId], references: [id], onDelete: Cascade)
+
+  storageKey  String  @map("storage_key") @db.VarChar(500)
+  urlOriginal String  @map("url_original") @db.VarChar(500)
+  urlLarge    String  @map("url_large") @db.VarChar(500)
+  urlMedium   String  @map("url_medium") @db.VarChar(500)
+  urlSmall    String  @map("url_small") @db.VarChar(500)
+  width       Int?
+  height      Int?
+  altTextAr   String? @map("alt_text_ar") @db.VarChar(255)
+  altTextEn   String? @map("alt_text_en") @db.VarChar(255)
+  sortOrder   Int     @default(0) @map("sort_order")
+  isCover     Boolean @default(false) @map("is_cover")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("vacation_rental_images")
+}
+
+model VacationRentalSpaceImage {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vacationRentalSpaceId String              @map("vacation_rental_space_id") @db.Uuid
+  vacationRentalSpace   VacationRentalSpace @relation(fields: [vacationRentalSpaceId], references: [id], onDelete: Cascade)
+
+  storageKey  String  @map("storage_key") @db.VarChar(500)
+  urlOriginal String  @map("url_original") @db.VarChar(500)
+  urlLarge    String  @map("url_large") @db.VarChar(500)
+  urlMedium   String  @map("url_medium") @db.VarChar(500)
+  urlSmall    String  @map("url_small") @db.VarChar(500)
+  width       Int?
+  height      Int?
+  altTextAr   String? @map("alt_text_ar") @db.VarChar(255)
+  altTextEn   String? @map("alt_text_en") @db.VarChar(255)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("vacation_rental_space_images")
+}
+
+model Amenity {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code     String @unique @db.VarChar(50)
+  nameAr   String @map("name_ar") @db.VarChar(100)
+  nameEn   String @map("name_en") @db.VarChar(100)
+  iconName String? @map("icon_name") @db.VarChar(50)
+  category AmenityCategory @map("category")
+
+  appliesToVacationRental      Boolean @default(true) @map("applies_to_vacation_rental")
+  appliesToVacationRentalSpace Boolean @default(false) @map("applies_to_vacation_rental_space")
+  appliesToHotel               Boolean @default(false) @map("applies_to_hotel")
+  appliesToRoomType            Boolean @default(false) @map("applies_to_room_type")
+
+  sortOrder Int     @default(0) @map("sort_order")
+  isActive  Boolean @default(true) @map("is_active")
+
+  vacationRentals      VacationRentalAmenity[]
+  vacationRentalSpaces VacationRentalSpaceAmenity[]
+
+  @@map("amenities")
+}
+
+model VacationRentalAmenity {
+  vacationRentalId String         @map("vacation_rental_id") @db.Uuid
+  vacationRental   VacationRental @relation(fields: [vacationRentalId], references: [id], onDelete: Cascade)
+  amenityId        String         @map("amenity_id") @db.Uuid
+  amenity          Amenity        @relation(fields: [amenityId], references: [id], onDelete: Restrict)
+
+  @@id([vacationRentalId, amenityId])
+  @@map("vacation_rental_amenities")
+}
+
+model VacationRentalSpaceAmenity {
+  vacationRentalSpaceId String              @map("vacation_rental_space_id") @db.Uuid
+  vacationRentalSpace   VacationRentalSpace @relation(fields: [vacationRentalSpaceId], references: [id], onDelete: Cascade)
+  amenityId             String              @map("amenity_id") @db.Uuid
+  amenity               Amenity             @relation(fields: [amenityId], references: [id], onDelete: Restrict)
+
+  @@id([vacationRentalSpaceId, amenityId])
+  @@map("vacation_rental_space_amenities")
+}
+
+model VacationRentalAvailabilityBlock {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vacationRentalId String             @map("vacation_rental_id") @db.Uuid
+  vacationRental   VacationRental     @relation(fields: [vacationRentalId], references: [id], onDelete: Cascade)
+
+  startsOn  DateTime           @map("starts_on") @db.Date
+  endsOn    DateTime           @map("ends_on") @db.Date
+  reason    AvailabilityReason @map("reason")
+  bookingId String?            @map("booking_id") @db.Uuid
+  note      String?            @map("note")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("vacation_rental_availability_blocks")
+}
+
+model VacationRentalPricingOverride {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vacationRentalId String         @map("vacation_rental_id") @db.Uuid
+  vacationRental   VacationRental @relation(fields: [vacationRentalId], references: [id], onDelete: Cascade)
+
+  startsOn DateTime @map("starts_on") @db.Date
+  endsOn   DateTime @map("ends_on") @db.Date
+
+  basePriceCents    BigInt  @map("base_price_cents")
+  weeklyPriceCents  BigInt? @map("weekly_price_cents")
+  monthlyPriceCents BigInt? @map("monthly_price_cents")
+
+  labelAr    String?     @map("label_ar") @db.VarChar(100)
+  labelEn    String?     @map("label_en") @db.VarChar(100)
+  seasonType SeasonType? @map("season_type")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("vacation_rental_pricing_overrides")
 }

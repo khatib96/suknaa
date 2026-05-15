@@ -225,9 +225,24 @@ CREATE TABLE vacation_rentals (
 CREATE INDEX idx_vacation_rentals_host ON vacation_rentals(host_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_vacation_rentals_status ON vacation_rentals(status) WHERE deleted_at IS NULL;
 CREATE INDEX idx_vacation_rentals_type ON vacation_rentals(rental_type) WHERE deleted_at IS NULL;
-CREATE INDEX idx_vacation_rentals_city ON vacation_rentals(city, governorate) WHERE status = 'published';
-CREATE INDEX idx_vacation_rentals_location ON vacation_rentals USING GIST(location) WHERE status = 'published';
+CREATE INDEX idx_vacation_rentals_city ON vacation_rentals(city, governorate)
+  WHERE status = 'published' AND deleted_at IS NULL;
+CREATE INDEX idx_vacation_rentals_location ON vacation_rentals USING GIST(location)
+  WHERE status = 'published' AND deleted_at IS NULL;
 ```
+
+**M2 implemented (2026-05-15):** Physical migration `20260515174722_phase3_m2_vacation_rentals`. Prisma uses `gen_random_uuid()` (not `uuid_generate_v7()`). Partial/GiST/child indexes and CHECK constraints live in migration SQL only.
+
+**`amenities` applicability (target — not legacy `applies_to_property`):**
+
+| Column | Purpose |
+|--------|---------|
+| `applies_to_vacation_rental` | Listing-level amenity (default true) |
+| `applies_to_vacation_rental_space` | Space-level amenity (default false) |
+| `applies_to_hotel` | Hotel-wide (Phase 4; default false) |
+| `applies_to_room_type` | Room type (Phase 4; default false) |
+
+Join tables: `vacation_rental_amenities`, `vacation_rental_space_amenities` (not `space_amenities`).
 
 | Legacy (pre-M2 — **do not use in new work**) | Target (M2) |
 |---|---|
