@@ -171,6 +171,8 @@ npx pnpm@9.15.4 --filter api verify:p3-m3
 
 ### M4 - Host Vacation Rental CRUD
 
+**Status:** Completed 2026-05-15.
+
 Purpose: let an authenticated host create and manage draft listings.
 
 Scope:
@@ -183,11 +185,36 @@ Scope:
 - Ownership checks.
 - Basic audit events for important state changes.
 
-Acceptance criteria:
+**Implemented endpoints** (authenticated, `JwtAuthGuard`):
+
+- `GET /v1/me/vacation-rentals` — cursor/limit; excludes `deleted_at`
+- `POST /v1/me/vacation-rentals` — creates `draft`; PostGIS `location` via raw SQL
+- `GET /v1/me/vacation-rentals/:id` — ownership via `host_id` in query (404 if not owner)
+- `PATCH /v1/me/vacation-rentals/:id` — `draft` \| `rejected` only
+- `DELETE /v1/me/vacation-rentals/:id` — soft delete; `draft` \| `rejected` only
+
+**Host gate (M2b deferred):** `HostCategory.real_estate` only (legacy DB value for vacation-rental hosts). Hospitality hosts → `WRONG_HOST_CATEGORY`.
+
+**Wire contract:** request/response use `vacation_rental_type`; money `*_cents` as string in JSON.
+
+**Audit:** `vacation_rental.created` / `.updated` / `.deleted`.
+
+**Deferred:** `submit-for-review`, `pause`, `resume`, spaces, amenities, pricing, availability, images (M5–M7).
+
+Acceptance criteria (met):
 
 - Non-host users cannot create listings.
 - Hosts can only access their own drafts/listings.
 - Validation rejects incomplete or invalid location, capacity, and pricing values.
+
+**Verification (recorded 2026-05-15):**
+
+```powershell
+npx pnpm@9.15.4 --filter api lint
+npx pnpm@9.15.4 --filter api build
+npx pnpm@9.15.4 --filter api exec prisma validate
+npx pnpm@9.15.4 --filter api verify:p3-m4
+```
 
 ### M5 - Spaces, Amenities, Pricing, And Availability
 

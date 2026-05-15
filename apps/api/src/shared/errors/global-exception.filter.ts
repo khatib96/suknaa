@@ -39,15 +39,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = body;
       } else if (body && typeof body === "object") {
         const b = body as Record<string, unknown>;
-        if (typeof b.code === "string") code = b.code;
-        if (typeof b.message === "string") {
+        const payload =
+          b.message && typeof b.message === "object" && !Array.isArray(b.message)
+            ? (b.message as Record<string, unknown>)
+            : b;
+
+        if (typeof payload.code === "string") code = payload.code;
+        if (typeof payload.message === "string") {
+          message = payload.message;
+        } else if (typeof b.message === "string") {
           message = b.message;
         } else if (Array.isArray(b.message) && typeof b.message[0] === "string") {
           message = b.message[0] as string;
         }
-        if (typeof b.message_en === "string") messageEn = b.message_en;
-        if (b.details && typeof b.details === "object" && !Array.isArray(b.details)) {
-          details = b.details as Record<string, unknown>;
+        if (typeof payload.message_en === "string") {
+          messageEn = payload.message_en;
+        } else if (typeof b.message_en === "string") {
+          messageEn = b.message_en;
+        }
+        const detailsSource = payload.details ?? b.details;
+        if (
+          detailsSource &&
+          typeof detailsSource === "object" &&
+          !Array.isArray(detailsSource)
+        ) {
+          details = detailsSource as Record<string, unknown>;
         }
       }
     } else if (exception instanceof Error) {

@@ -18,9 +18,9 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة**. **Phase 3** — **بيوت العطلات** — **M3 reference data منفّذ** (2026-05-15)؛ التالي **M4** (host CRUD). **M2b** لم يُنفَّذ بعد.
+- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة**. **Phase 3** — **بيوت العطلات** — **M4 host vacation rental CRUD منفّذ** (2026-05-15)؛ التالي **M5** (spaces, amenities, pricing, availability). **M2b** لم يُنفَّذ بعد.
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
-- **آخر تحديث للذاكرة**: 2026-05-15 (جلسة — Phase 3 M3 reference data + amenity seed)
+- **آخر تحديث للذاكرة**: 2026-05-15 (جلسة — P3 M4 إغلاق + إصلاحات مراجعة)
 - **آخر AI عمل على المشروع**: Cursor
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات)، و**`docs/PHASE_3_M1_NAMING_PLAN.md`** لتسمية وعقود بيوت العطلات (`vacation_rentals`) قبل M2. لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -190,11 +190,12 @@
 - [x] **M6 — Documentation Closure**: تحديث `PHASE_2_5_STABILIZATION_PLAN.md` (حالة Completed + M6)، `PHASE_2_TRACKER.md` (حالة Phase 2.5 + بوابة)،`BUILD_PLAN.md` (ملاحظة Phase 2.5)،`ai_memory.md`،`.cursor/rules/suknaa.mdc`؛ إعادة تشغيل **`npx pnpm@9.15.4 verify:phase2.5`** وتسجيل النجاح. ✓ 2026-05-13
 
 ### Phase 3 — Vacation Rentals / Holiday Homes System (End-to-End)
-- **نشطة تالياً:** **M4** (host vacation rental CRUD).
+- **نشطة تالياً:** **M5** (spaces, amenities, pricing, availability).
 - [x] **M0** ✓ 2026-05-13 — `verify:phase2.5` passed.
 - [x] **M1** ✓ 2026-05-13 — `docs/PHASE_3_M1_NAMING_PLAN.md`.
 - [x] **M2** ✓ 2026-05-15 — schema/migration vacation rentals.
-- [x] **M3 — Reference data** ✓ 2026-05-15 — `modules/reference/`؛ `GET /v1/reference/{vacation-rental-types,space-types,booking-modes,cancellation-policies,amenities}`؛ seed 22 amenities (`db:seed`، `amenity-seeds.ts` + `seed-amenities.ts`)؛ `verify:p3-m3`. **`hotel-types` مؤجل Phase 4.** لم يُمسّ M2b. تحقق: lint، build، prisma validate، seed، verify:p3-m3.
+- [x] **M3 — Reference data** ✓ 2026-05-15 — `modules/reference/`؛ `GET /v1/reference/*`؛ seed 22 amenities؛ `verify:p3-m3`.
+- [x] **M4 — Host CRUD** ✓ 2026-05-15 — `modules/vacation-rentals/`؛ `GET/POST/PATCH/DELETE /v1/me/vacation-rentals`؛ Zod؛ PostGIS raw INSERT/UPDATE؛ wire `vacation_rental_type`؛ money `*_cents` string؛ ownership **404** (لا 403 cross-host)؛ PATCH/DELETE `draft`|`rejected` فقط؛ delete soft؛ audit `vacation_rental.{created,updated,deleted}`؛ `verify:p3-m4`. **Host gate:** `isHost` + `host_profiles` + `HostCategory.real_estate` (legacy حتى M2b). **مراجعة M4:** `vacationRentalIdParamSchema` (UUID → 400)؛ `assertMergedStayRange` في PATCH → 422 `VACATION_RENTAL_INVALID_STAY_RANGE`. **إصلاح مساعد:** `GlobalExceptionFilter` يستخرج `code` من body المتداخل لـ Nest. **لم يُمسّ** M2b. تحقق: lint، build، prisma validate، verify:p3-m4، api test 11/11.
 - المرجع: `docs/PHASE_3_VACATION_RENTALS_PLAN.md` + **`docs/PHASE_3_M1_NAMING_PLAN.md`**. المنتج: **بيوت العطلات / Vacation Rentals**.
 
 ### Phase 4 — Hospitality System (End-to-End)
@@ -225,20 +226,52 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-15 (Phase 3 M3 — Reference data + amenity seed)
+**التاريخ**: 2026-05-15 (Phase 3 M4 — Host vacation rental CRUD + إصلاحات مراجعة)
+**الـ AI المستخدم**: Cursor
+
+**ما تم تنفيذه (M4 — التنفيذ الأولي)**:
+1. **`apps/api/src/modules/vacation-rentals/`** — module كامل: controller، service، schemas، types؛ مسجّل في `AppModule`.
+2. **Endpoints (authenticated):** `GET/POST /v1/me/vacation-rentals`، `GET/PATCH/DELETE /v1/me/vacation-rentals/:id`.
+3. **PostGIS** — `INSERT` raw مع `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography` + enum casts صريحة؛ قراءة `lat`/`lng` عبر `ST_X`/`ST_Y` في list/get.
+4. **Authorization** — `assertVacationRentalHost`: `NOT_A_HOST`، `HOST_PROFILE_REQUIRED`، `WRONG_HOST_CATEGORY` (hospitality مرفوض)؛ **legacy** `HostCategory.real_estate` فقط حتى M2b (تعليق في الكود).
+5. **Ownership** — `findFirst({ id, hostId, deletedAt: null })` → **404** `VACATION_RENTAL_NOT_FOUND` (لا تسريب لوجود listing لمضيف آخر).
+6. **Business rules** — create دائماً `draft`؛ PATCH/DELETE فقط `draft`|`rejected`؛ soft delete؛ لا `submit-for-review`/`pause`/`resume` (M7).
+7. **Wire contract** — request/response: `vacation_rental_type`؛ `*_cents` كـ string في JSON.
+8. **Audit** — `vacation_rental.created` / `.updated` / `.deleted` (بدون coordinates في metadata).
+9. **`scripts/manual-p3-m4-verify.ts`** + `verify:p3-m4`؛ IPs تركيبية per-scope لتفادي signup rate limit؛ `GlobalExceptionFilter` في سكربت التحقق.
+10. **وثائق** — `PHASE_2_TRACKER`، `PHASE_3_VACATION_RENTALS_PLAN` M4، `API_SPEC` §7 (response shape + delete policy + deferred lifecycle).
+
+**إصلاحات مراجعة M4 (نفس الجلسة — إغلاق)**:
+1. **`vacationRentalIdParamSchema`** (`z.string().uuid()`) — في GET/PATCH/DELETE `:id` قبل service → **400** `VALIDATION_ERROR` (لا Prisma error).
+2. **`assertMergedStayRange`** داخل `$transaction` في `patchForHost` — يدمج `input` مع `row` الحالي: `nextMinimum = input.minimum_stay_nights ?? row.minimumStayNights`؛ `nextMaximum` من input أو row؛ إن `nextMaximum < nextMinimum` → **422** `VACATION_RENTAL_INVALID_STAY_RANGE` (قبل أي update).
+3. **`GlobalExceptionFilter`** — استخراج `code`/`message` من `HttpException` body المتداخل `{ message: { code, ... } }` (يفيد كل الـ API، لا M4 فقط).
+4. **`manual-p3-m4-verify.ts`** — سيناريوهات: `GET .../not-a-uuid` → 400؛ PATCH stay range (max=2 ثم min=3 → 422) ثم patch صالح لإكمال السيناريو.
+
+**لم يُمسّ (عمداً)**:
+- M2b (`vacation_rentals` host category، `vacation_rental_operator`)
+- spaces، amenities attach، pricing overrides، availability، images (M5–M6)
+- submit/pause/resume، admin review، search (M7–M8)
+- UI/Next
+
+**التحقق (بعد إصلاحات المراجعة)**:
+```powershell
+npx pnpm@9.15.4 --filter api lint
+npx pnpm@9.15.4 --filter api build
+npx pnpm@9.15.4 --filter api exec prisma validate
+npx pnpm@9.15.4 --filter api verify:p3-m4
+npx pnpm@9.15.4 --filter api test
+```
+النتيجة: **الكل نجح** — verify:p3-m4 `ok: true`؛ api test **11/11**.
+
+**التالي:** **P3 M5** — spaces، amenities، pricing overrides، availability blocks.
+
+---
+
+**التاريخ السابق**: 2026-05-15 (Phase 3 M3 — Reference data + amenity seed)
 **الـ AI المستخدم**: Cursor
 
 **ما تم تنفيذه**:
-1. **`apps/api/src/modules/reference/`** — `ReferenceModule` + controller/service/catalog/types؛ 5 endpoints عامة؛ `Cache-Control: public, max-age=300`؛ Swagger خفيف.
-2. **Seed** — `prisma/amenity-seeds.ts` (22 صف)، `seed-amenities.ts` (`seedAmenities`)، `seed.ts` مع `require.main === module`؛ `prisma:seed` + جذر `db:seed`.
-3. **`scripts/manual-p3-m3-verify.ts`** + `verify:p3-m3` (لا test جديد في `api test`).
-4. **وثائق** — `PHASE_2_TRACKER`، `PHASE_3_VACATION_RENTALS_PLAN` M3، `API_SPEC` §6 (`hotel-types` Deferred Phase 4).
-
-**Endpoints:** `/v1/reference/vacation-rental-types`, `space-types`, `booking-modes`, `cancellation-policies`, `amenities`.
-
-**التحقق:** `lint`، `build`، `prisma validate`، `db:seed` (22 amenities)، `verify:p3-m3`.
-
-**التالي:** **P3 M4** — host vacation rental CRUD.
+1. **`apps/api/src/modules/reference/`** — 5 endpoints عامة؛ seed 22 amenities؛ `verify:p3-m3`.
 
 ---
 

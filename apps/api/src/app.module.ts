@@ -14,6 +14,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { KycModule } from "./modules/kyc/kyc.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { ReferenceModule } from "./modules/reference/reference.module";
+import { VacationRentalsModule } from "./modules/vacation-rentals/vacation-rentals.module";
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { ReferenceModule } from "./modules/reference/reference.module";
     KycModule,
     AdminModule,
     ReferenceModule,
+    VacationRentalsModule,
   ],
 })
 export class AppModule {}

@@ -6,12 +6,12 @@
 
 **Phase 2:** closed (M1–M10).  
 **Phase 2.5:** stabilization **complete** (2026-05-13) — see [Phase 2.5 — Stabilization](#phase-25--stabilization-post-phase-2) below.  
-**Phase 3:** M0–M3 **complete** (M3 reference data: 2026-05-15). Next implementation milestone: **P3 M4**.
+**Phase 3:** M0–M4 **complete** (M4 host CRUD: 2026-05-15). Next implementation milestone: **P3 M5**.
 
 **Completed (Phase 2):** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9, M10  
-**Completed (Phase 3):** P3 M0, P3 M1, P3 M2, P3 M3  
+**Completed (Phase 3):** P3 M0, P3 M1, P3 M2, P3 M3, P3 M4  
 **In progress:** None  
-**Not started:** P3 M4 onward
+**Not started:** P3 M5 onward
 
 ## Phase 2.5 — Stabilization (post-Phase 2)
 
@@ -44,7 +44,7 @@ Detailed plan: `docs/PHASE_3_VACATION_RENTALS_PLAN.md`. **Before starting M2**, 
 | **P3 M1** | Done | Domain naming and contracts (documentation only, 2026-05-13). Canonical output: `docs/PHASE_3_M1_NAMING_PLAN.md` — `vacation_rentals`, `vacation_rental_operator`, M2 vs M2b migration inventory. |
 | **P3 M2** | Done | Database schema + migration `20260515174722_phase3_m2_vacation_rentals` (2026-05-15). Prisma models/enums; PostGIS; partial/GiST indexes + CHECK in SQL. M2 closes schema/migration only — amenity seed + reference endpoints deferred to M3. Verified: `prisma validate`, `api build`, `db:migrate`. |
 | **P3 M3** | Done | Public `GET /v1/reference/*` (5 routes); amenity seed (`db:seed`, 22 rows); `verify:p3-m3`. `hotel-types` deferred Phase 4. Verified: lint, build, prisma validate, seed, verify. |
-| **P3 M4** | Not started | Host vacation rental CRUD. |
+| **P3 M4** | Done | Host CRUD: `modules/vacation-rentals/`؛ `GET/POST/PATCH/DELETE /v1/me/vacation-rentals`؛ PostGIS insert/update؛ audit events؛ `verify:p3-m4`. M2b not touched. Verified: lint, build, prisma validate, verify:p3-m4, api test 11/11. |
 | **P3 M5** | Not started | Spaces, amenities, pricing, and availability management. |
 | **P3 M6** | Not started | Image upload and optimization. |
 | **P3 M7** | Not started | Admin review queue. |

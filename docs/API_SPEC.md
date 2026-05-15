@@ -212,7 +212,11 @@ Not implemented in Phase 3 M3. Requires hospitality schema (`hotel_type` enum/ta
 ## 7. Vacation Rentals — Host Endpoints
 
 ### `GET /me/vacation-rentals`
-List own vacation rentals.
+List own vacation rentals (excludes soft-deleted). Cursor pagination: `?limit=20&cursor=<uuid>`.
+
+**Response (M4):** `{ "data": [ VacationRentalListing, ... ], "meta": { "next_cursor": "uuid" | null } }`
+
+Each listing includes `vacation_rental_type` (wire name), `location: { lat, lng }`, and `*_cents` fields as **strings**.
 
 ### `POST /me/vacation-rentals`
 **v2 expanded**:
@@ -248,11 +252,41 @@ List own vacation rentals.
 ```
 
 ### `GET /me/vacation-rentals/:id`
+Returns one listing owned by the current host. Cross-host access returns **404** `VACATION_RENTAL_NOT_FOUND` (no existence leak).
+
+**Response** (snake_case; money as string; location as `{ lat, lng }`):
+
+```json
+{
+  "data": {
+    "id": "uuid",
+    "host_id": "uuid",
+    "vacation_rental_type": "house",
+    "status": "draft",
+    "title_ar": "...",
+    "location": { "lat": 33.5, "lng": 36.3 },
+    "base_price_cents": "5000",
+    "cleaning_fee_cents": "500",
+    "booking_mode": "request",
+    "cancellation_policy": "medium"
+  }
+}
+```
+
 ### `PATCH /me/vacation-rentals/:id`
+Partial update. Allowed only when `status` is `draft` or `rejected`. Returns **422** `VACATION_RENTAL_NOT_EDITABLE` otherwise. `host_id` and `status` cannot be set via body.
+
 ### `POST /me/vacation-rentals/:id/submit-for-review`
+**Deferred (M7)** — not implemented in M4.
+
 ### `POST /me/vacation-rentals/:id/pause`
+**Deferred (M7)** — not implemented in M4.
+
 ### `POST /me/vacation-rentals/:id/resume`
+**Deferred (M7)** — not implemented in M4.
+
 ### `DELETE /me/vacation-rentals/:id`
+Soft delete (`deleted_at` set). Allowed only for `draft` or `rejected`. **422** for `published`, `pending_review`, or `paused`. Returns `{ "data": { "id": "...", "deleted": true } }`.
 
 ### `PATCH /me/vacation-rentals/:id/commission-passthrough` — NEW v2
 Toggles the commission passthrough setting.

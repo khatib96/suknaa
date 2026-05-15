@@ -17,6 +17,7 @@
     "prisma:status": "prisma migrate status",
     "prisma:seed": "prisma db seed",
     "verify:p3-m3": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-p3-m3-verify.js",
+    "verify:p3-m4": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-p3-m4-verify.js",
     "verify:m3": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m3-verify.js",
     "verify:m5": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m5-verify.js",
     "verify:m6": "npx pnpm@9.15.4 --filter @suknaa/types build && rimraf .tmp-scripts && tsc -p tsconfig.scripts.json && node .tmp-scripts/scripts/manual-m6-verify.js",
