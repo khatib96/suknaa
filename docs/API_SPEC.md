@@ -165,17 +165,47 @@ Returns profile with `is_guest`, `is_host`, `is_admin` flags.
 
 ## 6. Reference Data (Public, Cached)
 
+All reference routes are **public** (no auth). Responses use `{ "data": [ ... ] }` only (no `meta` on success). `Cache-Control: public, max-age=300`.
+
 ### `GET /reference/vacation-rental-types`
-Returns enum values for `vacation_rental_type` (`apartment`, `house`, `villa`, `farm`, `chalet`, `cabin`, `studio`) with translations.
+Returns enum values for `vacation_rental_type` with AR/EN labels.
 
-### `GET /reference/hotel-types`
-Returns enum values for `hotel_type`.
-
-### `GET /reference/amenities`
-Returns all amenities with `applies_to_*` flags.
+```json
+{ "data": [{ "key": "apartment", "label_ar": "شقة", "label_en": "Apartment" }] }
+```
 
 ### `GET /reference/space-types`
-Returns enum values for `space_type` (bedroom, bathroom, kitchen, etc.).
+Returns enum values for `space_type` (bedroom, bathroom, kitchen, etc.) with AR/EN labels.
+
+### `GET /reference/booking-modes`
+Returns `booking_mode` values (`instant`, `request`, `contact_only`) with AR/EN labels.
+
+### `GET /reference/cancellation-policies`
+Returns `cancellation_policy` values (`flexible`, `medium`, `strict`) with AR/EN labels.
+
+### `GET /reference/amenities`
+Returns all **active** rows from `amenities`, ordered by `sort_order` then `name_ar`. Clients filter by applicability flags.
+
+```json
+{
+  "data": [{
+    "id": "uuid",
+    "code": "wifi",
+    "name_ar": "واي فاي",
+    "name_en": "Wi-Fi",
+    "icon_name": "Wifi",
+    "category": "essentials",
+    "applies_to_vacation_rental": true,
+    "applies_to_vacation_rental_space": false,
+    "applies_to_hotel": true,
+    "applies_to_room_type": false
+  }]
+}
+```
+
+### `GET /reference/hotel-types` — **Deferred to Phase 4**
+
+Not implemented in Phase 3 M3. Requires hospitality schema (`hotel_type` enum/table). This is an intentional deferral, not a broken endpoint.
 
 ---
 

@@ -18,9 +18,9 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة**. **Phase 3** — **بيوت العطلات / Vacation Rentals** — **M2 schema/migration منفّذ** (2026-05-15)؛ التالي **M3** (reference data + amenity seed). **M2b** (`host_category` → `vacation_rentals`) لم يُنفَّذ بعد.
+- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة**. **Phase 3** — **بيوت العطلات** — **M3 reference data منفّذ** (2026-05-15)؛ التالي **M4** (host CRUD). **M2b** لم يُنفَّذ بعد.
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
-- **آخر تحديث للذاكرة**: 2026-05-15 (جلسة — Phase 3 M2 vacation rentals DB schema)
+- **آخر تحديث للذاكرة**: 2026-05-15 (جلسة — Phase 3 M3 reference data + amenity seed)
 - **آخر AI عمل على المشروع**: Cursor
 - **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات)، و**`docs/PHASE_3_M1_NAMING_PLAN.md`** لتسمية وعقود بيوت العطلات (`vacation_rentals`) قبل M2. لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
@@ -190,10 +190,11 @@
 - [x] **M6 — Documentation Closure**: تحديث `PHASE_2_5_STABILIZATION_PLAN.md` (حالة Completed + M6)، `PHASE_2_TRACKER.md` (حالة Phase 2.5 + بوابة)،`BUILD_PLAN.md` (ملاحظة Phase 2.5)،`ai_memory.md`،`.cursor/rules/suknaa.mdc`؛ إعادة تشغيل **`npx pnpm@9.15.4 verify:phase2.5`** وتسجيل النجاح. ✓ 2026-05-13
 
 ### Phase 3 — Vacation Rentals / Holiday Homes System (End-to-End)
-- **نشطة تالياً:** **M3** (reference endpoints + amenity catalogue seed).
+- **نشطة تالياً:** **M4** (host vacation rental CRUD).
 - [x] **M0** ✓ 2026-05-13 — `verify:phase2.5` passed.
-- [x] **M1 — Domain naming & contracts (وثائق فقط)** ✓ 2026-05-13 — `docs/PHASE_3_M1_NAMING_PLAN.md`.
-- [x] **M2 — Database schema & migration** ✓ 2026-05-15 — `apps/api/prisma/schema.prisma` + migration `20260515174722_phase3_m2_vacation_rentals`: جداول `vacation_rentals`، `vacation_rental_spaces`، `vacation_rental_images`، `vacation_rental_space_images`، `amenities`، `vacation_rental_amenities`، `vacation_rental_space_amenities`، `vacation_rental_availability_blocks`، `vacation_rental_pricing_overrides`؛ enums `vacation_rental_type`، `vacation_rental_listing_status`، + shared enums (`location_precision`, `booking_mode`, …). PostGIS `geography(Point,4326)`؛ فهارس partial/GiST/child في SQL فقط. **لم يُمسّ:** `host_category`/`real_estate_office`/`re_total_listings` (M2b). **مؤجّل لـ M3:** amenity seed + `GET /reference/*` (لا seed pipeline بعد). تحقق: `prisma validate`، `api build`، `db:migrate` نجحت.
+- [x] **M1** ✓ 2026-05-13 — `docs/PHASE_3_M1_NAMING_PLAN.md`.
+- [x] **M2** ✓ 2026-05-15 — schema/migration vacation rentals.
+- [x] **M3 — Reference data** ✓ 2026-05-15 — `modules/reference/`؛ `GET /v1/reference/{vacation-rental-types,space-types,booking-modes,cancellation-policies,amenities}`؛ seed 22 amenities (`db:seed`، `amenity-seeds.ts` + `seed-amenities.ts`)؛ `verify:p3-m3`. **`hotel-types` مؤجل Phase 4.** لم يُمسّ M2b. تحقق: lint، build، prisma validate، seed، verify:p3-m3.
 - المرجع: `docs/PHASE_3_VACATION_RENTALS_PLAN.md` + **`docs/PHASE_3_M1_NAMING_PLAN.md`**. المنتج: **بيوت العطلات / Vacation Rentals**.
 
 ### Phase 4 — Hospitality System (End-to-End)
@@ -224,7 +225,24 @@
 
 ## 4. آخر جلسة عمل
 
-**التاريخ**: 2026-05-15 (Phase 3 M2 — Vacation Rentals database schema & migration)
+**التاريخ**: 2026-05-15 (Phase 3 M3 — Reference data + amenity seed)
+**الـ AI المستخدم**: Cursor
+
+**ما تم تنفيذه**:
+1. **`apps/api/src/modules/reference/`** — `ReferenceModule` + controller/service/catalog/types؛ 5 endpoints عامة؛ `Cache-Control: public, max-age=300`؛ Swagger خفيف.
+2. **Seed** — `prisma/amenity-seeds.ts` (22 صف)، `seed-amenities.ts` (`seedAmenities`)، `seed.ts` مع `require.main === module`؛ `prisma:seed` + جذر `db:seed`.
+3. **`scripts/manual-p3-m3-verify.ts`** + `verify:p3-m3` (لا test جديد في `api test`).
+4. **وثائق** — `PHASE_2_TRACKER`، `PHASE_3_VACATION_RENTALS_PLAN` M3، `API_SPEC` §6 (`hotel-types` Deferred Phase 4).
+
+**Endpoints:** `/v1/reference/vacation-rental-types`, `space-types`, `booking-modes`, `cancellation-policies`, `amenities`.
+
+**التحقق:** `lint`، `build`، `prisma validate`، `db:seed` (22 amenities)، `verify:p3-m3`.
+
+**التالي:** **P3 M4** — host vacation rental CRUD.
+
+---
+
+**التاريخ السابق**: 2026-05-15 (Phase 3 M2 — Vacation Rentals database schema & migration)
 **الـ AI المستخدم**: Cursor
 
 **السياق**: بعد M0 (بوابة `verify:phase2.5`) و M1 (تسمية `vacation_rentals` في الوثائق)، تنفيذ **P3 M2** — مخطط Prisma + migration لبيوت العطلات فقط، دون M2b ولا UI ولا CRUD.

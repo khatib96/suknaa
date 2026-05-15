@@ -130,6 +130,8 @@ npx pnpm@9.15.4 db:migrate
 
 ### M3 - Reference Data
 
+**Status:** Completed 2026-05-15.
+
 Purpose: expose stable metadata needed by forms and filters.
 
 Scope:
@@ -137,13 +139,35 @@ Scope:
 - Vacation rental types.
 - Space types.
 - Amenity catalogue with flags for listing-level and space-level usage.
-- Cancellation policies and booking modes if needed by the wizard.
+- Cancellation policies and booking modes.
 
-Acceptance criteria:
+**Implemented endpoints** (public, `Cache-Control: public, max-age=300`):
 
-- Public reference endpoints return localized Arabic/English labels.
-- Responses can be cached safely.
-- Frontend can render type and amenity pickers without hardcoded mock lists.
+- `GET /v1/reference/vacation-rental-types`
+- `GET /v1/reference/space-types`
+- `GET /v1/reference/booking-modes`
+- `GET /v1/reference/cancellation-policies`
+- `GET /v1/reference/amenities` (active rows from DB; client filters by `applies_to_*`)
+
+**Seed:** `apps/api/prisma/amenity-seeds.ts` + `seed-amenities.ts` + `seed.ts`; `npx pnpm@9.15.4 db:seed` (22 amenities, idempotent by `code`).
+
+**Deferred:** `GET /reference/hotel-types` → Phase 4 (documented in API_SPEC §6).
+
+Acceptance criteria (met):
+
+- Public reference endpoints return localized Arabic/English labels (`{ data: [...] }`).
+- HTTP cache headers on all reference routes.
+- Amenity catalogue seeded for vacation-rental and space pickers.
+
+**Verification (recorded 2026-05-15):**
+
+```powershell
+npx pnpm@9.15.4 --filter api lint
+npx pnpm@9.15.4 --filter api build
+npx pnpm@9.15.4 --filter api exec prisma validate
+npx pnpm@9.15.4 db:seed
+npx pnpm@9.15.4 --filter api verify:p3-m3
+```
 
 ### M4 - Host Vacation Rental CRUD
 

@@ -19,6 +19,7 @@
     "db:generate": "npx pnpm@9.15.4 --filter api prisma:generate",
     "db:migrate": "npx pnpm@9.15.4 --filter api prisma:migrate",
     "db:status": "npx pnpm@9.15.4 --filter api prisma:status",
+    "db:seed": "npx pnpm@9.15.4 --filter api prisma:seed",
     "verify:phase2.5": "node scripts/verify-phase-2-5.mjs"
   }
 }
