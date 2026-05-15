@@ -47,7 +47,7 @@
 | Role | 2FA |
 |---|---|
 | Guest | Optional (recommended) |
-| Real Estate Host | **Mandatory** before publishing |
+| Vacation rental host | **Mandatory** before publishing |
 | Hospitality Host | **Mandatory** before publishing |
 | Admin | **Mandatory** before login |
 | Super Admin | **Mandatory** + hardware key recommended |
@@ -74,12 +74,12 @@ This is UX-level; Phase 2 security still depends on `is_guest` / `is_host` / `is
 
 ### 3.1. Bootstrap Roles
 A user has one or more of: `is_guest`, `is_host`, `is_admin`, `is_super_admin`.
-A `host_profile` records `host_category` (real_estate or hospitality) and `host_subtype`.
+A `host_profile` records `host_category` (`vacation_rentals` or `hospitality`; DB may still store legacy `real_estate` until M2b) and `host_subtype`.
 
 These flags are acceptable for Phase 2 foundation. They are not enough for the full product. Starting with dashboard/admin/financial tooling, Suknaa should use:
 - Permission templates for common jobs, such as owner, front desk, accounting, support, KYC reviewer, finance approver
 - Per-user permission overrides
-- Organization/company membership for hotels, real-estate offices, and Suknaa internal teams
+- Organization/company membership for hotels, vacation rental operators, and Suknaa internal teams
 - Invitation flow for hotel/company owners to add staff
 - Full audit logs for permission changes and sensitive actions
 
@@ -87,11 +87,11 @@ High-risk financial capabilities must be separate permissions, not implied by a 
 
 ### 3.2. Permission Matrix (sample, updated for v2)
 
-| Action | Guest | Host (RE) | Host (Hotel) | Admin | SuperAdmin |
+| Action | Guest | Host (Vacation rentals) | Host (Hotel) | Admin | SuperAdmin |
 |---|---|---|---|---|---|
 | Browse all listings | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Book a property or room | ✅ | ✅ | ✅ | ✅ | ✅ |
-| List a real-estate property | ❌ | ✅ (KYC'd) | ❌ | ❌ | ❌ |
+| Book a stay (listing or room) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| List a vacation rental | ❌ | ✅ (KYC'd) | ❌ | ❌ | ❌ |
 | List a hotel | ❌ | ❌ | ✅ (KYC'd) | ❌ | ❌ |
 | Manage own listings | ❌ | ✅ (own) | ✅ (own) | ❌ | ❌ |
 | Toggle commission passthrough | ❌ | ✅ (own, no active bookings) | ✅ (own, no active bookings) | ❌ | ❌ |
@@ -109,10 +109,10 @@ High-risk financial capabilities must be separate permissions, not implied by a 
 | View any user's full profile | ❌ | ❌ | ❌ | ✅ | ✅ |
 
 ### 3.3. Object-Level Permissions
-- A real-estate host **cannot** create a hotel (returns `WRONG_HOST_CATEGORY`)
-- A hotel host **cannot** create a real-estate property (same)
+- A vacation rental host **cannot** create a hotel (returns `WRONG_HOST_CATEGORY`)
+- A hotel host **cannot** create a vacation rental listing (same)
 - A user with both categories registered (rare but allowed) can do both
-- Hosts only see/edit their own properties + hotels
+- Hosts only see/edit their own vacation rentals + hotels
 - Guests only see their own bookings; hosts only see bookings for their listings
 - Hotel/company staff only see objects owned by their organization unless explicitly granted broader access
 - Suknaa staff only get the capabilities needed for their job; broad admin access is not the default
@@ -125,14 +125,14 @@ Enforced in service layer (not just controller).
 
 ### 4.1. Document Requirements by Host Type
 
-#### 4.1.1. Real Estate — Individual Host
+#### 4.1.1. Vacation rentals — Individual host
 - National ID (Syrian) or Passport: front + back
 - Selfie holding the ID (proof of liveness)
-- **Property ownership proof OR notarized rental authorization**
+- **Legal control of the stay unit** (ownership proof OR notarized rental authorization to sublet for short stays)
 
-#### 4.1.2. Real Estate — Real Estate Office Host
-- ID + selfie of the office representative
-- **Commercial registration certificate** of the office
+#### 4.1.2. Vacation rentals — `vacation_rental_operator` host (مشغّل بيوت عطلات)
+- ID + selfie of the authorized representative
+- **Commercial registration certificate** of the operator
 - Tax ID
 - Authorization letter (if rep is not the legal owner)
 
@@ -177,8 +177,8 @@ Enforced in service layer (not just controller).
 
 | Surface | Blocking Method |
 |---|---|
-| Property/hotel descriptions | Regex on submit + admin manual review |
-| Property/hotel titles | Regex on submit |
+| Listing/hotel descriptions | Regex on submit + admin manual review |
+| Listing/hotel titles | Regex on submit |
 | Profile bios | Regex on submit |
 | Pre-booking messages | **Disabled entirely** — no chat before booking confirmed |
 | Post-booking chat | Regex with warnings + admin flag |
@@ -210,7 +210,7 @@ A host has 5 hotel rooms. They get a guest interested but want to book "directly
 ### 6.2. Detection Approach: Forced Reasons + Risk Scoring
 
 #### 6.2.1. Forced Reasons
-Every time a host reduces inventory (blocks a room/property), they MUST select a reason:
+Every time a host reduces inventory (blocks a room or whole vacation rental), they MUST select a reason:
 
 | Reason Code | Description | Risk Weight |
 |---|---|---|
@@ -432,7 +432,7 @@ A simple runbook in `docs/INCIDENT_RESPONSE.md`:
 - [ ] HIBP integration
 - [ ] Session management with revoke
 
-### Phase 3 (Real Estate)
+### Phase 3 (Vacation rentals)
 - [ ] Image upload virus scanning + EXIF strip
 - [ ] PostGIS queries parameterized
 - [ ] File type validation by content

@@ -94,7 +94,7 @@ These are dedicated colors for map markers and category badges:
 ```
 
 ### 2.6. Color Usage Rules
-- **Primary (Burnt Orange)**: Main CTAs, header brand text, key links, real estate map markers
+- **Primary (Burnt Orange)**: Main CTAs, header brand text, key links, **vacation rental / holiday-home** map markers (`map-houses`, etc.)
 - **Accent (Gold)**: Verified badges, premium markers, hotel map markers, star ratings
 - **Map colors**: ONLY on map markers and category badges — never as text or backgrounds
 - **Charcoal**: All body text (never pure black)
@@ -206,13 +206,13 @@ These are dedicated colors for map markers and category badges:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  [Logo]   [الكل] [عقارات] [فنادق]                        [تسجيل الدخول]   [AR/EN] │
+│  [Logo]   [الكل] [بيوت العطلات] [فنادق]                  [تسجيل الدخول]   [AR/EN] │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Component breakdown:**
 1. **Logo** — left/start. Click → home.
-2. **Tabs** — center. Persistent on every public page. Active tab has filled background and color matching the category (orange for "Real Estate", gold for "Hotels", neutral for "All"). Default: "All".
+2. **Tabs** — center. Persistent on every public page. Active tab has filled background and color matching the category (orange for **Vacation rentals / holiday homes**, gold for "Hotels", neutral for "All"). Default: "All". *(Legacy mockups may still say "عقارات" / "Real Estate" — not normative; see `docs/PHASE_3_M1_NAMING_PLAN.md`.)*
 3. **Login button** — right/end. A single prominent button:
    - **"تسجيل الدخول"** (Login) — primary outline or solid style.
    - Host login will be accessible via the dropdown menu upon clicking this button, or from the footer, to avoid distracting the majority of users (guests).
@@ -226,18 +226,18 @@ These are dedicated colors for map markers and category badges:
 ### 6.2. Tab Behavior
 
 When the user switches tabs on a search results page:
-- The category filter is updated (`?kind=real_estate` or `?kind=hospitality`)
+- The category filter is updated (canonical: `?tab=vacation_rentals` or `?tab=hospitality`; legacy code may still use `real_estate` until M2b — see M1 naming plan)
 - Side filters update (different filters per category)
 - Map markers update (re-colored)
 - Search query persists (city, dates, guests)
 - Sort default changes:
   - "All": relevance
-  - "Real Estate": price ↑
+  - "Vacation rentals" tab: price ↑
   - "Hotels": star rating ↓
 
 ### 6.3. The Tabs as Discovery Tool
 On the **homepage**, the tabs are at the top, but the page also features:
-- Featured Real Estate (carousel of top houses)
+- Featured holiday homes / vacation rentals (carousel of top listings)
 - Featured Hotels (carousel of top hotels)
 - A clear "Explore All" CTA
 
@@ -266,7 +266,7 @@ This way, even users who land on "All" tab discover both categories naturally.
 - Focus: border primary-500, ring primary-100
 - Error: border error-500, helper in error-700
 
-### 7.3. Property Card (Real Estate)
+### 7.3. Vacation rental listing card (legacy Phase 1: `PropertyResultCard`, `/property/*` routes)
 ```
 ┌─────────────────────────────┐
 │                             │
@@ -308,7 +308,7 @@ This way, even users who land on "All" tab discover both categories naturally.
 └──────────────────────────────────────────────┘
 ```
 
-### 7.6. Bedroom/Space Card (inside Property detail page) — NEW
+### 7.6. Bedroom/Space Card (inside vacation rental detail page) — NEW
 ```
 ┌─────────────────────────────────────┐
 │ [Room Image Carousel]               │
@@ -328,7 +328,7 @@ This way, even users who land on "All" tab discover both categories naturally.
 | ⚡ حجز فوري (Instant) | success-100 bg, success-700 text | `booking_mode = instant` |
 | 🆕 جديد (New) | cream bg, neutral-700 text | Listed < 30 days |
 | 🔥 مميز (Featured) | gold gradient | Editorially featured |
-| 🟧 عقار (Real Estate) | category color, white text | On mixed search results |
+| 🟧 بيت عطلات (Vacation rental) | category color, white text | On mixed search results |
 | 🟡 فندق (Hotel) | category color, white text | On mixed search results |
 | ⭐⭐⭐ stars | accent-500 icons | Hotel star rating |
 
@@ -363,7 +363,7 @@ For hosts entering pricing:
 ```
 
 ### 7.10. Commission Choice Toggle (Host Side) — NEW v2
-Critical UX. Shown when host creates/edits property pricing:
+Critical UX. Shown when host creates/edits **vacation rental listing** pricing:
 ```
 ┌──────────────────────────────────────────────┐
 │ كيف تريد التعامل مع عمولة المنصة؟                │
@@ -411,8 +411,8 @@ Hovering reveals a mini-card with image + name + rating + price.
 At zoom-out levels, nearby markers cluster into a circle showing the count and the most prominent category color.
 
 ### 8.3. Nearby Attractions Layer (NEW v2)
-On a property/hotel detail page, the embedded map shows:
-- The property/hotel marker (large, central)
+On a vacation rental or hotel detail page, the embedded map shows:
+- The listing / hotel marker (large, central)
 - Nearby attractions (smaller icons within 2km radius)
 
 Icon legend:
@@ -441,7 +441,7 @@ Below the map, a list:
 
 ---
 
-## 9. Property Detail Page Structure (Real Estate)
+## 9. Vacation rental detail page structure (legacy Phase 1 route: `/property/[id]`)
 
 ```
 ┌─────────────────────────────────────────┐
@@ -463,12 +463,12 @@ Below the map, a list:
 │ • [Garden Card]                         │
 │                                         │
 │ ───── Amenities Section ─────           │
-│ Property-wide amenities (icons + labels)│
+│ Listing-wide amenities (icons + labels) │
 │                                         │
 │ ───── Map + Attractions ─────           │
 │                                         │
 │ ───── Reviews Section ─────             │
-│ Property rating + Host rating (separate)│
+│ Stay listing rating + Host rating (separate)│
 │                                         │
 │ ───── Host Profile Section ─────        │
 │ Name · Avatar · Bio · "View All Listings"│
@@ -517,7 +517,7 @@ Below the map, a list:
 
 ## 11. Host Profile Page (NEW v2)
 
-Public page showing all properties/hotels by one host:
+Public page showing all vacation rental and hotel listings by one host:
 ```
 ┌──────────────────────────────────────┐
 │ [Avatar]  محمد أحمد                  │
@@ -528,8 +528,8 @@ Public page showing all properties/hotels by one host:
 │ نبذة:                                  │
 │ ...                                  │
 │                                      │
-│ ───── عقاراته (8) ─────                │
-│ [Grid of property/hotel cards]       │
+│ ───── بيوت العطلات والفنادق (8) ─────   │
+│ [Grid of vacation rental / hotel cards]│
 └──────────────────────────────────────┘
 ```
 
@@ -539,10 +539,10 @@ Public page showing all properties/hotels by one host:
 
 ```
 ┌──────────────────────────────────────┐
-│ [Wishlist Name] (5 عقارات)             │
+│ [Wishlist Name] (5 إعلانات)            │
 │ [مشاركة] [تعديل] [حذف]                  │
 │                                      │
-│ [Grid of property cards]             │
+│ [Grid of vacation rental / hotel cards]│
 └──────────────────────────────────────┘
 ```
 
@@ -552,7 +552,7 @@ When "Share" is clicked: a modal with a copy-able link, plus options to share vi
 
 ## 13. Comparison Table (NEW v2)
 
-When user adds 2-4 properties to comparison:
+When user adds 2-4 vacation rental (or hotel) listings to comparison:
 ```
 ┌────────────┬─────────┬─────────┬─────────┐
 │ Feature    │ A       │ B       │ C       │
@@ -597,7 +597,7 @@ Shown in host dashboard, not pushy. Dismissible. Logged as `pricing_suggestions.
 ## 16. Iconography
 - **Library**: Lucide Icons (consistent, comprehensive, MIT)
 - **Custom icons** to commission:
-  - Property type icons (house, hotel, farm, cabin, chalet, hotel-apartment, resort)
+  - Listing type icons (house, apartment, villa, farm, cabin, chalet, studio, hotel, hotel-apartment, resort)
   - Bedroom bed-types (single, double, queen, king, sofa, bunk)
   - Bathroom types (full, half, shower)
   - Map attraction categories (mosque, church, monument, etc.)
@@ -605,7 +605,7 @@ Shown in host dashboard, not pushy. Dismissible. Logged as `pricing_suggestions.
 ---
 
 ## 17. Imagery Guidelines
-- **Property photos**: minimum 1200×800; WebP/AVIF with JPEG fallback
+- **Vacation rental listing photos**: minimum 1200×800; WebP/AVIF with JPEG fallback
 - **Hotel photos**: ideally 1920×1080 (hotels show wider images)
 - **Per-room photos**: minimum 800×600
 - **Hero images**: warm tones, real Syrian locations
@@ -658,4 +658,4 @@ export default {
 - ❌ Misleading scarcity nudges
 - ❌ Showing commission to guests (anywhere, ever)
 - ❌ "Login as Host" without making "Login as Guest" equally prominent
-- ❌ Putting hotels in real-estate-style cards (or vice versa)
+- ❌ Putting hotels in vacation-rental listing cards (or vice versa)

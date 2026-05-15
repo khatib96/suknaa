@@ -1,7 +1,7 @@
 # 🏗️ ARCHITECTURE — Suknaa Technical Architecture (v2)
 
 > Complete technical blueprint for building Suknaa.
-> **v2 changes**: Module structure reorganized to reflect dual-system architecture (Real Estate + Hospitality). New modules for Price Intelligence, Anti-Circumvention, Nearby Attractions.
+> **v2 changes**: Module structure reorganized for dual-system architecture (**Vacation rentals / Holiday homes** + **Hospitality**). New modules for Price Intelligence, Anti-Circumvention, Nearby Attractions. **Canonical naming:** [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md).
 
 ---
 
@@ -10,7 +10,7 @@
 Suknaa is a **modular monolith** (not microservices) for Phase 1, deployed across multiple Next.js + NestJS services that share a single PostgreSQL database.
 
 The codebase is organized into **two parallel domain modules** plus shared infrastructure:
-- **Real Estate domain** (P2P houses)
+- **Vacation rentals domain** (P2P holiday homes / بيوت العطلات)
 - **Hospitality domain** (B2B hotels)
 - **Shared infrastructure** (auth, payments, chat, etc.)
 
@@ -197,11 +197,11 @@ apps/api/src/
 │   ├── users/                      # User profiles, host profiles
 │   ├── kyc/                        # KYC submissions + review
 │   │
-│   ├── real-estate/                # ===== REAL ESTATE DOMAIN =====
-│   │   ├── properties/             # Properties CRUD
-│   │   ├── property-spaces/        # Per-room spaces (bedrooms, bathrooms)
-│   │   ├── property-availability/  # Availability blocks + pricing overrides
-│   │   └── real-estate.module.ts
+│   ├── vacation-rentals/           # ===== VACATION RENTALS DOMAIN =====
+│   │   ├── vacation-rentals/       # Listings CRUD (tables: vacation_rentals, …)
+│   │   ├── vacation-rental-spaces/ # Per-space breakdown (bedrooms, bathrooms, …)
+│   │   ├── vacation-rental-availability/  # Availability blocks + pricing overrides
+│   │   └── vacation-rentals.module.ts
 │   │
 │   ├── hospitality/                # ===== HOSPITALITY DOMAIN =====
 │   │   ├── hotels/                 # Hotels CRUD
@@ -217,7 +217,7 @@ apps/api/src/
 │   ├── wallet/                     # Wallets + transactions + withdrawals
 │   ├── pricing/                    # Pricing engine (uses packages/pricing)
 │   │
-│   ├── reviews/                    # Dual reviews (property/hotel + host)
+│   ├── reviews/                    # Dual reviews (listing + host)
 │   ├── chat/                       # Socket.io chat + message moderation
 │   ├── notifications/              # In-app + email + SMS + push
 │   │
@@ -246,7 +246,7 @@ apps/api/src/
 ```
 
 ### 3.2. Why This Structure?
-- **Domain isolation**: real-estate and hospitality are sibling domains. Bugs in one cannot leak into the other.
+- **Domain isolation**: `vacation-rentals` and `hospitality` are sibling domains. Bugs in one cannot leak into the other.
 - **Polymorphism handled at module boundaries**: `bookings` module knows about both, but each domain module knows only itself.
 - **Shared modules are infrastructure** (auth, payments, chat) — they don't care about the domain.
 
@@ -286,7 +286,7 @@ Database migrations: never auto-apply on production. Always run manually after b
 Guest Browser → Next.js (SSR) → fetches from api.suknaa.com/v1/search?kind=hospitality&city=Damascus
                                   ↓
                                 NestJS Search Module
-                                  → Hospitality Search Service (separate from RE search)
+                                  → Hospitality Search Service (separate from vacation-rentals search)
                                   ↓
                                 PostgreSQL + PostGIS (only hotels table)
                                   ↓
@@ -316,11 +316,11 @@ Host Browser → Next.js → POST /me/hotels/:hotel_id/room-types
 
 ### 6.3. Booking flow with commission passthrough (NEW v2)
 ```
-Guest views property listed at $100 (passthrough enabled)
+Guest views vacation rental listed at $100 (passthrough enabled)
    ↓
 Frontend displays: $113.64/night
    ↓
-Guest selects 3 nights → POST /properties/:id/quote
+Guest selects 3 nights → POST /me/vacation-rentals/:id/quote
    ↓
 Backend calls pricing engine:
    - Tier resolver picks rate
@@ -332,7 +332,7 @@ Backend calls pricing engine:
 Guest confirms → POST /bookings
    ↓
 Bookings service creates booking with:
-   - property_subtotal_cents = 34092
+   - listing_subtotal_cents = 34092
    - commission_cents = 4091 (12% of 34092)
    - service_fee_cents = 682
    - tax_cents = 0 in this example
@@ -344,7 +344,7 @@ Bookings service creates booking with:
 Payment initiated → confirmed → wallet entries created
    ↓
 Host wallet pending: +$300.01
-Guest receives invoice with: property $340.92 + service fee $6.82 + taxes if applicable = total
+Guest receives invoice with: stay subtotal $340.92 + service fee $6.82 + taxes if applicable = total
 NO mention of commission anywhere on guest's invoice.
 ```
 
@@ -415,7 +415,7 @@ Decision logged in audit_logs + availability_reduction_events
 - PostgreSQL primary + read replicas
 - Extract chat into separate service
 - Extract payments into separate service
-- **Possibly extract real-estate and hospitality search into separate services** (they have different query patterns)
+- **Possibly extract vacation-rentals and hospitality search into separate services** (they have different query patterns)
 - Consider managed PostgreSQL
 
 **Phase 4 (100k+ users):** Re-evaluate.
@@ -434,7 +434,7 @@ Decision logged in audit_logs + availability_reduction_events
 | Kubernetes | Massive overkill for one VPS |
 | AWS/GCP/Azure | Expensive, sanctions complications, Hostinger VPS sufficient |
 | React Native | Flutter has better RTL + UI consistency |
-| **NEW v2**: Single `properties` table for both houses and hotels | Different query patterns, different lifecycle, different inventory model |
+| **NEW v2**: Single `vacation_rentals` table merged with `hotels` | Different query patterns, different lifecycle, different inventory model — keep domains separate |
 | **NEW v2**: External price intelligence service | Can build with our own data; one less dependency |
 
 ---

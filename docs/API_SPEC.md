@@ -1,7 +1,7 @@
 # 📡 API_SPEC — Suknaa REST API (v2)
 
 > Base URL: `https://api.suknaa.com/v1`
-> **v2 changes**: Separated `/properties` (Real Estate) and `/hotels` (Hospitality). Added endpoints for: pricing tiers, commission passthrough, price intelligence, anti-circumvention, sharing wishlists, comparisons, price alerts, nearby attractions, host profiles.
+> **v2 changes**: Vacation rentals use `/me/vacation-rentals` and `/vacation-rentals/:id` (not a general “real estate” API). Hospitality uses `/me/hotels` and `/hotels/:id`. See [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md). Added endpoints for: pricing tiers, commission passthrough, price intelligence, anti-circumvention, sharing wishlists, comparisons, price alerts, nearby attractions, host profiles.
 
 ---
 
@@ -121,14 +121,14 @@ Returns profile with `is_guest`, `is_host`, `is_admin` flags.
 **v2 expanded**:
 ```json
 {
-  "intended_host_category": "real_estate",  // or "hospitality"
-  "intended_host_subtype": "individual",     // or "real_estate_office", "hotel_company"
+  "intended_host_category": "vacation_rentals",  // or "hospitality" (DB may still store legacy `real_estate` until M2b migration)
+  "intended_host_subtype": "individual",     // or "vacation_rental_operator" (replaces legacy `real_estate_office`), "hotel_company"
   "id_document_type": "national_id",
   "id_front_url": "minio_key",
   "id_back_url": "minio_key",
   "selfie_url": "minio_key",
-  "ownership_proof_url": "minio_key",         // for individual real estate
-  "company_registration_url": "minio_key",    // for offices/hotels
+  "ownership_proof_url": "minio_key",         // for individual vacation rental hosts
+  "company_registration_url": "minio_key",    // for operators / hotels
   "tax_certificate_url": "minio_key",
   "authorization_letter_url": "minio_key",
   "hotel_license_url": "minio_key"            // for hospitality only
@@ -146,8 +146,8 @@ Returns profile with `is_guest`, `is_host`, `is_admin` flags.
 **v2**: User chooses category + subtype.
 ```json
 {
-  "host_category": "real_estate",   // or "hospitality"
-  "host_subtype": "individual",     // or "real_estate_office", "hotel_company"
+  "host_category": "vacation_rentals",   // or "hospitality"
+  "host_subtype": "individual",     // or "vacation_rental_operator", "hotel_company"
   "display_name": "محمد أحمد",       // or company name
   "company_name": null,
   "company_registration": null,
@@ -165,8 +165,8 @@ Returns profile with `is_guest`, `is_host`, `is_admin` flags.
 
 ## 6. Reference Data (Public, Cached)
 
-### `GET /reference/property-types`
-Returns enum values for `re_property_type` with translations.
+### `GET /reference/vacation-rental-types`
+Returns enum values for `vacation_rental_type` (`apartment`, `house`, `villa`, `farm`, `chalet`, `cabin`, `studio`) with translations.
 
 ### `GET /reference/hotel-types`
 Returns enum values for `hotel_type`.
@@ -179,16 +179,16 @@ Returns enum values for `space_type` (bedroom, bathroom, kitchen, etc.).
 
 ---
 
-## 7. Properties — Real Estate (Host Endpoints)
+## 7. Vacation Rentals — Host Endpoints
 
-### `GET /me/properties`
-List own properties.
+### `GET /me/vacation-rentals`
+List own vacation rentals.
 
-### `POST /me/properties`
+### `POST /me/vacation-rentals`
 **v2 expanded**:
 ```json
 {
-  "property_type": "house",
+  "vacation_rental_type": "house",
   "title_ar": "...",
   "title_en": "...",
   "description_ar": "...",
@@ -217,21 +217,21 @@ List own properties.
 }
 ```
 
-### `GET /me/properties/:id`
-### `PATCH /me/properties/:id`
-### `POST /me/properties/:id/submit-for-review`
-### `POST /me/properties/:id/pause`
-### `POST /me/properties/:id/resume`
-### `DELETE /me/properties/:id`
+### `GET /me/vacation-rentals/:id`
+### `PATCH /me/vacation-rentals/:id`
+### `POST /me/vacation-rentals/:id/submit-for-review`
+### `POST /me/vacation-rentals/:id/pause`
+### `POST /me/vacation-rentals/:id/resume`
+### `DELETE /me/vacation-rentals/:id`
 
-### `PATCH /me/properties/:id/commission-passthrough` — NEW v2
+### `PATCH /me/vacation-rentals/:id/commission-passthrough` — NEW v2
 Toggles the commission passthrough setting.
 ```json
 { "commission_passthrough": true }
 ```
-Returns 422 if the property has active confirmed bookings.
+Returns 422 if the vacation rental has active confirmed bookings.
 
-### `POST /me/properties/:id/spaces` — NEW v2
+### `POST /me/vacation-rentals/:id/spaces` — NEW v2
 Add a space (bedroom, bathroom, kitchen, etc.).
 ```json
 {
@@ -246,24 +246,24 @@ Add a space (bedroom, bathroom, kitchen, etc.).
 }
 ```
 
-### `GET /me/properties/:id/spaces`
-### `PATCH /me/properties/:id/spaces/:space_id`
-### `DELETE /me/properties/:id/spaces/:space_id`
-### `POST /me/properties/:id/spaces/reorder` — body: `{ "ordered_ids": [...] }`
+### `GET /me/vacation-rentals/:id/spaces`
+### `PATCH /me/vacation-rentals/:id/spaces/:space_id`
+### `DELETE /me/vacation-rentals/:id/spaces/:space_id`
+### `POST /me/vacation-rentals/:id/spaces/reorder` — body: `{ "ordered_ids": [...] }`
 
-### `POST /me/properties/:id/spaces/:space_id/images`
+### `POST /me/vacation-rentals/:id/spaces/:space_id/images`
 Multipart upload (per-space images).
 
-### `DELETE /me/properties/:id/spaces/:space_id/images/:image_id`
+### `DELETE /me/vacation-rentals/:id/spaces/:space_id/images/:image_id`
 
-### `POST /me/properties/:id/images`
+### `POST /me/vacation-rentals/:id/images`
 Property-wide hero/cover gallery.
 
-### `DELETE /me/properties/:id/images/:image_id`
-### `PATCH /me/properties/:id/images/reorder`
+### `DELETE /me/vacation-rentals/:id/images/:image_id`
+### `PATCH /me/vacation-rentals/:id/images/reorder`
 
-### `GET /me/properties/:id/availability`
-### `POST /me/properties/:id/availability/block`
+### `GET /me/vacation-rentals/:id/availability`
+### `POST /me/vacation-rentals/:id/availability/block`
 **v2 expanded** (records reduction event for risk scoring):
 ```json
 {
@@ -274,7 +274,7 @@ Property-wide hero/cover gallery.
 }
 ```
 
-### `POST /me/properties/:id/pricing-overrides`
+### `POST /me/vacation-rentals/:id/pricing-overrides`
 **v2 expanded**:
 ```json
 {
@@ -289,14 +289,14 @@ Property-wide hero/cover gallery.
 }
 ```
 
-### `GET /me/properties/:id/pricing-overrides`
-### `DELETE /me/properties/:id/pricing-overrides/:override_id`
+### `GET /me/vacation-rentals/:id/pricing-overrides`
+### `DELETE /me/vacation-rentals/:id/pricing-overrides/:override_id`
 
-### `GET /me/properties/:id/pricing-suggestions` — NEW v2
+### `GET /me/vacation-rentals/:id/pricing-suggestions` — NEW v2
 Returns active suggestions for this property.
 
-### `POST /me/properties/:id/pricing-suggestions/:sug_id/accept`
-### `POST /me/properties/:id/pricing-suggestions/:sug_id/dismiss`
+### `POST /me/vacation-rentals/:id/pricing-suggestions/:sug_id/accept`
+### `POST /me/vacation-rentals/:id/pricing-suggestions/:sug_id/dismiss`
 
 ---
 
@@ -417,10 +417,10 @@ Block a specific unit for dates (with reason).
 
 ```
 ?q=damascus
-&kind=all                      // 'all' (default), 'real_estate', 'hospitality'
+&kind=all                      // 'all' (default), 'vacation_rentals', 'hospitality'
 &city=Damascus
 &governorate=دمشق
-&type=house,apartment           // for real_estate
+&type=house,apartment           // for vacation_rentals (see vacation_rental_type enum)
 &hotel_type=hotel,resort        // for hospitality
 &star_rating=4,5                // hospitality only
 &check_in=2026-06-01
@@ -435,7 +435,7 @@ Block a specific unit for dates (with reason).
 &cursor=...
 ```
 
-Each result item has a `kind` field: `"real_estate"` or `"hospitality"`.
+Each result item has a `kind` field: `"vacation_rentals"` or `"hospitality"`.
 
 ### `GET /search/map`
 Lightweight: returns coordinates + price + cover only, optimized for map display.
@@ -445,15 +445,15 @@ Type-ahead for cities, neighborhoods, popular hotels.
 
 ---
 
-## 10. Public Property Endpoints
+## 10. Public Vacation Rental Endpoints
 
-### `GET /properties/:id`
+### `GET /vacation-rentals/:id`
 Full detail. Includes embedded `spaces` (with images/amenities), `host` summary, `reviews_summary`.
 
-### `GET /properties/:id/availability`
+### `GET /vacation-rentals/:id/availability`
 Date ranges blocked for next 12 months.
 
-### `GET /properties/:id/quote`
+### `GET /vacation-rentals/:id/quote`
 **v2 expanded** (returns full breakdown):
 ```
 ?check_in=2026-06-01&check_out=2026-06-05&adults=2&children=0
@@ -462,7 +462,7 @@ Response:
 ```json
 {
   "data": {
-    "property_id": "...",
+    "vacation_rental_id": "...",
     "check_in": "2026-06-01",
     "check_out": "2026-06-05",
     "nights": 4,
@@ -472,7 +472,7 @@ Response:
     "nights_subtotal_cents": 16800,
     "cleaning_fee_cents": 500,
     "discount_cents": 0,
-    "property_subtotal_cents": 17300,
+    "listing_subtotal_cents": 17300,
     "service_fee_cents": 346,
     "service_fee_basis_points": 200,
     "guest_total_cents": 17646,
@@ -482,10 +482,10 @@ Response:
 ```
 Note: NO commission shown to public.
 
-### `GET /properties/:id/reviews`
-Paginated reviews (property + host ratings shown separately).
+### `GET /vacation-rentals/:id/reviews`
+Paginated reviews (listing + host ratings shown separately).
 
-### `GET /properties/:id/nearby` — NEW v2
+### `GET /vacation-rentals/:id/nearby` — NEW v2
 Returns nearby attractions within 2km, with distance.
 ```
 ?radius_meters=2000&categories=restaurant,mosque,park
@@ -541,7 +541,7 @@ Response:
 
 ### `GET /hotels/:id/reviews`
 
-### `GET /hotels/:id/nearby` — same as properties
+### `GET /hotels/:id/nearby` — same as vacation-rentals
 
 ### `GET /hotels/:id/upgrades` — NEW v2
 For a given selected room type and dates, returns upgrade options.
@@ -574,7 +574,7 @@ Public profile of a host.
   "data": {
     "id": "...",
     "display_name": "محمد أحمد",
-    "host_category": "real_estate",
+    "host_category": "vacation_rentals",
     "host_subtype": "individual",
     "is_verified": true,
     "verified_at": "...",
@@ -590,10 +590,10 @@ Public profile of a host.
 ```
 
 ### `GET /hosts/:id/listings`
-Returns all properties + hotels of this host.
+Returns all vacation rentals + hotels of this host.
 
 ### `GET /hosts/:id/reviews`
-Reviews of the host (separate from property reviews).
+Reviews of the host (separate from listing reviews).
 
 ---
 
@@ -602,10 +602,10 @@ Reviews of the host (separate from property reviews).
 ### `POST /bookings`
 **v2 polymorphic**:
 ```json
-// For real_estate
+// For vacation_rentals
 {
-  "kind": "real_estate",
-  "property_id": "...",
+  "kind": "vacation_rentals",
+  "vacation_rental_id": "...",
   "check_in": "2026-06-01",
   "check_out": "2026-06-05",
   "adults": 2,
@@ -698,8 +698,8 @@ Backend creates two `reviews` rows: one with `review_target='property'` (or `'ho
 **v2 polymorphic**:
 ```json
 {
-  "kind": "real_estate",
-  "property_id": "..."          // OR hotel_id, OR room_type_id
+  "kind": "vacation_rentals",
+  "vacation_rental_id": "..."          // OR hotel_id, OR room_type_id
 }
 ```
 
@@ -727,7 +727,7 @@ Invite a user to collaborate.
 ### `POST /me/comparisons`
 Add an item to comparison.
 ```json
-{ "kind": "real_estate", "id": "..." }
+{ "kind": "vacation_rentals", "id": "..." }
 ```
 
 ### `GET /me/comparisons/current`
@@ -744,8 +744,8 @@ Clear all.
 ### `POST /me/price-alerts`
 ```json
 {
-  "kind": "real_estate",
-  "property_id": "...",
+  "kind": "vacation_rentals",
+  "vacation_rental_id": "...",
   "alert_when": "price_below",
   "target_price_cents": 4000
 }
@@ -770,7 +770,7 @@ Applies the suggested price (updates the property/room_type).
 ### `GET /me/market-insights`
 Aggregate insights about the host's market areas.
 ```
-?city=Damascus&kind=real_estate
+?city=Damascus&kind=vacation_rentals
 ```
 
 ---
@@ -783,9 +783,9 @@ Aggregate insights about the host's market areas.
 - `POST /admin/kyc/:id/reject`
 
 ### Listings
-- `GET /admin/properties/queue`
-- `POST /admin/properties/:id/approve`
-- `POST /admin/properties/:id/reject`
+- `GET /admin/vacation-rentals/queue`
+- `POST /admin/vacation-rentals/:id/approve`
+- `POST /admin/vacation-rentals/:id/reject`
 - `GET /admin/hotels/queue` — NEW v2
 - `POST /admin/hotels/:id/approve` — NEW v2
 - `POST /admin/hotels/:id/reject` — NEW v2
@@ -870,7 +870,7 @@ Financial values are rules, not fixed constants. Commission/service/tax/discount
 | `OTP_EXPIRED`, `OTP_INVALID`, `OTP_MAX_ATTEMPTS` | OTP issues |
 | `2FA_REQUIRED` | Login needs 2FA |
 | `KYC_REQUIRED`, `KYC_PENDING` | Host action requires KYC |
-| `WRONG_HOST_CATEGORY` | NEW v2: trying to use a hotel endpoint as a real-estate host |
+| `WRONG_HOST_CATEGORY` | NEW v2: category mismatch (e.g. vacation rental host calling a hotel-only endpoint, or vice versa) |
 | `PROPERTY_NOT_AVAILABLE`, `ROOM_TYPE_NOT_AVAILABLE` | Dates booked |
 | `INSUFFICIENT_INVENTORY` | NEW v2: requested rooms_count > available_units |
 | `COMMISSION_PASSTHROUGH_LOCKED` | NEW v2: cannot toggle while active bookings exist |

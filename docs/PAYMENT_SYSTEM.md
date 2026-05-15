@@ -148,7 +148,7 @@ For each night of the stay:
 
 ## 3. Money Flow Models (Same as v1)
 
-### 3.1. Escrow (Real Estate / P2P)
+### 3.1. Escrow (Vacation rentals / whole-unit P2P)
 ```
 Guest Pays → Suknaa Escrow → Host Wallet (pending)
      ↓ 24h after check-in
@@ -296,13 +296,13 @@ Total refunded to guest: $0
 
 | Bucket | Description |
 |---|---|
-| **Pending** | Confirmed bookings, money held (Real Estate escrow) |
+| **Pending** | Confirmed bookings, money held (vacation-rental / whole-unit escrow) |
 | **Available** | Withdrawable |
 
 ### 7.2. State Transitions
 
 ```
-[Real Estate / Escrow]
+[Vacation rentals / Escrow]
   Guest pays $115.91
     → Suknaa keeps $13.64 commission + $2.27 service fee = $15.91
     → Host wallet: +$100.00 PENDING

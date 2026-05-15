@@ -24,8 +24,9 @@ Bilingual (Arabic RTL + English LTR). Mohammad is the developer; he is a beginne
 - `docs/BUILD_PLAN.md` — phased roadmap (11 phases)
 - `docs/PHASE_3_VACATION_RENTALS_PLAN.md` — active Phase 3 plan and naming decision
 - `docs/DESIGN_SYSTEM.md` — colors, typography, components, RTL rules, tab navigation
-- `docs/DATABASE_SCHEMA.md` — tables grouped by section A (shared), B (legacy real estate/vacation rentals), C (hospitality), D (bookings), E (payments), F (reviews), G (price intelligence), H (anti-circumvention), I (guest features), J (attractions)
-- `docs/API_SPEC.md` — endpoints; Phase 3 M1 must align legacy `/properties/*` naming with Vacation Rentals terminology before implementation
+- `docs/PHASE_3_M1_NAMING_PLAN.md` — Phase 3 M1 naming contracts (`vacation_rentals`, `vacation_rental_operator`, M2 vs M2b)
+- `docs/DATABASE_SCHEMA.md` — tables by section A (shared), **B (B0 = target vacation rentals; B1+ = legacy SQL inventory — do not implement as canonical)**, C (hospitality), D (bookings), …
+- `docs/API_SPEC.md` — endpoints; vacation rentals use `/me/vacation-rentals` and `/vacation-rentals/*` (legacy `/properties/*` = pre-M2/M2b inventory only — do not use for new Phase 3 code)
 - `docs/PAYMENT_SYSTEM.md` — money flow, escrow, withdrawals, **commission passthrough**
 - `docs/SECURITY.md` — auth, KYC, fraud prevention, **anti-circumvention**
 - `docs/DEPLOYMENT.md` — VPS, Docker, CI/CD
@@ -42,13 +43,13 @@ These two systems share infrastructure but have **fundamentally different data m
 
 | Aspect | Vacation Rentals / Holiday Homes | Hospitality |
 |---|---|---|
-| Listing unit | One `properties` row | One `hotels` row + many `room_types` |
-| Photos | Per-property + per-space (bedroom/bathroom/kitchen) | Per-hotel (categorized) + per-room-type |
-| Availability | Per-property (the whole property is booked) | Per-room-unit (specific physical room) |
-| Booking | Books the whole property | Books one or more units of a room type |
-| Pricing | Per-property (4 tiers + seasonal) | Per-room-type (4 tiers + seasonal) |
+| Listing unit | One `vacation_rentals` row | One `hotels` row + many `room_types` |
+| Photos | Per listing + per-space (bedroom/bathroom/kitchen) | Per-hotel (categorized) + per-room-type |
+| Availability | Per listing (the whole unit is booked) | Per-room-unit (specific physical room) |
+| Booking | Books the whole vacation rental | Books one or more units of a room type |
+| Pricing | Per listing (4 tiers + seasonal) | Per-room-type (4 tiers + seasonal) |
 | Address | Approximate by default | Always precise |
-| Host type | Individual or vacation rental office/operator | Hotel Company only |
+| Host type | Individual or **`vacation_rental_operator`** (مشغّل بيوت عطلات) | Hotel company only |
 
 **When writing code, always ask: "Does this apply to Vacation Rentals, Hospitality, or both?"**
 - Both (auth, payments, chat, reviews) → put in shared module
@@ -103,7 +104,7 @@ These two systems share infrastructure but have **fundamentally different data m
 ### General
 - **TypeScript strict mode**. Fix all errors; never use `any` to silence them.
 - **Named exports** (except Next.js pages/layouts).
-- File names: **kebab-case** (`user-service.ts`), **PascalCase** for React components (`PropertyCard.tsx`).
+- File names: **kebab-case** (`user-service.ts`), **PascalCase** for React components (`VacationRentalCard.tsx` — `PropertyCard` and similar are **legacy pre-M2/M2b Phase 1 names**; do not use `Property*` as the canonical vacation-rentals component prefix in new Phase 3 code).
 - Variables: **camelCase**. Types/Classes: **PascalCase**. Constants: **UPPER_SNAKE_CASE**.
 - Booleans start with `is`, `has`, `can`, `should`.
 
@@ -128,7 +129,7 @@ These two systems share infrastructure but have **fundamentally different data m
 
 ### Components
 - **Server Components by default.** Add `'use client'` only when needed.
-- Co-locate component files: `PropertyCard/index.tsx`, etc.
+- Co-locate component files (e.g. `VacationRentalCard/index.tsx`). **Legacy pre-M2/M2b:** `PropertyCard/index.tsx` exists in Phase 1 mocks only — not normative for new Phase 3 work.
 - Props typed with explicit interfaces named `<ComponentName>Props`.
 - Use `cn()` utility for conditional classes.
 
@@ -160,9 +161,9 @@ Schemas live in `packages/types/` and are reused by the backend.
 - Dates: `date-fns` with active locale.
 
 ### Tab Navigation (CRITICAL — UI pattern)
-The persistent header shows three tabs: `[الكل] [بيوت عطلات] [فنادق]`.
+The persistent header shows three tabs: `[الكل] [بيوت العطلات] [فنادق]`.
 - Default tab: "الكل" (All).
-- Tab state currently lives in URL (`?tab=all|real_estate|hospitality`); Phase 3 M1 should decide whether to rename this value to `vacation_rentals`.
+- Tab state: canonical URL values `?tab=all|vacation_rentals|hospitality` ([PHASE_3_M1_NAMING_PLAN.md](docs/PHASE_3_M1_NAMING_PLAN.md)). Phase 1 code may still use `real_estate` until M2b frontend migration.
 - Switching tab updates filters, search results, and map markers.
 - Components must check current tab and render appropriate UI variants.
 
@@ -219,7 +220,7 @@ apps/api/src/modules/
 - Always apply commission via `CommissionService.calculate()` — never inline.
 - **Commission passthrough math is non-trivial — always use the central pricing engine in `packages/pricing/`.**
 - Wallet mutations always go through `WalletService` and emit a `wallet_transactions` row.
-- **Invoice given to guest must NEVER show commission.** It shows: property_subtotal + service_fee = total.
+- **Invoice given to guest must NEVER show commission.** It shows: **listing_subtotal** + service_fee = total.
 
 ### Database
 - All access via **Prisma**. Raw SQL only for PostGIS, always parameterized.
@@ -229,7 +230,7 @@ apps/api/src/modules/
 - Use **advisory locks** for race-prone operations like booking creation (especially for hotels — `pg_advisory_xact_lock(hotel_id, room_type_id)`).
 
 ### Polymorphic Bookings (CRITICAL — new in v2)
-The `bookings` table is polymorphic: it has either `property_id` (for RE) or `(hotel_id, room_type_id)` (for Hospitality). When writing booking code:
+The `bookings` table is polymorphic: when `booking.kind === 'vacation_rentals'`, the stay side uses **`vacation_rental_id`** (target FK to `vacation_rentals`); when `kind === 'hospitality'`, use `(hotel_id, room_type_id)`. **Legacy pre-M2b inventory** may still reference `property_id` or `Property` in older code or docs — **do not use those names in new Phase 3 work.** When writing booking code:
 - Always check `booking.kind` first
 - Branch logic accordingly
 - Never assume one type
@@ -277,7 +278,7 @@ The `bookings` table is polymorphic: it has either `property_id` (for RE) or `(h
   - Commission calculator (both absorb + passthrough modes — gross-up math)
   - Service fee calculator
   - Refund calculator (3 policies)
-  - Availability conflict detection (RE + Hospitality)
+  - Availability conflict detection (**Vacation rentals** + Hospitality)
   - Hotel inventory engine (race conditions)
   - Risk score computation
 - Write integration tests for **critical flows** (signup, booking, payment).
@@ -318,15 +319,15 @@ const result = calculateBookingPrice({ ... });
 // ❌ Don't (only checks at controller)
 @Get(':id')
 @UseGuards(JwtAuthGuard)
-async getProperty(@Param('id') id: string) { ... }
+async getVacationRental(@Param('id') id: string) { ... }
 
 // ✅ Do (also check at service)
-async getPropertyForUser(propertyId: string, userId: string) {
-  const property = await prisma.property.findUniqueOrThrow({ where: { id: propertyId } });
-  if (property.hostId !== userId) {
-    throw new ForbiddenException({ code: 'NOT_PROPERTY_OWNER' });
+async getVacationRentalForUser(vacationRentalId: string, userId: string) {
+  const vacationRental = await prisma.vacationRental.findUniqueOrThrow({ where: { id: vacationRentalId } });
+  if (vacationRental.hostId !== userId) {
+    throw new ForbiddenException({ code: 'NOT_VACATION_RENTAL_OWNER' });
   }
-  return property;
+  return vacationRental;
 }
 ```
 
@@ -346,9 +347,11 @@ async createHotel(dto: CreateHotelDto, userId: string) {
 ```typescript
 async getBookingDetails(bookingId: string) {
   const booking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
-  if (booking.kind === 'real_estate') {
-    // Legacy enum value until Phase 3 M1 finalizes naming.
-    return { ...booking, property: await prisma.property.findUnique({ where: { id: booking.propertyId! } }) };
+  if (booking.kind === 'vacation_rentals') {
+    return {
+      ...booking,
+      vacationRental: await prisma.vacationRental.findUnique({ where: { id: booking.vacationRentalId! } }),
+    };
   } else {
     return {
       ...booking,
@@ -358,11 +361,12 @@ async getBookingDetails(bookingId: string) {
   }
 }
 ```
+*(Until Prisma models exist, generated client may still expose legacy `propertyId` — **legacy pre-M2/M2b inventory**; new code must use `vacationRentalId` / `VacationRental`.)*
 
 ### Form validation (shared schema)
 ```typescript
-// packages/types/src/schemas/property.ts
-export const createPropertySchema = z.object({
+// Target: packages/types/src/schemas/vacation-rental.ts (legacy filename `property.ts` = pre-M2/M2b inventory only)
+export const createVacationRentalSchema = z.object({
   titleAr: z.string().min(5).max(200),
   basePriceCents: z.bigint().positive(),
   // ...
@@ -443,10 +447,10 @@ When generating code, ensure it matches the current phase scope. Don't build Pha
 4. **Pricing has 4 tiers** — base, weekly, monthly, seasonal overrides.
 5. **Hotel inventory is per-unit** — not just a counter.
 6. **Anti-circumvention requires reason** — every availability reduction logs an event.
-7. **Dual reviews** — separate ratings for property/hotel AND host.
+7. **Dual reviews** — separate ratings for the stay listing (vacation rental or hotel) **and** host.
 8. **Map markers are color-coded** — by category, not arbitrary.
 9. **Login buttons are dual** — "as Guest" and "as Host" with same account.
-10. **Tabs are persistent** — `[الكل] [عقارات] [فنادق]` on every public page.
+10. **Tabs are persistent** — `[الكل] [بيوت العطلات] [فنادق]` on every public page (target copy; legacy UI may differ until wired).
 
 ---
 

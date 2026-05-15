@@ -18,11 +18,11 @@
 ## 1. حالة المشروع الحالية
 
 - **اسم المشروع**: Suknaa (سُكنى) — suknaa.com
-- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة بالكامل** (M1–M6: خطوط محلية + Helmet/`CORS_ORIGINS` + Redis auth RL + اختبارات auth مركّزة + بوابة **`verify:phase2.5`** + إغلاق توثيق M6). **Phase 3** — نظام **بيوت العطلات / Vacation Rentals** end-to-end **هي المرحلة النشطة التالية** للتنفيذ؛ **M0 مكتمل** بعد نجاح `verify:phase2.5` بتاريخ 2026-05-13.
+- **المرحلة الحالية**: Phase 2 مغلقة؛ **Phase 2.5 مكتملة بالكامل**. **Phase 3** — نظام **بيوت العطلات / Vacation Rentals** — **M1 naming & contracts موثّق** في `docs/PHASE_3_M1_NAMING_PLAN.md` (2026-05-13)؛ التنفيذ البرمجي والـ migrations تبدأ من M2/M2b.
 - **آخر مرحلة مكتملة (واجهة)**: Phase 1 + 1.5 — UI skeleton + mock. **Phase 2**: M1→M10 مكتملة.
 - **آخر تحديث للذاكرة**: 2026-05-13 (جلسة — Phase 3 planning + Vacation Rentals naming)
 - **آخر AI عمل على المشروع**: Cursor
-- **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات). لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
+- **مرجع الوثائق المعتمد**: `/docs/*.md` فقط (v2 الكاملة + backlog الملاحظات)، و**`docs/PHASE_3_M1_NAMING_PLAN.md`** لتسمية وعقود بيوت العطلات (`vacation_rentals`) قبل M2. لا توجد نسخة v1 بعد الآن — تم حذفها بشكل نهائي.
 - **مرجع قواعد الكود**: `.cursor/rules/suknaa.mdc` (يُقرأ تلقائياً)
 
 ---
@@ -31,8 +31,8 @@
 
 ### 2.1 المعمارية
 - **نظامان منفصلان كلياً**: Vacation Rentals / بيوت العطلات (P2P، شبيه بـ Airbnb) + Hospitality (B2B، شبيه بـ Booking.com)
-- جداول DB منفصلة لكل نظام (`properties`/`property_spaces`/`property_availability_blocks` ضد `hotels`/`room_types`/`room_units`/`room_unit_availability_blocks`)
-- modules منفصلة في الباك‌اند: `apps/api/src/modules/vacation-rentals/` و `apps/api/src/modules/hospitality/` للمرحلة الجديدة؛ أي اسم legacy مثل `real_estate` يُراجع ضمن Phase 3 M1.
+- جداول DB منفصلة لكل نظام (المستهدف: `vacation_rentals`/`vacation_rental_*` ضد `hotels`/`room_types`/`room_units`/`room_unit_availability_blocks` — الوثائق القديمة قد تذكر `properties` حتى تطبيق M2)
+- modules منفصلة في الباك‌اند: `apps/api/src/modules/vacation-rentals/` و `apps/api/src/modules/hospitality/`؛ **`real_estate` ليس تسمية مستهدفة** — قائمة الترحيل في `docs/PHASE_3_M1_NAMING_PLAN.md` (M2b).
 - `bookings` polymorphic بـ discriminator (`booking_kind` enum) و CHECK constraint
 - Modular monolith، **ليس** microservices
 - **Stack**: Next.js 16 (App Router) + NestJS 10 + PostgreSQL 16 + PostGIS + Redis 7 + MinIO + Flutter (Phase 10)
@@ -61,7 +61,7 @@
 - ممكن نعمل عروض مثل 0% عمولة لأول 5 حجوزات، أو عمولة خاصة لفندق/شركة، أو خصم ضيف محدد، بشرط usage limits + audit logs.
 
 ### 2.3 الواجهة
-- **شريط tabs دائم على كل صفحة عامة**: `[الكل] [عقارات] [فنادق]`
+- **شريط tabs دائم على كل صفحة عامة** (النسخة المستهدفة للمنتج): `[الكل] [بيوت العطلات] [فنادق]` — قيمة URL المستهدفة `?tab=vacation_rentals` (قد يبقى الكود الحالي `عقارات` / `real_estate` مؤقتاً حتى M2b؛ راجع `docs/PHASE_3_M1_NAMING_PLAN.md`).
 - "الكل" هو الافتراضي
 - **زرّان منفصلان لتسجيل الدخول**: "دخول كزبون" + "دخول كمؤجر"
 - نفس الحساب يقدر يكون الاثنين (`is_guest` و `is_host` flags مستقلة)
@@ -79,8 +79,8 @@
 ### 2.4 الأمان
 - **2FA إلزامي للمؤجرين والإدمن** (TOTP مفضّل)
 - **KYC مختلف لكل host_subtype**:
-  - فرد real_estate: ID + سيلفي + إثبات ملكية أو تفويض
-  - مكتب عقاري: ID رئيس المكتب + سجل تجاري + tax id + كتاب تفويض
+  - فرد **بيوت عطلات** (`vacation_rentals` في API المستهدف؛ DB قد يعرض `real_estate` حتى M2b): ID + سيلفي + إثبات ملكية أو تفويض
+  - **`vacation_rental_operator`** (مشغّل بيوت عطلات؛ كان `real_estate_office` في DB حتى M2b): ID ممثل معتمد + سجل تجاري + tax id + كتاب تفويض
   - شركة فنادق: كل اللي فوق + رخصة فندق
 - **Anti-circumvention** مع risk scoring (0-100):
   - Tiers: low (0-25) / medium (26-50) / high (51-75) / critical (76-100)
@@ -95,11 +95,11 @@
 - Passwords: argon2id (memory 64MB، iterations 3، parallelism 4)
 - **Phase 2.5 M3 (2026-05-13)**: حدّ إضافي عبر Redis على `login` / `signup` / طلب وتأكيد إعادة كلمة المرور / إكمال MFA؛ لا يُخزَّن توكن إعادة التعيين خاماً في مفاتيح Redis؛ يُكمّل حدود OTP الهاتفي الحالية ولا يستبدلها.
 - **الصلاحيات طويلة المدى granular** وليست roles جامدة فقط. flags الحالية (`is_guest/is_host/is_admin`) مقبولة كبداية Phase 2، لكن الداشبورد/الإدمن/الفنادق تحتاج capabilities لكل مستخدم + templates + overrides + audit.
-- الفنادق والشركات والمكاتب العقارية تحتاج organization/team membership: المالك يضيف موظفين ويعطيهم صلاحيات محددة (حجوزات، رسائل، محاسبة، تسعير، وثائق، إلخ).
+- الفنادق وشركات الضيافة ومشغّلي بيوت العطلات (`vacation_rental_operator`) يحتاجون organization/team membership: المالك يضيف موظفين ويعطيهم صلاحيات محددة (حجوزات، رسائل، محاسبة، تسعير، وثائق، إلخ).
 - صلاحيات مالية عالية الخطورة منفصلة: `commission.override`, `service_fee.override`, `tax_rules.approve`, `tax_rules.override`, `discount_codes.manage`, `wallet.adjust`, `refunds.process`.
 
 ### 2.5 قواعد عامة لا تُكسر
-- **أبداً لا تخلط `properties` و `hotels` في نفس الكود/endpoint**
+- **أبداً لا تخلط `vacation_rentals` و `hotels` في نفس الكود/endpoint** *(الكود الحالي قد يستخدم `properties` كاسم legacy حتى M2 — انظر `PHASE_3_M1_NAMING_PLAN.md`)*
 - **أبداً لا تعرض كلمة "commission" للزبون** في أي مكان (UI، email، PDF، JSON response)
 - **أبداً لا تعمل auto-ban** بناءً على risk score
 - **أبداً لا تخزّن المال كـ float** — دائماً `BIGINT cents`
@@ -191,7 +191,8 @@
 
 ### Phase 3 — Vacation Rentals / Holiday Homes System (End-to-End)
 - **نشطة تالياً للتنفيذ** — M0 مكتمل: `npx pnpm@9.15.4 verify:phase2.5` نجح بتاريخ 2026-05-13 (web lint/build، api lint/build، Prisma validate، api tests 11/11).
-- المرجع التفصيلي: `docs/PHASE_3_VACATION_RENTALS_PLAN.md`. الاسم المنتج الصحيح: **بيوت العطلات / Vacation Rentals** وليس "عقارات" أو "Real Estate" كاسم واجهة أو نطاق جديد.
+- [x] **M1 — Domain naming & contracts (وثائق فقط)** ✓ 2026-05-13: `docs/PHASE_3_M1_NAMING_PLAN.md`؛ تحديث `PROJECT` / `ARCHITECTURE` / `API_SPEC` / `DATABASE_SCHEMA` / `SECURITY` / `BUILD_PLAN` / `PHASE_3_VACATION_RENTALS_PLAN`؛ `ai_memory` + `.cursor/rules/suknaa.mdc` للتسميات المستهدفة (`vacation_rentals`، بيوت العطلات). لا migrations في M1.
+- المرجع التفصيلي للمرحلة: `docs/PHASE_3_VACATION_RENTALS_PLAN.md` + عقد التسمية: **`docs/PHASE_3_M1_NAMING_PLAN.md`**. الاسم المنتج الصحيح: **بيوت العطلات / Vacation Rentals** وليس "عقارات" أو "Real Estate" كاسم واجهة أو نطاق جديد.
 
 ### Phase 4 — Hospitality System (End-to-End)
 - لم يبدأ بعد
@@ -1039,14 +1040,14 @@ apps/web/
   - `lib/tab.ts` يحوي `parseTab`, `TAB_VALUES`, `TAB_LABELS`, `DEFAULT_TAB` (مرجع موحَّد).
   - `Navbar`, `FeaturedListings`, `SearchTabs` كلهم يقرؤون/يكتبون من URL.
   - الـ Navbar مُلَفّ بـ `<Suspense>` في الـ layout (Next.js 16 يتطلب ذلك مع `useSearchParams`).
-- `FeaturedListings` يفلتر حسب الـ tab: `all` يعرض الكل، `real_estate` يخفي الفنادق، `hospitality` يخفي بيوت العطلات. ملاحظة Phase 3 M1: قيمة `real_estate` legacy وقد تُعاد تسميتها.
+- `FeaturedListings` يفلتر حسب الـ tab: `all` يعرض الكل، `vacation_rentals` يخفي الفنادق (الكود الحالي قد يستخدم `real_estate` مؤقتاً)، `hospitality` يخفي بيوت العطلات. المستهدف: `docs/PHASE_3_M1_NAMING_PLAN.md`.
 
 ### 9.2 — صفحة `/become-a-host`
 - 8 أقسام كاملة وفق UI_UX_VISION §4: HostHero (90vh + gradient + CTAs) → LiveNumbersStrip (يُخفى إذا فاضي) → HostBenefits (3 columns) → HowItWorks (4 steps + خط نقطي بين الكروت) → **EarningsCalculator** (تفاعلي، يحسب: سعر/ليلة مقترح × occupancy × (1 − commission)) → HostTestimonials (carousel) → HostFAQ (`<details>` بدلاً من مكتبة accordion — أبسط وأخف) → HostFinalCTA (gradient banner).
 - Mock data في `data/host-stats.ts` (فاضي الآن)، `data/host-testimonials.ts`، `data/host-faq.ts`، `data/earnings-rates.ts` (مدن + أنواع عقارات + commission bps).
 
 ### 9.3 — صفحة `/search` (Server Component)
-- `lib/search-utils.ts`: pure functions `parseSearchParams`, `filterProperties`, `filterHotels`, `sortProperties`, `sortHotels`, `runSearch`. **مفصول كلياً** بين الـ RE والـ Hospitality — لا abstraction موحَّدة.
+- `lib/search-utils.ts`: pure functions `parseSearchParams`, `filterProperties`, `filterHotels`, `sortProperties`, `sortHotels`, `runSearch`. **مفصول كلياً** بين **بيوت العطلات (Vacation Rentals)** والـ Hospitality — لا abstraction موحَّدة. *(أسماء الدوال `*Properties*` = legacy Phase 1 فقط — المستهدف `vacation_rentals` / `vacationRental` بعد M2/M2b.)*
 - مكونات: `SearchHeader` (sticky search bar + tabs) + `SearchFilters` (Client، tab-aware: يخفي filters غير المناسبة) + `SearchSortBar` + `SearchEmptyState` + `PropertyResultCard` + `HotelResultCard` + `SearchMap` (placeholder بـ pins ملوّنة) + `MapToggleButton` (sticky في الأسفل).
 - جميع الفلاتر تُخزَّن في URL params (city, min_price, max_price, bedrooms, stars, breakfast, property_type[], hotel_type[], amenity[], sort).
 
@@ -1446,7 +1447,7 @@ npm run dev
 - **القرار 1 (النطاق)**: تنفيذ 7 صفحات حرجة فقط (الخيار B) قبل الصفحات الثابتة. السبب: الحصول على tour قابل للعرض على beta hosts/guests بأسرع وقت.
 - **القرار 2 (اللغة)**: AR فقط في Phase 1. `next-intl` + ترجمات EN يُضافان عند بدء الإنجليزية (Phase 2 أو لاحقاً).
 - **القرار 3 (الخريطة)**: placeholder سيستمر خلال Phase 1. MapLibre GL JS الفعلي يُدمج في Phase 3 عند توفر إحداثيات حقيقية لبيوت العطلات.
-- **القرار 4 (الفصل المعماري)**: لا component مشترك بين Property و Hotel detail. مجلدات `property-detail/` و `hotel-detail/` مفصولة. الـ data layer مفصول (`PROPERTIES` array مستقل عن `HOTELS`). الـ search utils تفلتر/تفرز كلاًّ بدالة منفصلة. هذا يعكس قاعدة "أبداً لا تخلط properties و hotels في نفس الكود".
+- **القرار 4 (الفصل المعماري)**: لا component مشترك بين تفاصيل **بيوت العطلات** (مسار Phase 1: `property-detail/`) وتفاصيل الفندق. مجلدات `property-detail/` و `hotel-detail/` مفصولة. الـ data layer مفصول (`PROPERTIES` mock مستقل عن `HOTELS`). الـ search utils تفلتر/تفرز كلاًّ بدالة منفصلة. هذا يعكس قاعدة **أبداً لا تخلط `vacation_rentals` و `hotels` في نفس الكود/endpoint** — أسماء `properties` / `PROPERTIES` أعلاه **legacy pre-M2/M2b** وليست العقد المستهدف.
 - **القرار 5 (الـ pricing display)**: `lib/pricing-display.ts` يحوي `computeGuestBreakdown` يُرجع `{ propertySubtotal, serviceFee, total }` فقط. **لا حقل ولا متغير ولا تعليق يذكر "commission"** في أي مكان يصل الزبون. الـ commission engine الحقيقي سيكون في `packages/pricing/` server-side.
 - **القرار 6 (Auth schemas مشتركة)**: `lib/auth-schemas.ts` (Zod) يبقى في `apps/web/` مؤقتاً. عند بدء Phase 2 (Backend Auth) سيُنقل لـ `packages/types/` ويستخدمه الباك‌اند كـ DTOs (مع class-validator wrapper).
 - **التأثير**: 19 صفحة مولّدة، lint نظيف، build ناجح، جاهز للعرض على staging.
@@ -1568,4 +1569,4 @@ npm run dev
 
 ---
 
-**نهاية الملف. آخر تحديث: 2026-05-13 (Phase 3 planning + Vacation Rentals naming؛ M0 مكتمل).**
+**نهاية الملف. آخر تحديث: 2026-05-13 (Phase 3 M1 naming docs مكتملة؛ M0 مكتمل).**

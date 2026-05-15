@@ -6,11 +6,12 @@
 
 **Phase 2:** closed (M1–M10).  
 **Phase 2.5:** stabilization **complete** (2026-05-13) — see [Phase 2.5 — Stabilization](#phase-25--stabilization-post-phase-2) below.  
-**Phase 3:** **next** — Vacation Rentals / Holiday Homes system (end-to-end), per `docs/BUILD_PLAN.md` and `docs/PHASE_3_VACATION_RENTALS_PLAN.md`.
+**Phase 3:** M0 + M1 **complete** (2026-05-13). Next implementation milestone: **P3 M2**.
 
 **Completed (Phase 2):** M1, M2, M2 cleanup, M3, M4, M5, M6, M7, M8, M9, M10  
+**Completed (Phase 3):** P3 M0, P3 M1
 **In progress:** None  
-**Not started:** Phase 3
+**Not started:** P3 M2 onward
 
 ## Phase 2.5 — Stabilization (post-Phase 2)
 
@@ -35,12 +36,12 @@ When starting **Phase 3**, follow `docs/BUILD_PLAN.md` and `docs/PHASE_3_VACATIO
 
 ## Phase 3 — Vacation Rentals / Holiday Homes
 
-Detailed plan: `docs/PHASE_3_VACATION_RENTALS_PLAN.md`.
+Detailed plan: `docs/PHASE_3_VACATION_RENTALS_PLAN.md`. **Before starting M2**, read the canonical naming contracts in `docs/PHASE_3_M1_NAMING_PLAN.md`.
 
 | Milestone | Status | Summary |
 |---|---:|---|
 | **P3 M0** | Done | Pre-phase health gate passed: `npx pnpm@9.15.4 verify:phase2.5` on 2026-05-13; web lint/build, api lint/build, Prisma validate, and api tests 11/11 passed. |
-| **P3 M1** | Not started | Domain naming and contracts: replace misleading Real Estate terminology with Vacation Rentals / Holiday Homes before schema/API work spreads. |
+| **P3 M1** | Done | Domain naming and contracts (documentation only, 2026-05-13). Canonical output: `docs/PHASE_3_M1_NAMING_PLAN.md` — `vacation_rentals`, `vacation_rental_operator`, M2 vs M2b migration inventory. |
 | **P3 M2** | Not started | Database schema and migration for vacation rentals, spaces, images, amenities, availability, pricing. |
 | **P3 M3** | Not started | Reference data endpoints and seeds. |
 | **P3 M4** | Not started | Host vacation rental CRUD. |

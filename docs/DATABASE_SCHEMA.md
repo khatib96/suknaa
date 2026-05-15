@@ -1,13 +1,13 @@
 # 🗄️ DATABASE_SCHEMA — Suknaa Data Model (v2)
 
 > Complete schema for the PostgreSQL 16 + PostGIS database.
-> **v2 changes**: Real Estate and Hospitality systems are fully separated. Hotels have their own tables (hotels, room_types, room_units). New tables for price intelligence, anti-circumvention, scarcity tracking, wishlists, comparisons, price alerts, and detailed room/space descriptions.
+> **v2 changes**: **Vacation rentals (holiday homes / بيوت العطلات)** and Hospitality systems are fully separated. Hotels have their own tables (`hotels`, `room_types`, `room_units`). New tables for price intelligence, anti-circumvention, scarcity tracking, wishlists, comparisons, price alerts, and detailed space descriptions. **Target table and enum names** (e.g. `vacation_rentals`, `vacation_rental_id`, `booking_kind = 'vacation_rentals'`): [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md). Some SQL fragments below still show legacy symbol names (`properties`, `property_id`, `real_estate`) where the Phase 2 migration has not landed yet — treat them as **pre-migration inventory** to be renamed in M2/M2b, not as long-term naming.
 
 ---
 
 ## Conventions
 
-- Table names: **snake_case, plural** (`users`, `properties`, `bookings`)
+- Table names: **snake_case, plural** (`users`, `vacation_rentals`, `bookings` — legacy docs may still say `properties` until migrations apply)
 - Column names: **snake_case** (`created_at`, `host_id`)
 - Primary keys: `id` of type `UUID` (generated server-side via `uuid_generate_v7()` for time-ordered UUIDs)
 - All tables have `created_at` and `updated_at` timestamps with timezone (`TIMESTAMPTZ`)
@@ -20,7 +20,7 @@
 
 ## SECTION A: SHARED CORE TABLES
 
-These tables are used by both Real Estate and Hospitality systems.
+These tables are used by both **vacation rentals** and **hospitality** systems.
 
 ---
 
@@ -85,7 +85,7 @@ CREATE TABLE host_profiles (
     response_rate        SMALLINT DEFAULT 0,           -- 0-100
     response_time_minutes INTEGER DEFAULT 0,
     acceptance_rate      SMALLINT DEFAULT 0,           -- request bookings only
-    -- Real Estate aggregates
+    -- Vacation rental listing aggregates (M2b: column rename from re_total_listings → vacation_rental_total_listings)
     re_total_listings    INTEGER NOT NULL DEFAULT 0,
     -- Hospitality aggregates
     hotel_total          INTEGER NOT NULL DEFAULT 0,
@@ -106,10 +106,11 @@ CREATE TABLE host_profiles (
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TYPE host_category AS ENUM ('real_estate', 'hospitality');
+CREATE TYPE host_category AS ENUM ('vacation_rentals', 'hospitality');  -- M2b: migrate existing rows from legacy 'real_estate'
 CREATE TYPE host_subtype AS ENUM (
-    -- For category=real_estate
-    'individual', 'real_estate_office',
+    -- For category=vacation_rentals
+    'individual',
+    'vacation_rental_operator',     -- M2b: replaces legacy 'real_estate_office'; Arabic UX: مشغّل بيوت عطلات
     -- For category=hospitality
     'hotel_company'
 );
@@ -121,15 +122,15 @@ CREATE TYPE withdrawal_schedule AS ENUM ('weekly', 'monthly', 'manual');
 CREATE TABLE kyc_submissions (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id             UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    intended_host_category host_category,           -- real_estate or hospitality (different docs needed)
+    intended_host_category host_category,           -- vacation_rentals or hospitality (different docs needed)
     intended_host_subtype host_subtype,
     id_document_type    kyc_doc_type NOT NULL,
     id_front_url        VARCHAR(500) NOT NULL,
     id_back_url         VARCHAR(500),
     selfie_url          VARCHAR(500) NOT NULL,
-    -- For real_estate hosts
+    -- For vacation_rental hosts (individual)
     ownership_proof_url VARCHAR(500),
-    -- For real_estate_office and hospitality hosts
+    -- For vacation_rental operators / hospitality hosts
     company_registration_url VARCHAR(500),
     tax_certificate_url VARCHAR(500),
     authorization_letter_url VARCHAR(500),
@@ -153,13 +154,101 @@ CREATE TYPE kyc_status AS ENUM ('pending', 'approved', 'rejected', 'expired');
 
 ---
 
-## SECTION B: REAL ESTATE SYSTEM
+## SECTION B: VACATION RENTALS / HOLIDAY HOMES
 
-For houses, apartments, villas, farms, cabins, chalets. Modeled after Airbnb.
+Short-stay listings: houses, apartments, villas, farms, cabins, chalets, studios. Modeled after Airbnb.
+
+**M2 agents:** implement **Section B0** identifiers only. Material below **B1** that still says `CREATE TABLE properties` or `property_id` is **legacy pre-M2 inventory — do not copy as the target schema** (kept for historical comparison until migrations land).
 
 ---
 
-## B1. `properties` (Real Estate)
+## B0. Target M2 DDL skeleton (canonical — implement this)
+
+Normative table and enum names for new migrations and Prisma. Expand columns per [PHASE_3_VACATION_RENTALS_PLAN.md](./PHASE_3_VACATION_RENTALS_PLAN.md). Related tables for M2 (names only): `vacation_rental_spaces`, `vacation_rental_space_images`, `vacation_rental_images`, `vacation_rental_amenities`, `vacation_rental_availability_blocks`, `vacation_rental_pricing_overrides`.
+
+```sql
+CREATE TYPE vacation_rental_type AS ENUM (
+    'apartment', 'house', 'villa', 'farm', 'chalet', 'cabin', 'studio'
+);
+
+CREATE TYPE vacation_rental_listing_status AS ENUM (
+    'draft', 'pending_review', 'published', 'paused', 'rejected', 'archived'
+);
+
+CREATE TABLE vacation_rentals (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    host_id                 UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    rental_type             vacation_rental_type NOT NULL,
+    title_ar                VARCHAR(200) NOT NULL,
+    title_en                VARCHAR(200),
+    description_ar          TEXT NOT NULL,
+    description_en          TEXT,
+    country_code            CHAR(2) NOT NULL DEFAULT 'SY',
+    governorate             VARCHAR(100) NOT NULL,
+    city                    VARCHAR(100) NOT NULL,
+    neighborhood            VARCHAR(150),
+    address_line            VARCHAR(255),
+    location                GEOGRAPHY(POINT, 4326) NOT NULL,
+    location_precision      location_precision NOT NULL DEFAULT 'approximate',
+    max_guests              SMALLINT NOT NULL,
+    bedrooms_count          SMALLINT NOT NULL DEFAULT 0,
+    beds_count              SMALLINT NOT NULL DEFAULT 0,
+    bathrooms_count         NUMERIC(3,1) NOT NULL DEFAULT 1.0,
+    area_sqm                INTEGER,
+    base_price_cents        BIGINT NOT NULL,
+    weekly_price_cents      BIGINT,
+    monthly_price_cents     BIGINT,
+    weekend_uplift_pct      SMALLINT NOT NULL DEFAULT 0,
+    cleaning_fee_cents      BIGINT NOT NULL DEFAULT 0,
+    minimum_stay_nights     SMALLINT NOT NULL DEFAULT 1,
+    maximum_stay_nights     SMALLINT,
+    currency                CHAR(3) NOT NULL DEFAULT 'USD',
+    commission_passthrough  BOOLEAN NOT NULL DEFAULT false,
+    booking_mode            booking_mode NOT NULL DEFAULT 'request',
+    cancellation_policy     cancellation_policy NOT NULL,
+    status                  vacation_rental_listing_status NOT NULL DEFAULT 'draft',
+    rejection_reason        TEXT,
+    submitted_for_review_at TIMESTAMPTZ,
+    approved_at             TIMESTAMPTZ,
+    approved_by             UUID REFERENCES users(id),
+    total_bookings          INTEGER NOT NULL DEFAULT 0,
+    total_views             INTEGER NOT NULL DEFAULT 0,
+    average_rating          NUMERIC(3,2),
+    total_reviews           INTEGER NOT NULL DEFAULT 0,
+    last_availability_reduction_at TIMESTAMPTZ,
+    availability_reductions_count INTEGER NOT NULL DEFAULT 0,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at              TIMESTAMPTZ
+);
+
+CREATE INDEX idx_vacation_rentals_host ON vacation_rentals(host_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_vacation_rentals_status ON vacation_rentals(status) WHERE deleted_at IS NULL;
+CREATE INDEX idx_vacation_rentals_type ON vacation_rentals(rental_type) WHERE deleted_at IS NULL;
+CREATE INDEX idx_vacation_rentals_city ON vacation_rentals(city, governorate) WHERE status = 'published';
+CREATE INDEX idx_vacation_rentals_location ON vacation_rentals USING GIST(location) WHERE status = 'published';
+```
+
+| Legacy (pre-M2 — **do not use in new work**) | Target (M2) |
+|---|---|
+| `properties` | `vacation_rentals` |
+| `property_id` | `vacation_rental_id` |
+| `property_spaces` | `vacation_rental_spaces` |
+| `property_space_images` | `vacation_rental_space_images` |
+| `property_images` | `vacation_rental_images` |
+| `property_amenities` | `vacation_rental_amenities` |
+| `property_availability_blocks` | `vacation_rental_availability_blocks` |
+| `property_pricing_overrides` | `vacation_rental_pricing_overrides` |
+| `re_property_type` | `vacation_rental_type` |
+| `property_status` | `vacation_rental_listing_status` |
+
+---
+
+## B1 — Legacy pre-M2 SQL inventory (**do not implement**)
+
+> **Warning:** The DDL in **B1–B7** uses `properties`, `property_id`, `re_property_type`, and related symbols from older drafts. **Do not create new migrations from this block.** Use **B0** and the mapping table above. This section remains only so engineers can compare field coverage until the physical schema is replaced.
+
+### B1a. `properties` (legacy DDL — non-canonical)
 ```sql
 CREATE TABLE properties (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
@@ -238,8 +327,11 @@ CREATE INDEX idx_properties_city ON properties(city, governorate) WHERE status =
 CREATE INDEX idx_properties_location ON properties USING GIST(location) WHERE status = 'published';
 ```
 
-### B2. `property_spaces` — Per-room/space breakdown (Airbnb-style)
-A property has many spaces: bedrooms, bathrooms, kitchens, living rooms, outdoor areas.
+### B2. `property_spaces` (legacy) — target: `vacation_rental_spaces`
+
+Legacy DDL below; **do not use as canonical M2 schema** (see B0).
+
+A listing has many spaces: bedrooms, bathrooms, kitchens, living rooms, outdoor areas.
 ```sql
 CREATE TABLE property_spaces (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
@@ -675,7 +767,7 @@ CREATE TABLE bookings (
     booking_reference   VARCHAR(20) UNIQUE NOT NULL,    -- "SUK-A1B2C3"
     -- Polymorphic target: either property OR room_type+units
     booking_kind        booking_kind NOT NULL,
-    property_id         UUID REFERENCES properties(id) ON DELETE RESTRICT,    -- if real_estate
+    property_id         UUID REFERENCES vacation_rentals(id) ON DELETE RESTRICT,    -- if vacation_rentals booking
     hotel_id            UUID REFERENCES hotels(id) ON DELETE RESTRICT,        -- if hospitality
     room_type_id        UUID REFERENCES room_types(id) ON DELETE RESTRICT,    -- if hospitality
     -- Parties
@@ -735,7 +827,7 @@ CREATE TABLE bookings (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     -- Polymorphic constraint
     CHECK (
-        (booking_kind = 'real_estate' AND property_id IS NOT NULL AND hotel_id IS NULL AND room_type_id IS NULL)
+        (booking_kind = 'vacation_rentals' AND property_id IS NOT NULL AND hotel_id IS NULL AND room_type_id IS NULL)
         OR
         (booking_kind = 'hospitality' AND property_id IS NULL AND hotel_id IS NOT NULL AND room_type_id IS NOT NULL)
     ),
@@ -744,7 +836,7 @@ CREATE TABLE bookings (
     CHECK (rooms_count > 0)
 );
 
-CREATE TYPE booking_kind AS ENUM ('real_estate', 'hospitality');
+CREATE TYPE booking_kind AS ENUM ('vacation_rentals', 'hospitality');  -- M2b: migrate legacy 'real_estate' rows
 CREATE TYPE money_flow_type AS ENUM ('escrow', 'direct');
 CREATE TYPE booking_status AS ENUM (
     'pending_payment', 'pending_approval', 'confirmed',

@@ -48,7 +48,7 @@ You can show a friend the visual mockups and they understand both the Vacation R
 - [ ] i18n with `next-intl`: full Arabic (RTL) + English (LTR)
 - [x] Design system implemented (colors, fonts, spacing — incl. map color palette)
 - [x] **Layout**:
-  - Header with logo + **persistent tabs `[الكل] [عقارات] [فنادق]`** + **two login buttons** (language switcher deferred with i18n)
+  - Header with logo + **persistent tabs `[الكل] [بيوت العطلات] [فنادق]`** + **two login buttons** (language switcher deferred with i18n). *(Phase 1 UI may still use legacy `عقارات` / `?tab=real_estate` until Phase 3 wiring + M2b — canonical names: [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md).)*
   - Footer
 - [x] **Homepage**:
   - Hero with search bar (interactive: location + dates + guests → `/search` with query params, mobile uses bottom-sheet drawer)
@@ -57,8 +57,8 @@ You can show a friend the visual mockups and they understand both the Vacation R
   - MapExplorer placeholder (real MapLibre integration deferred to Phase 3+)
   - Note: a homepage-level FAQ block was not built; FAQs live on `/help` for now
 - [x] **Search Results page** (works for all three tabs):
-  - Filters sidebar adapts to tab selection (RE filters vs Hotel filters)
-  - Property cards (RE) and Hotel cards (separate visual style)
+  - Filters sidebar adapts to tab selection (vacation rental filters vs hotel filters)
+  - Vacation rental listing cards and hotel cards (separate visual style)
   - Map view toggle with category color-coded markers (placeholder map)
 - [x] **Vacation Rental Detail page**:
   - Hero gallery
@@ -118,10 +118,10 @@ You can show a friend the visual mockups and they understand both the Vacation R
   - [ ] Mandatory enforcement for hosts/admins (deferred pre-production hardening)
 - [x] **Roles**: `is_guest`, `is_host`, `is_admin`, `is_super_admin` (a user can be multiple)
 - [x] **KYC submission**:
-  - [x] Different document requirements per `intended_host_category` (real_estate vs hospitality) and `intended_host_subtype`
+  - [x] Different document requirements per `intended_host_category` (DB may still store `real_estate` until M2b; target `vacation_rentals` vs `hospitality`) and `intended_host_subtype`
   - [x] Upload to MinIO private storage
 - [x] **Become Host flow**:
-  - [x] User chooses category (RE or Hospitality) and subtype (individual / RE office / hotel company)
+  - [x] User chooses category (vacation rentals vs hospitality; legacy UI may still show pre-M2b labels) and subtype (individual / `vacation_rental_operator` / hotel company)
   - [x] KYC requirements differ
 - [x] Admin endpoints: review and approve/reject KYC
 - [ ] Frontend:
@@ -154,10 +154,12 @@ A guest can sign up + verify phone + login. A user can choose to become a vacati
 
 **Canonical Phase 3 plan:** `docs/PHASE_3_VACATION_RENTALS_PLAN.md`.
 
-**Naming decision:** this phase is about **بيوت العطلات / Vacation Rentals**, not a broad real-estate marketplace. New user-facing copy and new Phase 3 code should avoid "عقارات", "Real Estate", and "RE" as domain labels.
+**M1 naming and contracts (gate before M2 schema):** `docs/PHASE_3_M1_NAMING_PLAN.md` — target `vacation_rentals` wire/tab/API, full rename path including M2b enum migration off `real_estate`.
+
+**Naming decision:** this phase is about **بيوت العطلات / Vacation Rentals**, not a broad real-estate marketplace. New user-facing copy and new Phase 3 code must avoid "عقارات", "Real Estate", and "RE" as domain labels once implementation starts; pre-M2b code may still contain legacy strings listed in M1 only as migration inventory.
 
 ### Deliverables
-- [ ] Phase 3 domain naming/contracts finalized before schema work.
+- [x] Phase 3 domain naming/contracts finalized before schema work ([PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md)).
 - [ ] Prisma schema for vacation rentals, spaces, images, amenities, availability blocks, and pricing overrides.
 - [ ] Seed data: amenities (with `applies_to_*` flags), vacation rental types
 - [ ] **Vacation rental creation wizard** (host side, multi-step):
@@ -222,7 +224,7 @@ A vacation rental host can list a real holiday home with full per-room/space det
 - [ ] **Admin review queue** for hotels
 - [ ] **Search API for hotels** with PostGIS:
   - Filters: star rating, hotel type, breakfast included, amenities, dates, price range, city
-- [ ] **Hotel search results page** (different visual from RE)
+- [ ] **Hotel search results page** (different visual from vacation rentals)
 - [ ] **Hotel detail page**:
   - Room types listed with **date-aware availability** (X of Y available)
   - Each room type bookable separately
@@ -241,9 +243,9 @@ A real hotel host can list a hotel with multiple room types. A guest can browse 
 **Estimated:** 4–5 weeks
 
 ### Deliverables
-- [ ] Prisma schema: `bookings` (polymorphic — RE or hospitality), `booking_room_units`, `payments`, `wallets`, `wallet_transactions`, `withdrawal_requests`, `commission_rates`, `service_fee_rates`, `tax_rules`, `discount_codes`, `booking_fee_snapshots`, `currency_rates`
+- [ ] Prisma schema: `bookings` (polymorphic — vacation rentals or hospitality), `booking_room_units`, `payments`, `wallets`, `wallet_transactions`, `withdrawal_requests`, `commission_rates`, `service_fee_rates`, `tax_rules`, `discount_codes`, `booking_fee_snapshots`, `currency_rates`
 - [ ] **Booking creation flow**:
-  - Polymorphic: handles both `kind=real_estate` and `kind=hospitality`
+  - Polymorphic: handles both `kind=vacation_rentals` and `kind=hospitality`
   - Date conflict detection (uses appropriate availability table)
   - **Pricing tier resolver** (4 tiers + weekend uplift + seasonal)
   - **Financial rules resolver** for commission + service fee + taxes + discounts/promos + manual overrides
@@ -260,7 +262,7 @@ A real hotel host can list a hotel with multiple room types. A guest can browse 
   - Receipt upload
   - Admin manual approval queue
 - [ ] **Payment Method 4: International gateway** (provider TBD)
-- [ ] **Escrow logic for RE**: money held until 24h post check-in
+- [ ] **Escrow logic for vacation rentals**: money held until 24h post check-in
 - [ ] **Direct flow for Hospitality**: money credited immediately
 - [ ] **Variable commission**: no fixed rates in code; configurable per global/type/host organization/host/property/hotel/room-type/guest/promo/booking override
 - [ ] **Service fee**: separately configurable from admin, guest-specific/coupon-capable, always shown when charged
@@ -401,7 +403,7 @@ The platform feels intelligent. Hosts get useful insights. Guests get useful nud
 - [ ] **Backup strategy verified**: full restore drill on staging
 - [ ] **Monitoring set up**: Uptime Kuma, Grafana dashboards, alerting
 - [ ] **Onboarding 30–50 beta users**:
-  - 5–8 RE hosts (mix individuals + 2 RE offices)
+  - 5–8 vacation rental hosts (mix individuals + operators/offices)
   - 3–5 hotel companies (small/mid hotels)
   - 20–30 guests (friends, family, Syrian diaspora)
 - [ ] **Beta feedback channel**: form + WhatsApp group
@@ -409,7 +411,7 @@ The platform feels intelligent. Hosts get useful insights. Guests get useful nud
 - [ ] **Public launch announcement**: social media, Syrian tech communities
 
 ### Exit Criteria
-Beta users complete at least 15 real bookings end-to-end (mix of RE + hotels) without critical issues.
+Beta users complete at least 15 real bookings end-to-end (mix of vacation rental stays + hotels) without critical issues.
 
 ---
 

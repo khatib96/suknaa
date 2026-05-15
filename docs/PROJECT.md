@@ -4,7 +4,7 @@
 > **Tagline (AR):** سكنك في كل مكان بسوريا
 > **Tagline (EN):** Your home, anywhere in Syria
 > **Status:** Phase 0 — Foundation
-> **Last Updated:** 2026-04-29 (v2)
+> **Last Updated:** 2026-05-13 (v2 + Phase 3 M1 naming)
 
 ---
 
@@ -12,7 +12,7 @@
 
 Suknaa is a **comprehensive Syrian rental platform** that operates as **two integrated but distinct systems**:
 
-1. **Real Estate System (نظام العقارات)** — for individuals and real-estate offices listing houses, apartments, villas, farms, cabins, chalets. Modeled after Airbnb's approach (per-property listing with detailed room-by-room information).
+1. **Vacation Rentals / Holiday Homes (بيوت العطلات)** — for individuals and vacation-rental operators listing houses, apartments, villas, farms, cabins, chalets, and studios for short stays. Modeled after Airbnb's approach (per-listing unit with detailed room-by-room information). **Canonical naming:** [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md).
 
 2. **Hospitality System (نظام الفنادق)** — for hotel and resort companies listing rooms-by-type. Modeled after Booking.com's approach (one establishment with multiple room types and inventory tracking).
 
@@ -28,13 +28,13 @@ This dual-system approach is **the defining architectural choice of Suknaa**. Ho
 
 ## 3. The Solution: Two Systems, One Platform
 
-### 3.1. The Real Estate System (P2P)
-- Single property = single listing
-- Detailed per-room descriptions (each bedroom: bed type, size, photos, amenities)
-- Per-room photo galleries (bedroom 1, bedroom 2, kitchen, bathroom 1, bathroom 2, garden, etc.)
-- Property-level amenities (pool, garden, parking, BBQ, etc.)
-- One booking = the entire property
-- Hosts: Individuals + Real Estate Offices
+### 3.1. Vacation Rentals / Holiday Homes (P2P)
+- Single vacation rental = single listing
+- Detailed per-space descriptions (each bedroom: bed type, size, photos, amenities)
+- Per-space photo galleries (bedroom 1, bedroom 2, kitchen, bathroom 1, bathroom 2, garden, etc.)
+- Listing-level amenities (pool, garden, parking, BBQ, etc.)
+- One booking = the entire unit
+- Hosts: Individuals + **`vacation_rental_operator`** hosts (Arabic: مشغّل بيوت عطلات; see [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md))
 
 ### 3.2. The Hospitality System (B2B)
 - Single hotel = one establishment with **multiple room types**
@@ -57,12 +57,12 @@ Every user landing on `suknaa.com` sees a **persistent tab bar** at the top:
 
 ```
 ┌──────────────────────────────────────────────┐
-│      [الكل]  [عقارات]  [فنادق]                │
+│      [الكل]  [بيوت العطلات]  [فنادق]          │
 └──────────────────────────────────────────────┘
 ```
 
 - **الكل (All)** — Default. Mixed results. Best for users who don't know yet.
-- **عقارات (Real Estate)** — Filters limited to houses; map markers in orange/green; filters tailored (bedrooms count, pool, garden).
+- **بيوت العطلات (Vacation rentals)** — Short-stay listings; map markers in orange/green by category; filters tailored (bedrooms, pool, garden, etc.). URL/query target: `?tab=vacation_rentals` (see [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md)).
 - **فنادق (Hotels)** — Filters limited to hotels; map markers in gold; filters tailored (star rating, breakfast included, room type).
 
 User can switch tabs anytime; their search context persists.
@@ -76,7 +76,7 @@ On the public site header:
 ```
 
 - **"دخول كزبون" (Login as Guest)** → guest dashboard / continues browsing
-- **"دخول كمؤجر" (Login as Host)** → host dashboard for managing properties + bookings
+- **"دخول كمؤجر" (Login as Host)** → host dashboard for managing listings + bookings
 
 > **Important**: One account can be **both** a guest and a host. The two buttons select the *experience to enter*, not separate accounts. If a user with no host profile clicks "Login as Host," they're guided through the "become a host" flow.
 
@@ -90,9 +90,9 @@ On the public site header:
 - **Tourists**: foreign visitors needing verified accommodation
 - **Business travelers**: needing hotels and serviced apartments
 
-### 5.2. Hosts — Real Estate (Individuals & Real Estate Offices)
-- **Individual property owners**: own a house/farm/cabin and want to monetize it
-- **Real estate offices (مكاتب عقارية)**: manage multiple properties for various owners; act as intermediaries
+### 5.2. Hosts — Vacation rentals (individuals & operators)
+- **Individual hosts**: own or operate a house, farm, cabin, etc., for short stays
+- **Vacation rental operators** (`host_subtype` = `vacation_rental_operator`; Arabic: مشغّل بيوت عطلات): manage multiple vacation rental listings on behalf of owners
 
 ### 5.3. Hosts — Hospitality (Companies)
 - **Hotel companies**: small or large hotels with multiple room types
@@ -100,7 +100,7 @@ On the public site header:
 - **Hotel-apartment operators**: serviced apartment buildings
 
 ### 5.4. Admin (إدارة المنصة)
-- **Suknaa team**: approves listings, verifies KYC, processes withdrawals, handles disputes, monitors price intelligence
+- **Suknaa team**: approves vacation rental and hotel listings, verifies KYC, processes withdrawals, handles disputes, monitors price intelligence
 
 ---
 
@@ -114,7 +114,7 @@ On the public site header:
 - **Arabic (ar)** — primary, with full RTL layout
 - **English (en)** — secondary, LTR
 - All user-facing text must be translatable (i18n from day one)
-- Property descriptions: stored in both languages where provided by host; auto-translation as fallback (Phase 2)
+- Listing descriptions: stored in both languages where provided by host; auto-translation as fallback (Phase 2)
 
 ## 8. Brand Identity
 
@@ -126,7 +126,7 @@ On the public site header:
 
 | Color | HEX | Usage |
 |---|---|---|
-| Burnt Orange (Primary) | `#C85A3D` | Headers, primary buttons, brand text, **Real Estate map markers** |
+| Burnt Orange (Primary) | `#C85A3D` | Headers, primary buttons, brand text, **Vacation rental map markers** (houses/apartments/villas) |
 | Warm Gold (Accent) | `#D4A24C` | Highlights, badges (verified, premium), **Hospitality (Hotels) map markers** |
 | Forest Green | `#3D8A6B` | Success, **Farms/Cabins/Chalets map markers** |
 | Teal | `#3D8A95` | **Hotel-Apartments map markers** |
@@ -138,7 +138,7 @@ On the public site header:
 | Error Red | `#B83A3A` | Errors, cancelled bookings |
 
 ### 8.3. Map Color Code (Critical for Visual Hierarchy)
-The map is a primary navigation surface. Markers are color-coded by property category:
+The map is a primary navigation surface. Markers are color-coded by listing category:
 - 🟧 **Burnt Orange**: Houses, Apartments, Villas
 - 🟢 **Forest Green**: Farms, Cabins, Chalets
 - 🟡 **Gold**: Hotels, Resorts
@@ -155,11 +155,11 @@ Users learn the code intuitively after browsing for a few minutes.
 
 ## 9. Core Principles (Non-Negotiable)
 
-1. **Two systems, never confused**: Real Estate ≠ Hospitality at every layer (UI, API, DB, business logic)
+1. **Two systems, never confused**: Vacation rentals ≠ Hospitality at every layer (UI, API, DB, business logic)
 2. **Security first**: every financial flow is auditable, every contact is mediated
 3. **Trust through verification**: no listing goes live without admin approval
 4. **No off-platform deals**: contact information is blocked until booking is confirmed
-5. **Transparent pricing**: guest sees a single property price + visible service fee; never sees the commission internals
+5. **Transparent pricing**: guest sees a single nightly/subtotal line for the stay + visible service fee; never sees the commission internals
 6. **Mobile-conscious**: desktop is primary build target, but mobile UX is never an afterthought
 7. **Bilingual parity**: Arabic is not "an addition" — it is co-equal with English
 8. **Local payment respect**: Sham Cash and MTN Cash are first-class, not workarounds
@@ -175,7 +175,7 @@ These are the features that make Suknaa more than "Airbnb+Booking for Syria":
 |---|---|
 | **Dual-system tabs** | Users never confused about what they're booking |
 | **Commission passthrough choice** | Hosts choose if they absorb the commission or pass it to guests (always invisible to guest) |
-| **Per-room property listings** | Houses described room-by-room (like Airbnb), giving guests a true picture |
+| **Per-space vacation rental listings** | Stays described room-by-room (like Airbnb), giving guests a true picture |
 | **Hotel inventory engine** | Real-time per-room-type availability (like Booking.com), preventing overbooking |
 | **Price intelligence** | Market signals to hosts ("demand up 30%, raise prices") + pricing assistant ("you're priced 40% above similar listings") |
 | **Anti-circumvention safeguards** | Hosts who artificially lower availability are flagged; encourages on-platform bookings |
@@ -185,15 +185,15 @@ These are the features that make Suknaa more than "Airbnb+Booking for Syria":
 | **Discover Syria** | Destination guides, landmarks, restaurants, and local stories that make Suknaa a travel reference, not only a booking tool |
 | **Trips and planning** | Guest trip dashboard plus future multi-city planning for travelers visiting more than one Syrian city |
 | **AI search assistant** | Data-grounded assistant for finding stays, comparing prices, choosing dates, and planning trips from live Suknaa data |
-| **Dual rating** | Both the property AND the host get rated separately |
-| **Host profile pages** | See all properties from one host; build trust through reputation |
+| **Dual rating** | Both the listing AND the host get rated separately |
+| **Host profile pages** | See all vacation rental and hotel listings from one host; build trust through reputation |
 
 ---
 
 ## 11. Out of Scope (for now)
 
 - ❌ Long-term residential rentals (>30 days as primary use case — but supported via monthly pricing tier)
-- ❌ Real estate sales (buying/selling property)
+- ❌ Property sales (buying/selling real estate) as a marketplace vertical
 - ❌ Roommate/shared housing matchmaking
 - ❌ Cash payment on arrival
 - ❌ Cryptocurrency payments
@@ -206,12 +206,12 @@ These are the features that make Suknaa more than "Airbnb+Booking for Syria":
 
 ## 12. Success Metrics (Year 1 Targets)
 
-- 500+ verified listings (300 real estate + 200 hotel rooms across 30 hotels)
-- 50+ verified hosts (mix of individuals + real estate offices + small/mid hotels)
+- 500+ verified listings (300 vacation rentals + 200 hotel rooms across 30 hotels)
+- 50+ verified hosts (mix of individuals + vacation rental operators + small/mid hotels)
 - 1,000+ registered guests
 - 200+ completed bookings
 - <5% dispute rate
-- >4.0 average property rating
+- >4.0 average listing rating
 - Sustainable commission revenue covering hosting + ops costs
 
 ---
@@ -229,5 +229,5 @@ These are the features that make Suknaa more than "Airbnb+Booking for Syria":
 | `PAYMENT_SYSTEM.md` | Money flow, escrow, withdrawals, commission passthrough |
 | `SECURITY.md` | Auth, KYC, fraud prevention, anti-circumvention |
 | `DEPLOYMENT.md` | VPS setup, CI/CD, backups |
-| `PRODUCT_IDEAS.md` | Future product ideas: Discover Syria, trips, multi-city planning, AI assistant |
+| `PHASE_3_M1_NAMING_PLAN.md` | Phase 3 M1: vacation rentals naming, API/DB targets, M2/M2b migration inventory |
 | `.cursor/rules/suknaa.mdc` | Rules for Cursor AI when generating code |

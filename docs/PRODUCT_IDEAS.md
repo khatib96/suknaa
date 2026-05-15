@@ -50,7 +50,7 @@ Core idea:
 - Show upcoming, current, past, cancelled, and pending-payment trips.
 - Each trip shows booking status, accommodation, dates, guests, payment status, host/hotel contact rules, invoice, and check-in instructions.
 - After checkout, prompt for reviews.
-- Trips can include real-estate stays, hotel stays, or eventually multi-city plans.
+- Trips can include vacation-rental (whole-unit) stays, hotel stays, or eventually multi-city plans.
 
 Minimum useful version:
 - After Phase 5 booking system: show confirmed and pending bookings.

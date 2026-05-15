@@ -24,11 +24,11 @@ Avoid these terms for user-facing product copy:
 - RE
 - Property owner, unless the context is legal ownership proof
 
-Technical naming should also move toward the product domain:
+Technical naming: see **[PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md)** for the full matrix, M2/M2b migration checklist, and pre-migration inventory. Summary:
 
-- API/module names: prefer `vacation-rentals` over `real-estate`.
-- Domain names: prefer `vacationRental` over `realEstate`.
-- Database naming: Phase 3 M1 must decide and document the final table naming before migrations are written. Because the app is not in production yet, renaming from `properties`/`real_estate` concepts to `vacation_rentals` is still practical.
+- Nest module: `vacation-rentals`; API: `/v1/me/vacation-rentals`; tab/kind: `vacation_rentals`.
+- Target `host_category` value: `vacation_rentals` (Phase 2 DB still may show `real_estate` until M2b — not normative).
+- New tables: `vacation_rentals` family — not `properties` / `re_*` as canonical names for new migrations.
 
 ## Current Verified State
 
@@ -71,20 +71,20 @@ Acceptance criteria:
 
 ### M1 - Domain Naming And Contracts
 
-Purpose: remove the misleading Real Estate terminology before building new surface area.
+**Canonical spec:** [PHASE_3_M1_NAMING_PLAN.md](./PHASE_3_M1_NAMING_PLAN.md) (glossary, seven listing types, target API/DB names, M2 vs M2b checklist, pre-migration inventory only for `real_estate`).
 
-Scope:
+Purpose: lock contracts and documentation before schema work — **full rename path** to `vacation_rentals` / بيوت العطلات (no long-term “real estate” product naming).
 
-- Update planning docs to use **Vacation Rentals / Holiday Homes**.
-- Decide final internal naming for API paths, modules, DTOs, and database tables.
-- Decide whether existing frontend routes like `/property/[id]` become `/vacation-rentals/[id]` now or in a compatibility step.
-- Update shared type names before they spread into more code.
+Scope (documentation only in M1):
+
+- Core docs + `API_SPEC` + `DATABASE_SCHEMA` aligned with M1 naming plan.
+- Frontend route/tab targets documented (`/vacation-rentals/[id]`, `?tab=vacation_rentals`); legacy `/property` and `real_estate` listed as pre-migration only.
 
 Acceptance criteria:
 
-- No new Phase 3 code uses `real-estate`, `real_estate`, or `RE` as the domain name.
-- Any intentionally retained legacy name is documented with a migration reason.
-- Future agents know the correct domain term from `BUILD_PLAN`, this file, and project rules.
+- M1 naming plan merged; `BUILD_PLAN` Phase 3 references it as gate before M2.
+- No new Phase 3 **implementation** uses `real-estate`, `real_estate`, or `RE` as the domain name once coding starts; any pre-M2b occurrence in code is temporary and listed in M1 inventory.
+- Future agents read `BUILD_PLAN`, this file, `PHASE_3_M1_NAMING_PLAN.md`, and `.cursor/rules/suknaa.mdc` for terminology.
 
 ### M2 - Database Schema And Migration
 
